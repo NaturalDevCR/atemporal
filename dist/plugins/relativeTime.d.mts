@@ -1,4 +1,4 @@
-import { P as Plugin } from '../TemporalWrapper-glHCeOuR.js';
+import { P as Plugin } from '../TemporalWrapper-glHCeOuR.mjs';
 import '@js-temporal/polyfill';
 
 declare module '../TemporalWrapper' {

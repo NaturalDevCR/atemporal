@@ -1,28 +1,4 @@
-"use strict";
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
 // src/plugins/relativeTime.ts
-var relativeTime_exports = {};
-__export(relativeTime_exports, {
-  default: () => relativeTime_default
-});
-module.exports = __toCommonJS(relativeTime_exports);
 var relativeTimePlugin = (Atemporal, atemporal) => {
   const UNITS = ["year", "month", "day", "hour", "minute", "second"];
   Atemporal.prototype.fromNow = function(withoutSuffix = false) {
@@ -51,4 +27,7 @@ var relativeTimePlugin = (Atemporal, atemporal) => {
   };
 };
 var relativeTime_default = relativeTimePlugin;
-//# sourceMappingURL=relativeTime.js.map
+export {
+  relativeTime_default as default
+};
+//# sourceMappingURL=relativeTime.mjs.map

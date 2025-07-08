@@ -1,18 +1,60 @@
 {
   "name": "atemporal",
-  "version": "1.0.1",
+  "version": "1.0.17",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc"
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./plugins/relativeTime": {
+      "import": {
+        "types": "./dist/plugins/relativeTime.d.ts",
+        "default": "./dist/plugins/relativeTime.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/relativeTime.d.ts",
+        "default": "./dist/plugins/relativeTime.js"
+      }
+    }
   },
+  "scripts": {
+    "build": "tsup"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/plugins/relativeTime.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true
+  },
+  "author": "Josue Orozco A.",
+  "license": "MIT",
   "dependencies": {
-    "temporal-polyfill": "^0.3.0"
+    "@js-temporal/polyfill": "^0.5.1"
   },
   "devDependencies": {
-    "@types/node": "^24.0.10",
+    "@types/node": "^24.0.11",
+    "tsup": "^8.1.0",
     "typescript": "^5.4.5"
   }
 }

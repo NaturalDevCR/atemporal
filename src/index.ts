@@ -1,19 +1,38 @@
+import '@js-temporal/polyfill';
+
+import {Temporal} from "@js-temporal/polyfill";
+
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
-import type { Plugin, AtemporalFactory, AtemporalFunction } from './types';
+import type { DateInput, Plugin, AtemporalFactory, AtemporalFunction } from './types';
 
-// Re-exporta los tipos públicos para los usuarios de la librería
 export { TemporalWrapper as Atemporal };
 export type { DateInput, TimeUnit, SettableUnit, Plugin } from './types';
 
-// 1. Tomamos la función base que creará las instancias
-const atemporalFn: AtemporalFunction = TemporalUtils.wrap;
+// La función 'wrap' ahora vive aquí dentro de nuestra función principal.
+const atemporalFn: AtemporalFunction = (input?: DateInput, timeZone?: string) => {
+    if (input instanceof TemporalWrapper) {
+        return timeZone ? input.timeZone(timeZone) : input;
+    }
 
-// 2. Le decimos a TypeScript que nuestro objeto final 'atemporal' se comportará
-//    como nuestra factoría (una función con propiedades).
+    // --- LA SOLUCIÓN ESTÁ AQUÍ ---
+    // Si el usuario llama a atemporal() sin argumentos, 'input' será undefined.
+    // En ese caso, queremos devolver la fecha y hora actuales.
+    if (input === undefined) {
+        // Usamos la API nativa de Temporal para obtener la fecha y hora actuales
+        // en la zona horaria por defecto que el usuario haya configurado.
+        const now = Temporal.Now.zonedDateTimeISO(TemporalUtils.defaultTimeZone);
+        return new TemporalWrapper(now);
+    }
+
+    // Si 'input' no es undefined, TypeScript ahora sabe que es un DateInput válido
+    // y podemos pasarlo directamente al constructor.
+    return new TemporalWrapper(input, timeZone);
+};
+
+// Construimos el objeto final
 const atemporal = atemporalFn as AtemporalFactory;
 
-// 3. Le asignamos todas las propiedades estáticas que definimos en el tipo.
 atemporal.isValid = TemporalUtils.isValid;
 atemporal.setDefaultLocale = TemporalUtils.setDefaultLocale;
 atemporal.setDefaultTimeZone = TemporalUtils.setDefaultTimeZone;
@@ -23,5 +42,4 @@ atemporal.extend = (plugin: Plugin, options) => {
     plugin(TemporalWrapper, atemporal, options);
 };
 
-// 4. Exportamos el objeto completo.
 export default atemporal;

@@ -1,34 +1,9 @@
-"use strict";
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
 // src/index.ts
-var index_exports = {};
-__export(index_exports, {
-  Atemporal: () => TemporalWrapper,
-  default: () => index_default
-});
-module.exports = __toCommonJS(index_exports);
-var import_polyfill2 = require("@js-temporal/polyfill");
-var import_polyfill3 = require("@js-temporal/polyfill");
+import "@js-temporal/polyfill";
+import { Temporal as Temporal2 } from "@js-temporal/polyfill";
 
 // src/TemporalUtils.ts
-var import_polyfill = require("@js-temporal/polyfill");
+import { Temporal } from "@js-temporal/polyfill";
 var _TemporalUtils = class _TemporalUtils {
   static setDefaultLocale(code) {
     _TemporalUtils._defaultLocale = code;
@@ -51,21 +26,21 @@ var _TemporalUtils = class _TemporalUtils {
     if (typeof input === "object" && input !== null && "raw" in input) {
       return input.raw;
     }
-    if (input instanceof import_polyfill.Temporal.ZonedDateTime) {
+    if (input instanceof Temporal.ZonedDateTime) {
       return input.withTimeZone(timeZone);
     }
-    if (input instanceof import_polyfill.Temporal.PlainDateTime) {
+    if (input instanceof Temporal.PlainDateTime) {
       return input.toZonedDateTime(timeZone);
     }
     if (input instanceof Date) {
-      return import_polyfill.Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(timeZone);
+      return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(timeZone);
     }
     if (typeof input === "string") {
       try {
-        return import_polyfill.Temporal.ZonedDateTime.from(input).withTimeZone(timeZone);
+        return Temporal.ZonedDateTime.from(input).withTimeZone(timeZone);
       } catch (e) {
         try {
-          const plainDateTime = import_polyfill.Temporal.PlainDateTime.from(input);
+          const plainDateTime = Temporal.PlainDateTime.from(input);
           return plainDateTime.toZonedDateTime(timeZone);
         } catch (e2) {
           throw new Error(`Invalid date string: ${input}`);
@@ -97,13 +72,13 @@ var _TemporalUtils = class _TemporalUtils {
     return d1.since(d2).total({ unit, relativeTo: d1 });
   }
   static isBefore(a, b) {
-    return import_polyfill.Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === -1;
+    return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === -1;
   }
   static isAfter(a, b) {
-    return import_polyfill.Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 1;
+    return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 1;
   }
   static isSame(a, b) {
-    return import_polyfill.Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 0;
+    return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 0;
   }
   static isSameDay(a, b) {
     return _TemporalUtils.from(a).toPlainDate().equals(_TemporalUtils.from(b).toPlainDate());
@@ -327,7 +302,7 @@ var atemporalFn = (input, timeZone) => {
     return timeZone ? input.timeZone(timeZone) : input;
   }
   if (input === void 0) {
-    const now = import_polyfill3.Temporal.Now.zonedDateTimeISO(TemporalUtils.defaultTimeZone);
+    const now = Temporal2.Now.zonedDateTimeISO(TemporalUtils.defaultTimeZone);
     return new TemporalWrapper(now);
   }
   return new TemporalWrapper(input, timeZone);
@@ -341,8 +316,8 @@ atemporal.extend = (plugin, options) => {
   plugin(TemporalWrapper, atemporal, options);
 };
 var index_default = atemporal;
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  Atemporal
-});
-//# sourceMappingURL=index.js.map
+export {
+  TemporalWrapper as Atemporal,
+  index_default as default
+};
+//# sourceMappingURL=index.mjs.map

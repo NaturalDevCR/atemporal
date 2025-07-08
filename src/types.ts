@@ -1,8 +1,8 @@
-import { Temporal } from 'temporal-polyfill';
+import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 
 // --- Tipos Generales ---
-export type DateInput = Date | string | Temporal.PlainDateTime | Temporal.ZonedDateTime;
+export type DateInput = Date | string | Temporal.PlainDateTime | Temporal.ZonedDateTime | TemporalWrapper;
 export type TimeUnit = 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
 export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
 
@@ -10,11 +10,9 @@ export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'secon
 export type AtemporalClass = typeof TemporalWrapper;
 export type Plugin<T = any> = (cls: AtemporalClass, factory: AtemporalFactory, options?: T) => void;
 
-// --- AÑADIR 'export' AQUÍ ---
 // La firma de la función principal
 export type AtemporalFunction = (input?: DateInput, tz?: string) => TemporalWrapper;
 
-// --- Y AQUÍ ---
 // Las propiedades estáticas que cuelgan de la función principal
 export type AtemporalStatics = {
     extend: (plugin: Plugin, options?: any) => void;

@@ -1,6 +1,7 @@
-import { TemporalWrapper } from './TemporalWrapper';
-import type { AtemporalFactory } from './types';
-export { TemporalWrapper as Atemporal };
-export type { DateInput, TimeUnit, SettableUnit, Plugin } from './types';
+import { A as AtemporalFactory } from './TemporalWrapper-glHCeOuR.js';
+export { T as Atemporal, D as DateInput, P as Plugin, S as SettableUnit, a as TimeUnit } from './TemporalWrapper-glHCeOuR.js';
+import '@js-temporal/polyfill';
+
 declare const atemporal: AtemporalFactory;
-export default atemporal;
+
+export { atemporal as default };
