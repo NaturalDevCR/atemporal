@@ -1,21 +1,18 @@
 {
   "name": "atemporal",
   "version": "1.0.0",
-  "description": "",
+  "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
-  "devDependencies": {
-    "@types/node": "^24.0.10",
-    "typescript": "^5.8.3"
-  },
-  "private": true,
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "temporal-polyfill": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "typescript": "^5.4.5"
   }
 }
