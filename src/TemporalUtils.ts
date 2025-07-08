@@ -1,4 +1,3 @@
-// src/TemporalUtils.ts
 import { Temporal } from 'temporal-polyfill';
 import { TemporalWrapper } from './TemporalWrapper'; // Importa el wrapper para el método 'wrap'
 import type { DateInput, TimeUnit } from './types';
@@ -96,9 +95,16 @@ export class TemporalUtils {
         }
     }
 
-    static wrap(input: DateInput, timeZone?: string): TemporalWrapper {
+    static wrap(input?: DateInput, timeZone?: string): TemporalWrapper {
+        // 1. Si no hay input, creamos una instancia con la fecha y hora actuales.
+        if (input === undefined) {
+            const now = Temporal.Now.zonedDateTimeISO(this.defaultTimeZone);
+            return new TemporalWrapper(now);
+        }
+
+        // 2. Si hay input, continuamos con la validación y creación como antes.
         if (!this.isValid(input)) {
-            throw new Error(`Invalid date input: ${input}`);
+            throw new Error(`Invalid date input: ${String(input)}`);
         }
         return new TemporalWrapper(input, timeZone);
     }

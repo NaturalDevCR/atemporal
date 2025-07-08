@@ -1,6 +1,5 @@
 import { Temporal } from 'temporal-polyfill';
-import { DateInput, TimeUnit } from './TemporalUtils';
-type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
+import type { DateInput, TimeUnit, SettableUnit } from './types';
 export declare class TemporalWrapper {
     private readonly datetime;
     constructor(input: DateInput, timeZone?: string);
@@ -32,4 +31,3 @@ export declare class TemporalWrapper {
     isSameDay(other: DateInput): boolean;
     isLeapYear(): boolean;
 }
-export {};

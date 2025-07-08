@@ -1,11 +1,11 @@
 import { Temporal } from 'temporal-polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
-export type DateInput = Date | string | Temporal.PlainDateTime | Temporal.ZonedDateTime;
-export type TimeUnit = 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+import type { DateInput, TimeUnit } from './types';
 export declare class TemporalUtils {
     private static _defaultTimeZone;
     private static _defaultLocale;
     static setDefaultLocale(code: string): void;
+    static getDefaultLocale(): string;
     static setDefaultTimeZone(tz: string): void;
     static get defaultTimeZone(): string;
     static from(input: DateInput, timeZone?: string): Temporal.ZonedDateTime;
@@ -17,5 +17,5 @@ export declare class TemporalUtils {
     static isSame(a: DateInput, b: DateInput): boolean;
     static isSameDay(a: DateInput, b: DateInput): boolean;
     static isValid(input: any): boolean;
-    static wrap(input: DateInput, timeZone?: string): TemporalWrapper;
+    static wrap(input?: DateInput, timeZone?: string): TemporalWrapper;
 }

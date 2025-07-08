@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TemporalUtils = void 0;
-// src/TemporalUtils.ts
 const temporal_polyfill_1 = require("temporal-polyfill");
 const TemporalWrapper_1 = require("./TemporalWrapper"); // Importa el wrapper para el método 'wrap'
 class TemporalUtils {
     static setDefaultLocale(code) {
         this._defaultLocale = code;
+    }
+    static getDefaultLocale() {
+        return this._defaultLocale;
     }
     static setDefaultTimeZone(tz) {
         try {
@@ -75,12 +77,18 @@ class TemporalUtils {
         }
     }
     static wrap(input, timeZone) {
+        // 1. Si no hay input, creamos una instancia con la fecha y hora actuales.
+        if (input === undefined) {
+            const now = temporal_polyfill_1.Temporal.Now.zonedDateTimeISO(this.defaultTimeZone);
+            return new TemporalWrapper_1.TemporalWrapper(now);
+        }
+        // 2. Si hay input, continuamos con la validación y creación como antes.
         if (!this.isValid(input)) {
-            throw new Error(`Invalid date input: ${input}`);
+            throw new Error(`Invalid date input: ${String(input)}`);
         }
         return new TemporalWrapper_1.TemporalWrapper(input, timeZone);
     }
 }
 exports.TemporalUtils = TemporalUtils;
-TemporalUtils._defaultTimeZone = 'America/Costa_Rica';
-TemporalUtils._defaultLocale = 'es-CR';
+TemporalUtils._defaultTimeZone = 'UTC';
+TemporalUtils._defaultLocale = 'en-US';

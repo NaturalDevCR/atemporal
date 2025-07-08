@@ -1,4 +1,3 @@
-// TemporalWrapper.ts
 import { Temporal } from 'temporal-polyfill';
 import { TemporalUtils } from './TemporalUtils';
 
