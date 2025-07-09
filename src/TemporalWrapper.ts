@@ -21,8 +21,14 @@ function getDurationUnit(unit: TimeUnit): string {
  * Creates a map of formatting tokens to their corresponding string values.
  * @internal
  */
+// Caching for better performance:
+const formatReplacementsCache = new WeakMap<TemporalWrapper, FormatTokenMap>();
+
 function createTokenReplacements(instance: TemporalWrapper, locale?: string): FormatTokenMap {
-    return {
+    if (formatReplacementsCache.has(instance)) {
+        return formatReplacementsCache.get(instance)!;
+    }
+    const replacements: FormatTokenMap = {
         YYYY: () => instance.year.toString(),
         YY: () => instance.year.toString().slice(-2),
         MM: () => instance.month.toString().padStart(2, '0'),
@@ -35,12 +41,15 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
         m: () => instance.minute.toString(),
         ss: () => instance.second.toString().padStart(2, '0'),
         s: () => instance.second.toString(),
+        SSS: () => instance.millisecond.toString().padStart(3, '0'),
         dddd: () => instance.dayOfWeekName,
         ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: 'short' }),
         // Timezone tokens
         Z: () => instance.raw.offset, // e.g., +01:00
         ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100
     };
+    formatReplacementsCache.set(instance, replacements);
+    return replacements;
 }
 
 export class TemporalWrapper {
@@ -201,12 +210,22 @@ export class TemporalWrapper {
         if (typeof templateOrOptions === 'string') {
             const formatString = templateOrOptions;
             const replacements = createTokenReplacements(this, localeCode);
-            const tokenRegex = /YYYY|YY|MM|M|DD|D|HH|H|mm|m|ss|s|dddd|ddd|Z|ZZ/g;
 
-            return formatString.replace(tokenRegex, match => {
+            // This new regex matches either a bracketed literal string OR one of our tokens.
+            const tokenRegex = /\[([^\]]+)]|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|Z|ZZ/g;
+
+            return formatString.replace(tokenRegex, (match, literal) => {
+                // `literal` will be the content inside the brackets if that part of the regex matched.
+                if (literal) {
+                    return literal; // Return the content of the brackets without the brackets themselves.
+                }
+
+                // If it wasn't a literal, it must be a token.
                 if (match in replacements) {
                     return (replacements)[match]();
                 }
+
+                // This part should theoretically not be reached with the new regex, but it's safe to keep.
                 return match;
             });
         }

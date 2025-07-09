@@ -51,7 +51,7 @@ export class TemporalUtils {
     }
 
     /**
-     * [REFACTOR FINAL Y DEFINITIVO] The core parsing engine, rewritten for clarity and robustness.
+     * The core parsing engine, rewritten for clarity and robustness.
      * Each input type is handled in a self-contained block that returns directly.
      * The string parsing logic is now more defensive.
      */
