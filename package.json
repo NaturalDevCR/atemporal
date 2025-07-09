@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "1.0.17",
+  "version": "0.0.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -56,5 +56,28 @@
     "@types/node": "^24.0.11",
     "tsup": "^8.1.0",
     "typescript": "^5.4.5"
-  }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "typesVersions": {
+    "*": {
+      "*": ["dist/*"]
+    }
+  },
+  "keywords": [
+    "temporal",
+    "temporal-wrapper",
+    "atemporal",
+    "date",
+    "datetime",
+    "timezone",
+    "typescript",
+    "immutable",
+    "i18n",
+    "temporal-api",
+    "dayjs-alternative",
+    "luxon-alternative"
+  ]
 }
