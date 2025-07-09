@@ -19,7 +19,6 @@ describe('relativeTime plugin', () => {
     describe('fromNow()', () => {
         it('should handle past times correctly', () => {
             const now = atemporal(MOCK_NOW_ISO);
-            console.log(now, MOCK_NOW_ISO, atemporal())
             expect(now.subtract(5, 'second').fromNow()).toBe('5 seconds ago');
             expect(now.subtract(1, 'minute').fromNow()).toBe('1 minute ago');
             expect(now.subtract(10, 'minute').fromNow()).toBe('10 minutes ago');
