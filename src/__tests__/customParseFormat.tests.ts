@@ -57,8 +57,13 @@ describe('customParseFormat plugin', () => {
         it('should parse a date with a specific timezone', () => {
             const date = atemporal.fromFormat('2023/03/10 09:00', 'YYYY/MM/DD HH:mm', 'America/New_York');
             expect(date.isValid()).toBe(true);
-            // El string de salida debe reflejar la zona horaria y el offset correctos.
-            expect(date.toString()).toBe('2023-03-10T09:00:00-05:00[America/New_York]');
+
+            // PRUEBA CORREGIDA: La responsabilidad de mostrar el nombre de la zona es de .format(), no de .toString().
+            // Esta prueba ahora valida que .format() puede generar el offset correcto.
+            expect(date.format('YYYY-MM-DDTHH:mm:ssZ')).toBe('2023-03-10T09:00:00-05:00');
+
+            // Y validamos que la zona horaria interna es la correcta de forma explícita.
+            expect(date.raw.timeZoneId).toBe('America/New_York');
 
             // Para verificar, convertimos a UTC y comprobamos la hora.
             const utcDate = date.timeZone('UTC');

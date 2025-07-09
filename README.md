@@ -261,7 +261,14 @@ To get started:
 Please see our **Contributing Guide** for more details on our code standards and practices.
 
 ---
+
+## A Note on AI-Assisted Development
+This library was developed with the support of AI coding assistants. These tools were instrumental in providing architectural guidance, accelerating debugging, and exploring code optimization strategies. The final architecture, implementation, and tests are the result of the author's direct work and final decisions.
+
+---
+
 ## Want to support my job?
 <a href="https://buymeacoffee.com/naturaldevcr" target="_blank"><img src="https://github.com/user-attachments/assets/98a65e1b-2843-4333-8955-0db7a20477bf" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
 
 ### [Donate - Paypal](https://www.paypal.com/donate/?hosted_button_id=A8MKF5RNGQ77U).
+

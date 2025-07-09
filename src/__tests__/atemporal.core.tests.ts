@@ -53,6 +53,18 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
 
     // 3. Test Utility Methods (diff, get, format with options)
     describe('Utilities', () => {
+        it('should format using the timezone name token (z)', () => {
+            const nyDate = atemporal('2024-01-01T12:00:00', 'America/New_York');
+            const tokyoDate = atemporal('2024-01-01T12:00:00', 'Asia/Tokyo');
+
+            // Test the 'z' token directly to confirm it works.
+            expect(tokyoDate.format('z')).toBe('Asia/Tokyo');
+
+            // Test the 'z' token as part of a larger string.
+            // Note that we use the 'z' token without brackets to get it replaced.
+            expect(nyDate.format('YYYY-MM-DD HH:mm z')).toBe('2024-01-01 12:00 America/New_York');
+        });
+
         it('should calculate the difference between two dates', () => {
             const futureDate = date1.add(3, 'day');
             expect(futureDate.diff(date1, 'day')).toBe(3);

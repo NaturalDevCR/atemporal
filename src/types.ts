@@ -42,6 +42,10 @@ export interface AtemporalFactory {
      */
     (input?: DateInput, timeZone?: string): TemporalWrapper;
 
+    from(input: DateInput, tz?: string): TemporalWrapper;
+
+    unix(timestampInSeconds: number): TemporalWrapper;
+
     /**
      * Checks if a given input can be parsed into a valid date.
      */

@@ -46,7 +46,8 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
         ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: 'short' }),
         // Timezone tokens
         Z: () => instance.raw.offset, // e.g., +01:00
-        ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100
+        ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100,
+        z: () => instance.raw.timeZoneId,
     };
     formatReplacementsCache.set(instance, replacements);
     return replacements;
@@ -74,6 +75,15 @@ export class TemporalWrapper {
      */
     static from(input: DateInput, tz?: string): TemporalWrapper {
         return new TemporalWrapper(input, tz);
+    }
+
+    /**
+     * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
+     */
+    static unix(timestampInSeconds: number): TemporalWrapper {
+        // Convert seconds to milliseconds and use the main constructor
+        const timestampInMs = timestampInSeconds * 1000;
+        return new TemporalWrapper(timestampInMs);
     }
 
     /**
@@ -212,7 +222,7 @@ export class TemporalWrapper {
             const replacements = createTokenReplacements(this, localeCode);
 
             // This new regex matches either a bracketed literal string OR one of our tokens.
-            const tokenRegex = /\[([^\]]+)]|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|Z|ZZ/g;
+            const tokenRegex = /\[([^\]]+)]|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
 
             return formatString.replace(tokenRegex, (match, literal) => {
                 // `literal` will be the content inside the brackets if that part of the regex matched.
@@ -271,10 +281,34 @@ export class TemporalWrapper {
         return TemporalUtils.toDate(this.datetime);
     }
 
+    // toString(): string {
+    //     if (!this.isValid()) return 'Invalid Date';
+    //     return this.datetime.toString();
+    // }
+
     toString(): string {
         if (!this.isValid()) return 'Invalid Date';
-        return this.datetime.toString();
+
+        // TypeScript es estricto y necesita saber que los valores son literales específicos.
+        // Definimos el tipo explícitamente para que coincida con la firma de la API de Temporal.
+        type FractionalDigits = 0 | 3;
+
+        const hasFractional = this.datetime.millisecond > 0 || this.datetime.microsecond > 0 || this.datetime.nanosecond > 0;
+        const fractionalSecondDigits: FractionalDigits = hasFractional ? 3 : 0;
+
+        // 1. Para UTC, usamos toInstant() que garantiza el formato 'Z' y aplicamos el padding de milisegundos.
+        if (this.datetime.timeZoneId === 'UTC') {
+            return this.datetime.toInstant().toString({ fractionalSecondDigits });
+        }
+
+        // 2. Para otras zonas, usamos el formato con offset, sin el nombre de la zona, y con el padding.
+        return this.datetime.toString({
+            offset: 'auto',
+            timeZoneName: 'never',
+            fractionalSecondDigits
+        });
     }
+
 
     get raw(): Temporal.ZonedDateTime {
         return this.datetime;

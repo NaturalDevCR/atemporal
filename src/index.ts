@@ -1,5 +1,3 @@
-// src/index.ts
-
 /**
  * @file This is the main entry point for the 'atemporal' library.
  * It sets up the main factory function, attaches static utility methods,
@@ -9,7 +7,6 @@
 // Import the Temporal polyfill to ensure the API is available in all environments.
 import '@js-temporal/polyfill';
 
-// [FIX] Re-import `Temporal` to handle the "now" case explicitly and safely.
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
@@ -31,11 +28,8 @@ const atemporalFn: AtemporalFunction = (input?: DateInput, timeZone?: string) =>
         return timeZone ? input.timeZone(timeZone) : input.clone();
     }
 
-    // [FIX] Handle the `undefined` case explicitly to satisfy the stricter type signature
-    // of `TemporalWrapper.from`. This resolves the TypeScript error.
     if (input === undefined) {
         // When no input is provided, create an instance for the current moment.
-        // We create the valid Temporal object here before passing it to the wrapper.
         const nowTemporal = Temporal.Now.zonedDateTimeISO(timeZone || TemporalUtils.defaultTimeZone);
         return TemporalWrapper.from(nowTemporal);
     }
@@ -45,8 +39,21 @@ const atemporalFn: AtemporalFunction = (input?: DateInput, timeZone?: string) =>
 };
 
 // Augment the core function with static properties to create the final factory object.
-// This pattern allows calling `atemporal()` as a function while also accessing utils like `atemporal.isValid()`.
 const atemporal = atemporalFn as AtemporalFactory;
+
+// --- Attach all static methods from TemporalWrapper and TemporalUtils ---
+
+/**
+ * Creates a new TemporalWrapper instance.
+ * The function signature is inferred from `TemporalWrapper.from`.
+ */
+atemporal.from = TemporalWrapper.from;
+
+/**
+ * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
+ * The function signature is inferred from `TemporalWrapper.unix`.
+ */
+atemporal.unix = TemporalWrapper.unix;
 
 /**
  * Checks if a given input can be parsed into a valid date.
