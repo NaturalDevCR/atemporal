@@ -19,6 +19,25 @@ This is a work in progress, and is in a very alpha state, please don't use it in
 
 ---
 
+## 📚 Table of Contents
+
+- [Why Atemporal?](#-why-atemporal)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Usage](#-usage)
+  - [Creating Instances](#creating-instances)
+  - [Manipulation](#manipulation)
+  - [Formatting](#formatting)
+  - [Comparison](#comparison)
+- [Localization and Time Zones](#-localization-and-time-zones)
+- [Plugins](#-plugins)
+- [API Summary](#-api-summary)
+- [Browser Usage](#-browser-usage)
+- [Contributing](#-want-to-contribute)
+- [License](#-license)
+
+---
+
 ## 📦 Installation
 
 ```bash
@@ -30,23 +49,6 @@ npm install atemporal
 ---
 
 ## 🚀 Quick Start
-
-## 📚 Table of Contents
-
-- [Why Atemporal?](#-why-atemporal)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Usage](#-usage)
-    - [Creating Instances](#creating-instances)
-    - [Manipulation](#manipulation)
-    - [Formatting](#formatting)
-    - [Comparison](#comparison)
-- [Localization and Time Zones](#-localization-and-time-zones)
-- [Plugins](#-plugins)
-- [API Summary](#-api-summary)
-- [Browser Usage](#-browser-usage)
-- [Contributing](#-want-to-contribute)
-- [License](#-license)
 
 ```ts
 import atemporal from 'atemporal';
