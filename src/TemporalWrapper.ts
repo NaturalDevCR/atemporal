@@ -6,14 +6,21 @@
 
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalUtils } from './TemporalUtils';
-import type {DateInput, TimeUnit, SettableUnit, FormatTokenMap} from './types';
+import type { DateInput, TimeUnit, SettableUnit, FormatTokenMap } from './types';
 
-// ... (las funciones auxiliares getDurationUnit y createTokenReplacements no cambian) ...
+/**
+ * Converts a library time unit to its plural form for the Temporal API.
+ * @internal
+ */
 function getDurationUnit(unit: TimeUnit): string {
     if (unit === 'millisecond') return 'milliseconds';
     return `${unit}s`;
 }
 
+/**
+ * Creates a map of formatting tokens to their corresponding string values.
+ * @internal
+ */
 function createTokenReplacements(instance: TemporalWrapper, locale?: string): FormatTokenMap {
     return {
         YYYY: () => instance.year.toString(),
@@ -30,18 +37,19 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
         s: () => instance.second.toString(),
         dddd: () => instance.dayOfWeekName,
         ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: 'short' }),
-        // [NUEVO] Añadimos los tokens de zona horaria
+        // Timezone tokens
         Z: () => instance.raw.offset, // e.g., +01:00
         ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100
     };
 }
 
-
 export class TemporalWrapper {
     private readonly _datetime: Temporal.ZonedDateTime | null;
     private readonly _isValid: boolean;
 
-    // [CAMBIO] El constructor ahora es privado para controlar la creación de instancias.
+    /**
+     * The constructor is private to control instance creation through the static `from` method.
+     */
     private constructor(input: DateInput, timeZone?: string) {
         try {
             this._datetime = TemporalUtils.from(input, timeZone);
@@ -53,19 +61,18 @@ export class TemporalWrapper {
     }
 
     /**
-     * [NUEVO] Método de fábrica público para crear instancias.
-     * Este es ahora el punto de entrada principal.
+     * Creates a new TemporalWrapper instance. This is the primary entry point for creating objects.
      */
     static from(input: DateInput, tz?: string): TemporalWrapper {
         return new TemporalWrapper(input, tz);
     }
 
     /**
-     * [NUEVO] Un método estático privado para crear una instancia desde un ZonedDateTime ya existente.
-     * Esto es más eficiente y claro que pasar por la lógica de parsing completa.
+     * Creates a new instance from an existing ZonedDateTime, bypassing the parsing logic for efficiency.
+     * @internal
      */
     private static _fromZonedDateTime(dateTime: Temporal.ZonedDateTime): TemporalWrapper {
-        // Usamos Object.create para instanciar sin llamar al constructor y sus validaciones.
+        // Use Object.create to instantiate without calling the constructor and its parsing logic.
         const wrapper = Object.create(TemporalWrapper.prototype);
         wrapper._datetime = dateTime;
         wrapper._isValid = true;
@@ -73,20 +80,19 @@ export class TemporalWrapper {
     }
 
     /**
-     * [MODIFICADO] _cloneWith ahora usa el método estático directo y más eficiente.
+     * Clones the current instance with a new ZonedDateTime object.
+     * @internal
      */
     private _cloneWith(newDateTime: Temporal.ZonedDateTime): TemporalWrapper {
         return TemporalWrapper._fromZonedDateTime(newDateTime);
     }
-
-    // --- El resto de la clase sigue igual, pero aquí la incluyo completa por claridad ---
 
     isValid(): boolean {
         return this._isValid;
     }
 
     get datetime(): Temporal.ZonedDateTime {
-        if (!this._isValid || !this._datetime) {
+        if (!this.isValid() || !this._datetime) {
             throw new Error("Cannot perform operations on an invalid Atemporal object.");
         }
         return this._datetime;
@@ -94,8 +100,8 @@ export class TemporalWrapper {
 
     timeZone(tz: string): TemporalWrapper {
         if (!this.isValid()) return this;
-        // Aquí sí creamos una nueva instancia pasando por el constructor,
-        // ya que withTimeZone puede fallar si la zona es inválida.
+        // We create a new instance via the constructor here because `withTimeZone` can fail
+        // if the zone is invalid, and we need to handle that case gracefully.
         return new TemporalWrapper(this.datetime.withTimeZone(tz));
     }
 
@@ -120,7 +126,7 @@ export class TemporalWrapper {
     }
 
     /**
-     * ...
+     * Returns a new instance set to the start of a given unit of time.
      * Note: `startOf('week')` assumes the week starts on Monday (ISO 8601 standard).
      */
     startOf(unit: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'): TemporalWrapper {
@@ -208,17 +214,17 @@ export class TemporalWrapper {
         const options = templateOrOptions as Intl.DateTimeFormatOptions;
         const locale = localeCode || TemporalUtils.getDefaultLocale();
 
-        // [FIX] You cannot mix `dateStyle`/`timeStyle` with component options like `year`.
-        // We must check if the user provided style options and use them exclusively if they exist.
+        // The Intl.DateTimeFormat API does not allow mixing `dateStyle`/`timeStyle` with component options like `year`.
+        // We check if the user provided style options and use them exclusively if they exist.
         if (options && ('dateStyle' in options || 'timeStyle' in options)) {
-            // If style options are present, use them directly without our defaults.
+            // If style options are present, use them directly without the library's defaults.
             return new Intl.DateTimeFormat(locale, {
                 timeZone: this.datetime.timeZoneId,
                 ...options
             }).format(this.toDate());
         }
 
-        // If no style options are provided, then we can safely use our component defaults.
+        // If no style options are provided, we can safely use our component defaults.
         const defaultOptions: Intl.DateTimeFormatOptions = {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
