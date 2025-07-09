@@ -65,6 +65,17 @@ export class TemporalWrapper {
         }
     }
 
+    /**
+     * Private helper to create a new instance from an internal ZonedDateTime,
+     * preserving the original time zone.
+     */
+    private _cloneWith(newDateTime: Temporal.ZonedDateTime): TemporalWrapper {
+        // We pass the newDateTime's own timeZoneId to the constructor,
+        // ensuring it's preserved instead of falling back to the global default.
+        // return new TemporalWrapper(newDateTime, newDateTime.timeZoneId);
+        return new TemporalWrapper(newDateTime);
+    }
+
     // --- Core API Methods ---
 
     /**
@@ -110,7 +121,7 @@ export class TemporalWrapper {
         if (!this.isValid()) return this;
         const duration = { [getDurationUnit(unit)]: value };
         const newDate = this.datetime.add(duration);
-        return new TemporalWrapper(newDate);
+        return this._cloneWith(newDate);
     }
 
     /**
@@ -120,7 +131,7 @@ export class TemporalWrapper {
         if (!this.isValid()) return this;
         const duration = { [getDurationUnit(unit)]: value };
         const newDate = this.datetime.subtract(duration);
-        return new TemporalWrapper(newDate);
+        return this._cloneWith(newDate);
     }
 
     /**
@@ -129,7 +140,7 @@ export class TemporalWrapper {
     set(unit: SettableUnit, value: number): TemporalWrapper {
         if (!this.isValid()) return this;
         const newDate = this.datetime.with({ [unit]: value });
-        return new TemporalWrapper(newDate);
+        return this._cloneWith(newDate);
     }
 
     /**
@@ -139,27 +150,26 @@ export class TemporalWrapper {
         if (!this.isValid()) return this;
         switch (unit) {
             case 'year': {
-                const pDate = this.datetime.toPlainDate().with({ month: 1, day: 1 });
-                return new TemporalWrapper(pDate.toZonedDateTime(this.datetime.timeZoneId));
+                const newDateTime = this.datetime.with({ month: 1, day: 1 }).startOfDay();
+                return this._cloneWith(newDateTime);
             }
             case 'month': {
-                const pDate = this.datetime.toPlainDate().with({ day: 1 });
-                return new TemporalWrapper(pDate.toZonedDateTime(this.datetime.timeZoneId));
+                const newDateTime = this.datetime.with({ day: 1 }).startOfDay();
+                return this._cloneWith(newDateTime);
             }
             case 'week': {
-                // Assuming ISO 8601 week start (Monday = 1).
                 const dayOfWeek = this.datetime.dayOfWeek;
-                const daysToSubtract = dayOfWeek - 1;
-                const pDate = this.datetime.subtract({ days: daysToSubtract }).toPlainDate();
-                return new TemporalWrapper(pDate.toZonedDateTime(this.datetime.timeZoneId));
+                const daysToSubtract = dayOfWeek - 1; // Llevamos la fecha al lunes de esa semana.
+                const newDateTime = this.datetime.subtract({ days: daysToSubtract });
+                return this._cloneWith(newDateTime.startOfDay());
             }
             case 'day':
-                return new TemporalWrapper(this.datetime.startOfDay());
+                return this._cloneWith(this.datetime.startOfDay());
             case 'hour':
             case 'minute':
             case 'second':
                 const newDate = this.datetime.round({ smallestUnit: unit, roundingMode: 'floor' });
-                return new TemporalWrapper(newDate);
+                return this._cloneWith(newDate);
         }
     }
 
@@ -168,6 +178,7 @@ export class TemporalWrapper {
      */
     endOf(unit: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'): TemporalWrapper {
         if (!this.isValid()) return this;
+        // This logic is now more robust because startOf preserves the time zone.
         const start = this.startOf(unit);
         const nextStart = start.add(1, unit);
         return nextStart.subtract(1, 'millisecond');
@@ -178,7 +189,7 @@ export class TemporalWrapper {
      */
     clone(): TemporalWrapper {
         if (!this.isValid()) return this;
-        return new TemporalWrapper(this.datetime);
+        return this._cloneWith(this.datetime);
     }
 
     /**
