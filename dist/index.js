@@ -61,7 +61,7 @@ var _TemporalUtils = class _TemporalUtils {
     return _TemporalUtils._defaultTimeZone;
   }
   /**
-   * [REFACTOR FINAL Y DEFINITIVO] The core parsing engine, rewritten for clarity and robustness.
+   * The core parsing engine, rewritten for clarity and robustness.
    * Each input type is handled in a self-contained block that returns directly.
    * The string parsing logic is now more defensive.
    */
@@ -175,8 +175,12 @@ function getDurationUnit(unit) {
   if (unit === "millisecond") return "milliseconds";
   return `${unit}s`;
 }
+var formatReplacementsCache = /* @__PURE__ */ new WeakMap();
 function createTokenReplacements(instance, locale) {
-  return {
+  if (formatReplacementsCache.has(instance)) {
+    return formatReplacementsCache.get(instance);
+  }
+  const replacements = {
     YYYY: () => instance.year.toString(),
     YY: () => instance.year.toString().slice(-2),
     MM: () => instance.month.toString().padStart(2, "0"),
@@ -189,17 +193,23 @@ function createTokenReplacements(instance, locale) {
     m: () => instance.minute.toString(),
     ss: () => instance.second.toString().padStart(2, "0"),
     s: () => instance.second.toString(),
+    SSS: () => instance.millisecond.toString().padStart(3, "0"),
     dddd: () => instance.dayOfWeekName,
     ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: "short" }),
-    // [NUEVO] Añadimos los tokens de zona horaria
+    // Timezone tokens
     Z: () => instance.raw.offset,
     // e.g., +01:00
-    ZZ: () => instance.raw.offset.replace(":", "")
-    // e.g., +0100
+    ZZ: () => instance.raw.offset.replace(":", ""),
+    // e.g., +0100,
+    z: () => instance.raw.timeZoneId
   };
+  formatReplacementsCache.set(instance, replacements);
+  return replacements;
 }
 var TemporalWrapper = class _TemporalWrapper {
-  // [CAMBIO] El constructor ahora es privado para controlar la creación de instancias.
+  /**
+   * The constructor is private to control instance creation through the static `from` method.
+   */
   constructor(input, timeZone) {
     try {
       this._datetime = TemporalUtils.from(input, timeZone);
@@ -210,15 +220,21 @@ var TemporalWrapper = class _TemporalWrapper {
     }
   }
   /**
-   * [NUEVO] Método de fábrica público para crear instancias.
-   * Este es ahora el punto de entrada principal.
+   * Creates a new TemporalWrapper instance. This is the primary entry point for creating objects.
    */
   static from(input, tz) {
     return new _TemporalWrapper(input, tz);
   }
   /**
-   * [NUEVO] Un método estático privado para crear una instancia desde un ZonedDateTime ya existente.
-   * Esto es más eficiente y claro que pasar por la lógica de parsing completa.
+   * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
+   */
+  static unix(timestampInSeconds) {
+    const timestampInMs = timestampInSeconds * 1e3;
+    return new _TemporalWrapper(timestampInMs);
+  }
+  /**
+   * Creates a new instance from an existing ZonedDateTime, bypassing the parsing logic for efficiency.
+   * @internal
    */
   static _fromZonedDateTime(dateTime) {
     const wrapper = Object.create(_TemporalWrapper.prototype);
@@ -227,17 +243,17 @@ var TemporalWrapper = class _TemporalWrapper {
     return wrapper;
   }
   /**
-   * [MODIFICADO] _cloneWith ahora usa el método estático directo y más eficiente.
+   * Clones the current instance with a new ZonedDateTime object.
+   * @internal
    */
   _cloneWith(newDateTime) {
     return _TemporalWrapper._fromZonedDateTime(newDateTime);
   }
-  // --- El resto de la clase sigue igual, pero aquí la incluyo completa por claridad ---
   isValid() {
     return this._isValid;
   }
   get datetime() {
-    if (!this._isValid || !this._datetime) {
+    if (!this.isValid() || !this._datetime) {
       throw new Error("Cannot perform operations on an invalid Atemporal object.");
     }
     return this._datetime;
@@ -264,7 +280,7 @@ var TemporalWrapper = class _TemporalWrapper {
     return this._cloneWith(newDate);
   }
   /**
-   * ...
+   * Returns a new instance set to the start of a given unit of time.
    * Note: `startOf('week')` assumes the week starts on Monday (ISO 8601 standard).
    */
   startOf(unit) {
@@ -347,8 +363,11 @@ var TemporalWrapper = class _TemporalWrapper {
     if (typeof templateOrOptions === "string") {
       const formatString = templateOrOptions;
       const replacements = createTokenReplacements(this, localeCode);
-      const tokenRegex = /YYYY|YY|MM|M|DD|D|HH|H|mm|m|ss|s|dddd|ddd|Z|ZZ/g;
-      return formatString.replace(tokenRegex, (match) => {
+      const tokenRegex = /\[([^\]]+)]|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
+      return formatString.replace(tokenRegex, (match, literal) => {
+        if (literal) {
+          return literal;
+        }
         if (match in replacements) {
           return replacements[match]();
         }
@@ -391,9 +410,22 @@ var TemporalWrapper = class _TemporalWrapper {
     if (!this.isValid()) return /* @__PURE__ */ new Date(NaN);
     return TemporalUtils.toDate(this.datetime);
   }
+  // toString(): string {
+  //     if (!this.isValid()) return 'Invalid Date';
+  //     return this.datetime.toString();
+  // }
   toString() {
     if (!this.isValid()) return "Invalid Date";
-    return this.datetime.toString();
+    const hasFractional = this.datetime.millisecond > 0 || this.datetime.microsecond > 0 || this.datetime.nanosecond > 0;
+    const fractionalSecondDigits = hasFractional ? 3 : 0;
+    if (this.datetime.timeZoneId === "UTC") {
+      return this.datetime.toInstant().toString({ fractionalSecondDigits });
+    }
+    return this.datetime.toString({
+      offset: "auto",
+      timeZoneName: "never",
+      fractionalSecondDigits
+    });
   }
   get raw() {
     return this.datetime;
@@ -466,6 +498,8 @@ var atemporalFn = (input, timeZone) => {
   return TemporalWrapper.from(input, timeZone);
 };
 var atemporal = atemporalFn;
+atemporal.from = TemporalWrapper.from;
+atemporal.unix = TemporalWrapper.unix;
 atemporal.isValid = TemporalUtils.isValid;
 atemporal.setDefaultLocale = TemporalUtils.setDefaultLocale;
 atemporal.setDefaultTimeZone = TemporalUtils.setDefaultTimeZone;
