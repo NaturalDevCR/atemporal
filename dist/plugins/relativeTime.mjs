@@ -2,6 +2,9 @@
 var relativeTimePlugin = (Atemporal, atemporal) => {
   const UNITS = ["year", "month", "day", "hour", "minute", "second"];
   Atemporal.prototype.fromNow = function(withoutSuffix = false) {
+    if (!this.isValid()) {
+      return "Invalid Date";
+    }
     const dateToCompare = this;
     const now = atemporal();
     let bestUnit = "second";
@@ -23,6 +26,8 @@ var relativeTimePlugin = (Atemporal, atemporal) => {
     return rtf.format(bestDiff, bestUnit);
   };
   Atemporal.prototype.toNow = function(withoutSuffix = false) {
+    const now = atemporal();
+    const diff = this.diff(now, "second");
     return this.fromNow(withoutSuffix);
   };
 };

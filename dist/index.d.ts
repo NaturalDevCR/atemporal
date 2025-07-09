@@ -1,6 +1,12 @@
-import { A as AtemporalFactory } from './TemporalWrapper-glHCeOuR.js';
-export { T as Atemporal, D as DateInput, P as Plugin, S as SettableUnit, a as TimeUnit } from './TemporalWrapper-glHCeOuR.js';
+import { A as AtemporalFactory } from './TemporalWrapper-Cj9Ommz5.js';
+export { T as Atemporal, D as DateInput, P as Plugin, S as SettableUnit, a as TimeUnit } from './TemporalWrapper-Cj9Ommz5.js';
 import '@js-temporal/polyfill';
+
+/**
+ * @file This is the main entry point for the 'atemporal' library.
+ * It sets up the main factory function, attaches static utility methods,
+ * and handles the plugin system, making it the central hub for all functionality.
+ */
 
 declare const atemporal: AtemporalFactory;
 

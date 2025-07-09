@@ -5,12 +5,22 @@ import { Temporal as Temporal2 } from "@js-temporal/polyfill";
 // src/TemporalUtils.ts
 import { Temporal } from "@js-temporal/polyfill";
 var _TemporalUtils = class _TemporalUtils {
+  /**
+   * Sets the default locale for all new atemporal instances. Used for formatting.
+   */
   static setDefaultLocale(code) {
     _TemporalUtils._defaultLocale = code;
   }
+  /**
+   * Gets the currently configured default locale.
+   */
   static getDefaultLocale() {
     return _TemporalUtils._defaultLocale;
   }
+  /**
+   * Sets the default IANA time zone for all new atemporal instances.
+   * It validates the time zone identifier before setting it.
+   */
   static setDefaultTimeZone(tz) {
     try {
       new Intl.DateTimeFormat("en-US", { timeZone: tz });
@@ -19,9 +29,16 @@ var _TemporalUtils = class _TemporalUtils {
       throw new Error(`Invalid time zone: ${tz}`);
     }
   }
+  /**
+   * Gets the currently configured default time zone.
+   */
   static get defaultTimeZone() {
     return _TemporalUtils._defaultTimeZone;
   }
+  /**
+   * The core parsing engine. Converts any valid DateInput into a Temporal.ZonedDateTime object.
+   * This function is designed to be robust and handle various input formats.
+   */
   static from(input, timeZone = _TemporalUtils.defaultTimeZone) {
     if (typeof input === "object" && input !== null && "raw" in input) {
       return input.raw;
@@ -49,40 +66,62 @@ var _TemporalUtils = class _TemporalUtils {
     }
     throw new Error("Unsupported date input");
   }
+  /**
+   * Converts a Temporal.ZonedDateTime object back to a legacy JavaScript Date.
+   */
   static toDate(temporal) {
     return new Date(temporal.epochMilliseconds);
   }
-  // static format(
-  //     input: DateInput,
-  //     options: Intl.DateTimeFormatOptions = {
-  //         year: 'numeric', month: '2-digit', day: '2-digit',
-  //         hour: '2-digit', minute: '2-digit', second: '2-digit'
-  //     },
-  //     localeCode: string = TemporalUtils._defaultLocale
-  // ): string {
-  //     const dt = TemporalUtils.from(input);
-  //     return new Intl.DateTimeFormat(localeCode, {
-  //         timeZone: dt.timeZoneId,
-  //         ...options
-  //     }).format(TemporalUtils.toDate(dt));
-  // }
+  /**
+   * Calculates the difference between two dates in a specified unit.
+   */
   static diff(a, b, unit = "millisecond") {
     const d1 = _TemporalUtils.from(a);
     const d2 = _TemporalUtils.from(b);
     return d1.since(d2).total({ unit, relativeTo: d1 });
   }
+  /**
+   * Checks if date `a` is before date `b`.
+   */
   static isBefore(a, b) {
     return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === -1;
   }
+  /**
+   * Checks if date `a` is after date `b`.
+   */
   static isAfter(a, b) {
     return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 1;
   }
+  /**
+   * Checks if a date `a` is between two other dates, `b` and `c`.
+   * This is the low-level implementation.
+   */
+  static isBetween(a, b, c, inclusivity = "[]") {
+    const date = _TemporalUtils.from(a);
+    const start = _TemporalUtils.from(b);
+    const end = _TemporalUtils.from(c);
+    const compareWithStart = Temporal.ZonedDateTime.compare(date, start);
+    const compareWithEnd = Temporal.ZonedDateTime.compare(date, end);
+    const isAfterStart = inclusivity[0] === "[" ? compareWithStart >= 0 : compareWithStart > 0;
+    const isBeforeEnd = inclusivity[1] === "]" ? compareWithEnd <= 0 : compareWithEnd < 0;
+    return isAfterStart && isBeforeEnd;
+  }
+  /**
+   * Checks if date `a` is the same instant in time as date `b`.
+   */
   static isSame(a, b) {
     return Temporal.ZonedDateTime.compare(_TemporalUtils.from(a), _TemporalUtils.from(b)) === 0;
   }
+  /**
+   * Checks if date `a` is on the same calendar day as date `b`, ignoring time and timezone.
+   */
   static isSameDay(a, b) {
     return _TemporalUtils.from(a).toPlainDate().equals(_TemporalUtils.from(b).toPlainDate());
   }
+  /**
+   * Checks if a given input can be parsed into a valid date without throwing an error.
+   * This is used for the static `atemporal.isValid()` method.
+   */
   static isValid(input) {
     try {
       _TemporalUtils.from(input);
@@ -92,6 +131,7 @@ var _TemporalUtils = class _TemporalUtils {
     }
   }
 };
+// Private static properties to hold the global default settings.
 _TemporalUtils._defaultTimeZone = "UTC";
 _TemporalUtils._defaultLocale = "en-US";
 var TemporalUtils = _TemporalUtils;
@@ -100,6 +140,25 @@ var TemporalUtils = _TemporalUtils;
 function getDurationUnit(unit) {
   if (unit === "millisecond") return "milliseconds";
   return `${unit}s`;
+}
+function createTokenReplacements(instance, locale) {
+  return {
+    YYYY: () => instance.year.toString(),
+    YY: () => instance.year.toString().slice(-2),
+    MM: () => instance.month.toString().padStart(2, "0"),
+    M: () => instance.month.toString(),
+    DD: () => instance.day.toString().padStart(2, "0"),
+    D: () => instance.day.toString(),
+    HH: () => instance.hour.toString().padStart(2, "0"),
+    H: () => instance.hour.toString(),
+    mm: () => instance.minute.toString().padStart(2, "0"),
+    m: () => instance.minute.toString(),
+    ss: () => instance.second.toString().padStart(2, "0"),
+    s: () => instance.second.toString(),
+    dddd: () => instance.dayOfWeekName,
+    // We need to access the raw datetime for this localized format
+    ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: "short" })
+  };
 }
 var TemporalWrapper = class _TemporalWrapper {
   constructor(input, timeZone = TemporalUtils.defaultTimeZone) {
@@ -111,49 +170,68 @@ var TemporalWrapper = class _TemporalWrapper {
       this._isValid = false;
     }
   }
-  // --- CAMBIO 3: El método `isValid` de instancia ---
+  // --- Core API Methods ---
   /**
-   * Comprueba si la instancia de Atemporal representa una fecha y hora válidas.
-   * @returns {boolean} `true` si es válida, `false` en caso contrario.
+   * Checks if the atemporal instance represents a valid date and time.
+   * This is the primary way to handle potentially invalid date inputs gracefully.
    */
   isValid() {
     return this._isValid;
   }
-  // --- CAMBIO 4: Getter protegido para el objeto Temporal interno ---
-  // Este getter asegura que no intentemos operar sobre un objeto nulo.
-  // Los métodos públicos usarán `isValid()` para evitar llegar a este error.
+  /**
+   * A protected getter for the internal Temporal.ZonedDateTime object.
+   * This ensures that we don't accidentally try to operate on a null object.
+   * Public methods should use `isValid()` to avoid triggering this error.
+   */
   get datetime() {
     if (!this._isValid || !this._datetime) {
       throw new Error("Cannot perform operations on an invalid Atemporal object.");
     }
     return this._datetime;
   }
-  // --- CAMBIO 5: Todos los métodos públicos ahora están protegidos ---
-  // A partir de aquí, cada método primero comprueba si la instancia es válida.
+  /**
+   * A static factory method to create a new TemporalWrapper instance.
+   * Provides an alternative to calling the main factory function.
+   */
   static from(input, tz) {
     return new _TemporalWrapper(input, tz);
   }
+  /**
+   * Returns a new atemporal instance with a different time zone.
+   */
   timeZone(tz) {
     if (!this.isValid()) return this;
     return new _TemporalWrapper(this.datetime.withTimeZone(tz));
   }
+  /**
+   * Returns a new atemporal instance with the specified amount of time added.
+   */
   add(value, unit) {
     if (!this.isValid()) return this;
     const duration = { [getDurationUnit(unit)]: value };
     const newDate = this.datetime.add(duration);
     return new _TemporalWrapper(newDate);
   }
+  /**
+   * Returns a new atemporal instance with the specified amount of time subtracted.
+   */
   subtract(value, unit) {
     if (!this.isValid()) return this;
     const duration = { [getDurationUnit(unit)]: value };
     const newDate = this.datetime.subtract(duration);
     return new _TemporalWrapper(newDate);
   }
+  /**
+   * Returns a new atemporal instance with a specific unit of time set to a new value.
+   */
   set(unit, value) {
     if (!this.isValid()) return this;
     const newDate = this.datetime.with({ [unit]: value });
     return new _TemporalWrapper(newDate);
   }
+  /**
+   * Returns a new atemporal instance set to the beginning of a specified unit of time.
+   */
   startOf(unit) {
     if (!this.isValid()) return this;
     switch (unit) {
@@ -180,21 +258,30 @@ var TemporalWrapper = class _TemporalWrapper {
         return new _TemporalWrapper(newDate);
     }
   }
+  /**
+   * Returns a new atemporal instance set to the end of a specified unit of time.
+   */
   endOf(unit) {
     if (!this.isValid()) return this;
     const start = this.startOf(unit);
     const nextStart = start.add(1, unit);
     return nextStart.subtract(1, "millisecond");
   }
+  /**
+   * Returns a new, cloned instance of the atemporal object.
+   */
   clone() {
     if (!this.isValid()) return this;
     return new _TemporalWrapper(this.datetime);
   }
+  /**
+   * Gets a specific unit of time from the instance.
+   */
   get(unit) {
     if (!this.isValid()) return NaN;
     return this.datetime[unit];
   }
-  // Getters protegidos
+  // --- Getters for common date parts ---
   get year() {
     return this.isValid() ? this.datetime.year : NaN;
   }
@@ -227,8 +314,25 @@ var TemporalWrapper = class _TemporalWrapper {
   get weekOfYear() {
     return this.isValid() ? this.datetime.weekOfYear : NaN;
   }
-  format(options, localeCode) {
-    if (!this.isValid()) return "Invalid Date";
+  /**
+   * Implementation of the format method.
+   */
+  format(templateOrOptions, localeCode) {
+    if (!this.isValid()) {
+      return "Invalid Date";
+    }
+    if (typeof templateOrOptions === "string") {
+      const formatString = templateOrOptions;
+      const replacements = createTokenReplacements(this, localeCode);
+      const tokenRegex = /YYYY|YY|MM|M|DD|D|HH|H|mm|m|ss|s|dddd|ddd/g;
+      return formatString.replace(tokenRegex, (match) => {
+        if (match in replacements) {
+          return replacements[match]();
+        }
+        return match;
+      });
+    }
+    const options = templateOrOptions;
     const locale = localeCode || TemporalUtils.getDefaultLocale();
     const defaultOptions = {
       year: "numeric",
@@ -242,35 +346,80 @@ var TemporalWrapper = class _TemporalWrapper {
       timeZone: this.datetime.timeZoneId,
       ...defaultOptions,
       ...options
-      // Las opciones del usuario sobreescriben las por defecto
     }).format(this.toDate());
   }
+  // --- Comparison Methods ---
+  /**
+   * Calculates the difference between this instance and another date.
+   */
   diff(other, unit = "millisecond") {
     const otherAtemporal = new _TemporalWrapper(other);
     if (!this.isValid() || !otherAtemporal.isValid()) return NaN;
     return TemporalUtils.diff(this.datetime, other, unit);
   }
+  /**
+   * Converts the atemporal instance to a legacy JavaScript Date object.
+   */
   toDate() {
     if (!this.isValid()) return /* @__PURE__ */ new Date(NaN);
     return TemporalUtils.toDate(this.datetime);
   }
+  /**
+   * Returns the full ISO 8601 string representation of the date.
+   */
   toString() {
     if (!this.isValid()) return "Invalid Date";
     return this.datetime.toString();
   }
+  /**
+   * Provides direct, "raw" access to the underlying Temporal.ZonedDateTime object.
+   * This is the only getter that will throw an error if the instance is invalid.
+   */
   get raw() {
     return this.datetime;
   }
+  /**
+   * Checks if this instance is before another date.
+   */
   isBefore(other) {
     const otherAtemporal = new _TemporalWrapper(other);
     if (!this.isValid() || !otherAtemporal.isValid()) return false;
     return TemporalUtils.isBefore(this.datetime, other);
   }
+  /**
+   * Checks if this instance is after another date.
+   */
   isAfter(other) {
     const otherAtemporal = new _TemporalWrapper(other);
     if (!this.isValid() || !otherAtemporal.isValid()) return false;
     return TemporalUtils.isAfter(this.datetime, other);
   }
+  /**
+   * Checks if the instance's date is between two other dates.
+   * @param start - The start date of the range.
+   * @param end - The end date of the range.
+   * @param inclusivity - A string indicating whether the start and end dates should be included.
+   * '[]' means inclusive on both ends (default).
+   * '()' means exclusive on both ends.
+   * '[)' means inclusive start, exclusive end.
+   * '(]' means exclusive start, inclusive end.
+   * @example
+   * atemporal('2025-01-15').isBetween('2025-01-10', '2025-01-20'); // true
+   * atemporal('2025-01-20').isBetween('2025-01-10', '2025-01-20', '[)'); // false
+   */
+  isBetween(start, end, inclusivity = "[]") {
+    if (!this.isValid()) {
+      return false;
+    }
+    try {
+      return TemporalUtils.isBetween(this.datetime, start, end, inclusivity);
+    } catch (e) {
+      return false;
+    }
+  }
+  /**
+   * Checks if this instance is the same as another date, optionally to a specific unit.
+   */
   isSame(otherDate, unit) {
     const other = new _TemporalWrapper(otherDate);
     if (!this.isValid() || !other.isValid()) return false;
@@ -285,11 +434,17 @@ var TemporalWrapper = class _TemporalWrapper {
         return this.datetime.epochMilliseconds === other.datetime.epochMilliseconds;
     }
   }
+  /**
+   * Checks if this instance is on the same calendar day as another date.
+   */
   isSameDay(other) {
     const otherAtemporal = new _TemporalWrapper(other);
     if (!this.isValid() || !otherAtemporal.isValid()) return false;
     return TemporalUtils.isSameDay(this.datetime, other);
   }
+  /**
+   * Checks if the instance's year is a leap year.
+   */
   isLeapYear() {
     if (!this.isValid()) return false;
     return this.datetime.inLeapYear;
