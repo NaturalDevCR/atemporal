@@ -1,68 +1,74 @@
-/**
- * @file This file contains all the core type definitions for the atemporal library.
- * It establishes the contracts for date inputs, time units, the plugin system,
- * and the main factory function, ensuring type safety across the entire project.
- */
+// src/types.ts
 
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 
-// --- General Purpose Types ---
-
 /**
- * Represents all valid inputs that can be parsed by the atemporal factory function.
- * This union type allows for flexibility when creating new atemporal instances.
+ * Represents the various types of input that can be parsed into an atemporal instance.
  */
-export type DateInput = Date | string | Temporal.PlainDateTime | Temporal.ZonedDateTime | TemporalWrapper;
+export type DateInput = string | number | Date | Temporal.ZonedDateTime | Temporal.PlainDateTime | TemporalWrapper;
 
 /**
- * Defines the units of time that can be used in manipulation methods like `add`, `subtract`, and `diff`.
+ * Defines the units of time that can be used for durations and differences.
  */
-export type TimeUnit = 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+export type TimeUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
 
 /**
- * Defines the units of time that can be directly set on an atemporal instance using the `.set()` method.
+ * Defines the units of time that can be set on an atemporal instance.
  */
 export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
 
-// --- Plugin System Types ---
-
 /**
- * Represents the TemporalWrapper class itself, used by plugins to extend its prototype.
+ * A map of format tokens to their string replacement functions. Used by the `.format()` method.
  */
-export type AtemporalClass = typeof TemporalWrapper;
-
-/**
- * Defines the signature for a valid atemporal plugin.
- * A plugin is a function that receives the main class and factory to add new functionality.
- * @template T - The type for optional plugin options.
- */
-export type Plugin<T = any> = (cls: AtemporalClass, factory: AtemporalFactory, options?: T) => void;
-
-// --- Factory Function Types ---
-
-/**
- * Defines the signature of the core `atemporal()` function when it is called.
- */
-export type AtemporalFunction = (input?: DateInput, tz?: string) => TemporalWrapper;
-
-/**
- * Defines the static properties and methods that are attached to the core `atemporal` function.
- */
-export type AtemporalStatics = {
-    extend: (plugin: Plugin, options?: any) => void;
-    isValid: (input: any) => boolean;
-    setDefaultLocale: (code: string) => void;
-    setDefaultTimeZone: (tz: string) => void;
-    getDefaultLocale: () => string;
+export type FormatTokenMap = {
+    [key: string]: () => string;
 };
 
 /**
- * Represents the final, complete `atemporal` object.
- * It's an intersection type that combines the callable function signature (`AtemporalFunction`)
- * with its static properties (`AtemporalStatics`), creating a powerful and flexible factory object.
+ * The type for the core `atemporal` function before static properties are attached.
  */
-export type AtemporalFactory = AtemporalFunction & AtemporalStatics;
+export type AtemporalFunction = (input?: DateInput, timeZone?: string) => TemporalWrapper;
 
+/**
+ * The main factory for creating atemporal instances.
+ * This is an interface so that plugins can augment it with new static methods.
+ */
+export interface AtemporalFactory {
+    /**
+     * Creates a new atemporal instance.
+     * @param input The date/time input. Defaults to now.
+     * @param timeZone The IANA time zone identifier.
+     */
+    (input?: DateInput, timeZone?: string): TemporalWrapper;
 
-export type FormatTokenMap = Record<string, () => string>;
+    /**
+     * Checks if a given input can be parsed into a valid date.
+     */
+    isValid: (input: any) => boolean;
+
+    /**
+     * Sets the default locale for all new atemporal instances.
+     */
+    setDefaultLocale: (code: string) => void;
+
+    /**
+     * Sets the default IANA time zone for all new atemporal instances.
+     */
+    setDefaultTimeZone: (tz: string) => void;
+
+    /**
+     * Gets the currently configured default locale.
+     */
+    getDefaultLocale: () => string;
+
+    /**
+     * Extends atemporal's functionality with a plugin.
+     */
+    extend: (plugin: Plugin, options?: any) => void;
+}
+
+/**
+ * Defines the shape of a plugin for atemporal.
+ */
+export type Plugin = (Atemporal: typeof TemporalWrapper, atemporal: AtemporalFactory, options?: any) => void;

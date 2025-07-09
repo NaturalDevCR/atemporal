@@ -1,3 +1,5 @@
+// src/TemporalUtils.ts
+
 /**
  * @file This file provides a collection of low-level, static utility functions
  * for creating and manipulating Temporal objects. It serves as the internal
@@ -49,43 +51,64 @@ export class TemporalUtils {
     }
 
     /**
-     * The core parsing engine. Converts any valid DateInput into a Temporal.ZonedDateTime object.
-     * This function is designed to be robust and handle various input formats.
+     * [REFACTOR FINAL Y DEFINITIVO] The core parsing engine, rewritten for clarity and robustness.
+     * Each input type is handled in a self-contained block that returns directly.
+     * The string parsing logic is now more defensive.
      */
-    static from(input: DateInput, timeZone: string = TemporalUtils.defaultTimeZone): Temporal.ZonedDateTime {
-        // Duck-typing check for an atemporal instance.
-        // This is more robust than `instanceof` across different module contexts.
-        if (typeof input === 'object' && input !== null && 'raw' in input) {
-            // It's a TemporalWrapper, so we can access its internal .raw property.
-            return (input as any).raw;
+    static from(input?: DateInput, timeZone?: string): Temporal.ZonedDateTime {
+        const tz = timeZone || TemporalUtils.defaultTimeZone;
+
+        if (input === undefined || input === null) {
+            return Temporal.Now.zonedDateTimeISO(tz);
         }
 
+        // Handle objects that are already Temporal types or our wrapper
         if (input instanceof Temporal.ZonedDateTime) {
-            return input.withTimeZone(timeZone);
+            return timeZone && input.timeZoneId !== timeZone ? input.withTimeZone(timeZone) : input;
+        }
+        if (typeof input === 'object' && 'raw' in input && (input as any).raw instanceof Temporal.ZonedDateTime) {
+            const raw = (input as any).raw as Temporal.ZonedDateTime;
+            return timeZone && raw.timeZoneId !== timeZone ? raw.withTimeZone(timeZone) : raw;
         }
         if (input instanceof Temporal.PlainDateTime) {
-            return input.toZonedDateTime(timeZone);
+            return input.toZonedDateTime(tz);
         }
+
+        // Handle standard JavaScript Date
         if (input instanceof Date) {
-            return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(timeZone);
+            return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(tz);
         }
+
+        // Handle string inputs with a more robust strategy
         if (typeof input === 'string') {
             try {
-                // First, attempt to parse as a ZonedDateTime (expects offset/timezone info).
-                return Temporal.ZonedDateTime.from(input).withTimeZone(timeZone);
+                // STRATEGY 1: Try parsing as an Instant. This is the most robust way for
+                // full ISO strings that contain timezone information (like 'Z' or offsets).
+                // This will correctly handle the MOCK_NOW_ISO case.
+                const instant = Temporal.Instant.from(input);
+                const zdt = instant.toZonedDateTimeISO(tz);
+                // If a *different* timezone was requested, apply it.
+                return timeZone && tz !== zdt.timeZoneId ? zdt.withTimeZone(timeZone) : zdt;
             } catch (e) {
-                // If that fails, it might be a plain string without timezone info.
                 try {
-                    const plainDateTime = Temporal.PlainDateTime.from(input);
-                    return plainDateTime.toZonedDateTime(timeZone);
+                    // STRATEGY 2: If it's not an Instant, it might be a "plain" date string
+                    // without timezone info (e.g., "2023-10-27 10:00:00").
+                    const pdt = Temporal.PlainDateTime.from(input);
+                    return pdt.toZonedDateTime(tz);
                 } catch (e2) {
-                    // If both attempts fail, the string is invalid.
+                    // If both parsing attempts fail, the string is truly invalid.
                     throw new Error(`Invalid date string: ${input}`);
                 }
             }
         }
-        // If the input type is not supported, throw an error.
-        throw new Error('Unsupported date input');
+
+        // Handle number inputs (as epoch milliseconds)
+        if (typeof input === 'number') {
+            return Temporal.Instant.fromEpochMilliseconds(input).toZonedDateTimeISO(tz);
+        }
+
+        // If the input type is none of the above, it's unsupported.
+        throw new Error(`Unsupported date input type: ${typeof input}`);
     }
 
     /**
@@ -102,9 +125,9 @@ export class TemporalUtils {
         const d1 = TemporalUtils.from(a);
         const d2 = TemporalUtils.from(b);
 
-        // The `total` method requires a more specific unit type than our `TimeUnit`.
-        // We use a type assertion to satisfy TypeScript.
         type TotalUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
+
+        // Use the robust `since().total()` method for ALL units for calendar-aware accuracy.
         return d1.since(d2).total({ unit: unit as TotalUnit, relativeTo: d1 });
     }
 
@@ -124,14 +147,12 @@ export class TemporalUtils {
 
     /**
      * Checks if a date `a` is between two other dates, `b` and `c`.
-     * This is the low-level implementation.
      */
     static isBetween(a: DateInput, b: DateInput, c: DateInput, inclusivity: '()' | '[]' | '(]' | '[)' = '[]'): boolean {
         const date = TemporalUtils.from(a);
         const start = TemporalUtils.from(b);
         const end = TemporalUtils.from(c);
 
-        // Compare returns -1 (a < b), 0 (a === b), or 1 (a > b)
         const compareWithStart = Temporal.ZonedDateTime.compare(date, start);
         const compareWithEnd = Temporal.ZonedDateTime.compare(date, end);
 
@@ -162,16 +183,12 @@ export class TemporalUtils {
 
     /**
      * Checks if a given input can be parsed into a valid date without throwing an error.
-     * This is used for the static `atemporal.isValid()` method.
      */
     static isValid(input: any): boolean {
         try {
-            // Attempt to process the input with our main parsing function.
-            // If it doesn't throw, the input is considered valid.
             TemporalUtils.from(input);
             return true;
         } catch (e) {
-            // If `from` throws any error, the input is invalid.
             return false;
         }
     }

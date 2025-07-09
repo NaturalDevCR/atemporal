@@ -1,13 +1,13 @@
 /**
  * @file This plugin extends the TemporalWrapper class with relative time formatting,
  * allowing for human-readable strings like "5 minutes ago" or "in 2 hours".
- * It leverages the native `Intl.RelativeTimeFormat` API for robust localization.
+ * It leverages the native `Intl` APIs for robust localization.
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
 import type { AtemporalFactory, Plugin, TimeUnit } from '../types';
 
-// Use TypeScript's module augmentation to add the new methods to the TemporalWrapper interface.
+// Augment the TemporalWrapper interface to include the new methods.
 // This provides full type safety and autocompletion for consumers of the plugin.
 declare module '../TemporalWrapper' {
     interface TemporalWrapper {
@@ -33,7 +33,10 @@ declare module '../TemporalWrapper' {
 }
 
 /**
- * A shared helper function to calculate relative time, avoiding code duplication.
+ * A robust helper function to calculate relative time.
+ * This version uses a threshold-based logic (similar to Day.js/Moment.js) to select
+ * the most appropriate human-readable unit.
+ *
  * @param instance - The atemporal instance to format.
  * @param comparisonDate - The date to compare against (typically "now").
  * @param withoutSuffix - Whether to strip the "ago"/"in" suffix.
@@ -46,46 +49,63 @@ const getRelativeTime = (
     withoutSuffix: boolean,
     locale: string
 ): string => {
-    if (!instance.isValid()) {
+    if (!instance.isValid() || !comparisonDate.isValid()) {
         return 'Invalid Date';
     }
 
-    const UNITS: TimeUnit[] = ['year', 'month', 'day', 'hour', 'minute', 'second'];
-    let bestUnit: TimeUnit = 'second';
-    let bestDiff = 0;
+    // Thresholds for unit selection, to provide more natural language.
+    const THRESHOLDS = {
+        s: 45,  // seconds to minute
+        m: 45,  // minutes to hour
+        h: 22,  // hours to day
+        d: 26,  // days to month
+        M: 11,  // months to year
+    };
 
-    // The direction of the comparison is determined by which date is the baseline.
-    // `comparisonDate.diff(instance)` gives the duration from `instance` to `comparisonDate`.
-    const diffInSeconds = comparisonDate.diff(instance, 'second');
+    const diffSeconds = instance.diff(comparisonDate, 'second');
+    const diffMinutes = instance.diff(comparisonDate, 'minute');
+    const diffHours = instance.diff(comparisonDate, 'hour');
+    const diffDays = instance.diff(comparisonDate, 'day');
+    const diffMonths = instance.diff(comparisonDate, 'month');
+    const diffYears = instance.diff(comparisonDate, 'year');
 
-    // Iterate through units to find the largest one with a non-zero difference.
-    for (const unit of UNITS) {
-        const diff = comparisonDate.diff(instance, unit);
-        if (Math.abs(diff) >= 1) {
-            bestUnit = unit;
-            // We round the difference for a more natural output, e.g., not "1.9 days ago".
-            bestDiff = Math.round(diff);
-            break;
-        }
+    let bestUnit: Intl.RelativeTimeFormatUnit;
+    let bestDiff: number;
+
+    // Determine the best unit based on thresholds
+    if (Math.abs(diffSeconds) < THRESHOLDS.s) {
+        bestUnit = 'second';
+        bestDiff = Math.round(diffSeconds);
+    } else if (Math.abs(diffMinutes) < THRESHOLDS.m) {
+        bestUnit = 'minute';
+        bestDiff = Math.round(diffMinutes);
+    } else if (Math.abs(diffHours) < THRESHOLDS.h) {
+        bestUnit = 'hour';
+        bestDiff = Math.round(diffHours);
+    } else if (Math.abs(diffDays) < THRESHOLDS.d) {
+        bestUnit = 'day';
+        bestDiff = Math.round(diffDays);
+    } else if (Math.abs(diffMonths) < THRESHOLDS.M) {
+        bestUnit = 'month';
+        bestDiff = Math.round(diffMonths);
+    } else {
+        bestUnit = 'year';
+        bestDiff = Math.round(diffYears);
     }
-
-    // If the difference is less than a second, we can handle it explicitly.
-    if (bestUnit === 'second' && Math.abs(diffInSeconds) < 1) {
-        bestDiff = Math.round(diffInSeconds);
-    }
-
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
     if (withoutSuffix) {
-        // To get the string without the suffix, we format to parts and filter.
-        const parts = rtf.formatToParts(bestDiff, bestUnit as Intl.RelativeTimeFormatUnit);
-        return parts
-            .filter(part => part.type === 'integer' || part.type === 'unit')
-            .map(part => part.value)
-            .join(' ');
+        // Use Intl.NumberFormat for a robust way to get the number and the
+        // correctly pluralized, localized unit without any "ago" or "in" suffix.
+        return new Intl.NumberFormat(locale, {
+            style: 'unit',
+            unit: bestUnit,
+            unitDisplay: 'long',
+        }).format(Math.abs(bestDiff));
     }
 
-    return rtf.format(bestDiff, bestUnit as Intl.RelativeTimeFormatUnit);
+    // For the default case, use Intl.RelativeTimeFormat which adds the suffix.
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    return rtf.format(bestDiff, bestUnit);
 };
 
 
@@ -93,14 +113,12 @@ const relativeTimePlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
     Atemporal.prototype.fromNow = function (this: TemporalWrapper, withoutSuffix = false) {
         const now = atemporal();
         const locale = atemporal.getDefaultLocale();
-        // `fromNow` calculates the time from `this` instance to `now`.
         return getRelativeTime(this, now, withoutSuffix, locale);
     };
 
     Atemporal.prototype.toNow = function (this: TemporalWrapper, withoutSuffix = false) {
         const now = atemporal();
         const locale = atemporal.getDefaultLocale();
-        // `toNow` calculates the time from `now` to `this` instance (the inverse).
         return getRelativeTime(now, this, withoutSuffix, locale);
     };
 };

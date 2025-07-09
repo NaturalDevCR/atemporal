@@ -1,3 +1,5 @@
+// src/index.ts
+
 /**
  * @file This is the main entry point for the 'atemporal' library.
  * It sets up the main factory function, attaches static utility methods,
@@ -7,7 +9,8 @@
 // Import the Temporal polyfill to ensure the API is available in all environments.
 import '@js-temporal/polyfill';
 
-import { Temporal } from "@js-temporal/polyfill";
+// [FIX] Re-import `Temporal` to handle the "now" case explicitly and safely.
+import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
 import type { DateInput, Plugin, AtemporalFactory, AtemporalFunction } from './types';
@@ -23,22 +26,22 @@ export type { DateInput, TimeUnit, SettableUnit, Plugin } from './types';
  * The function is fully typed by the `AtemporalFunction` type, so JSDoc param/returns are not needed.
  */
 const atemporalFn: AtemporalFunction = (input?: DateInput, timeZone?: string) => {
-    // If the input is already an atemporal instance, clone it.
-    // If a new timezone is provided, apply it; otherwise, return the clone.
+    // If the input is already an atemporal instance, clone it or change its timezone.
     if (input instanceof TemporalWrapper) {
-        return timeZone ? input.timeZone(timeZone) : input;
+        return timeZone ? input.timeZone(timeZone) : input.clone();
     }
 
-    // Handle the case where atemporal() is called without arguments.
+    // [FIX] Handle the `undefined` case explicitly to satisfy the stricter type signature
+    // of `TemporalWrapper.from`. This resolves the TypeScript error.
     if (input === undefined) {
-        // Create an instance representing the current moment in the configured default timezone.
-        const now = Temporal.Now.zonedDateTimeISO(TemporalUtils.defaultTimeZone);
-        return new TemporalWrapper(now);
+        // When no input is provided, create an instance for the current moment.
+        // We create the valid Temporal object here before passing it to the wrapper.
+        const nowTemporal = Temporal.Now.zonedDateTimeISO(timeZone || TemporalUtils.defaultTimeZone);
+        return TemporalWrapper.from(nowTemporal);
     }
 
-    // For all other valid inputs, pass them directly to the constructor.
-    // TypeScript knows 'input' is no longer undefined here, ensuring type safety.
-    return new TemporalWrapper(input, timeZone);
+    // At this point, `input` is guaranteed to be a valid `DateInput` type, so the call is safe.
+    return TemporalWrapper.from(input, timeZone);
 };
 
 // Augment the core function with static properties to create the final factory object.

@@ -3,12 +3,21 @@
 ![license](https://img.shields.io/npm/l/atemporal)
 
 
+
+
 Atemporal is a modern, immutable, and ergonomic date-time library built on top of the new Temporal API — with first-class support for formatting, localization, plugins, and time zones.
 
-## Warning!
-This is a work in progress, and is in a very alpha state, please don't use it in production yet.
+---
 
 > ⚡️ Powered by the Temporal API and polyfilled automatically via `@js-temporal/polyfill` — no extra setup required.
+
+
+---
+
+## ⚠️ ⚠️ Warning! ⚠️⚠️
+This is a work in progress, and is in a very alpha state, please don't use it in production yet.
+
+---
 
 ## 📦 Installation
 
@@ -21,6 +30,23 @@ npm install atemporal
 ---
 
 ## 🚀 Quick Start
+
+## 📚 Table of Contents
+
+- [Why Atemporal?](#-why-atemporal)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Usage](#-usage)
+    - [Creating Instances](#creating-instances)
+    - [Manipulation](#manipulation)
+    - [Formatting](#formatting)
+    - [Comparison](#comparison)
+- [Localization and Time Zones](#-localization-and-time-zones)
+- [Plugins](#-plugins)
+- [API Summary](#-api-summary)
+- [Browser Usage](#-browser-usage)
+- [Contributing](#-want-to-contribute)
+- [License](#-license)
 
 ```ts
 import atemporal from 'atemporal';
@@ -73,7 +99,33 @@ atemporal().endOf('month');          // end of month
 
 ### Formatting
 
-#### Token-based (Day.js style)
+### Token-based (Day.js style)
+
+The `format()` method accepts a string of tokens to display date and time parts.
+
+| Token  | Output Example        | Description                  |
+| ------ | --------------------- | ---------------------------- |
+| `YYYY` | `2025`                | 4-digit year                 |
+| `YY`   | `25`                  | 2-digit year                 |
+| `MM`   | `07`                  | Month, 2-digits (01-12)      |
+| `M`    | `7`                   | Month (1-12)                 |
+| `DD`   | `09`                  | Day of month, 2-digits (01-31) |
+| `D`    | `9`                   | Day of month (1-31)          |
+| `HH`   | `14`                  | Hour, 2-digits (00-23)       |
+| `H`    | `14`                  | Hour (0-23)                  |
+| `mm`   | `05`                  | Minute, 2-digits (00-59)     |
+| `m`    | `5`                   | Minute (0-59)                |
+| `ss`   | `02`                  | Second, 2-digits (00-59)     |
+| `s`    | `2`                   | Second (0-59)                |
+| `dddd` | `Wednesday`           | Full day of the week name    |
+| `ddd`  | `Wed`                 | Short day of the week name   |
+| `Z`    | `+02:00`              | Time zone offset with colon  |
+| `ZZ`   | `+0200`               | Time zone offset without colon |
+
+
+*(Note: Characters in brackets `[]` are displayed literally.)*
+
+**Example:**
 
 ```ts
 atemporal().format('YYYY-MM-DD HH:mm:ss');
@@ -138,6 +190,12 @@ atemporal().subtract(5, 'minutes').fromNow(); // "5 minutes ago"
 atemporal().add(2, 'hours').fromNow();        // "in 2 hours"
 ```
 
+
+### Example: `customParseFormat` plugin
+
+This plugin allows you to parse date strings that don't follow the ISO 8601 standard.
+
+
 ---
 
 ## ✨ API Summary
@@ -190,9 +248,17 @@ MIT — Josue Orozco A.
 
 ---
 
-## Want to contribute?
+## 🛠️ Want to contribute?
 
-Contributions are always welcome! The Temporal API is a major leap forward for JavaScript date handling, but my goal with Atemporal is to provide a simple, ergonomic, and chainable interface for everyday use. While Day.js offered a convenient API, it had limitations and quirks that made it less reliable. By building on top of Temporal, we can focus fully on abstraction and usability, delivering a robust and developer-friendly experience.
+Contributions are always welcome! This project follows the [standard fork & pull request workflow](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
+
+To get started:
+1. Fork the repository.
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/atemporal.git`
+3. Install dependencies: `npm install`
+4. Run the tests: `npm test`
+
+Please see our **Contributing Guide** for more details on our code standards and practices.
 
 ---
 ## Want to support my job?
