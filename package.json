@@ -6,7 +6,9 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "exports": {
     ".": {
@@ -28,16 +30,28 @@
         "types": "./dist/plugins/relativeTime.d.ts",
         "default": "./dist/plugins/relativeTime.js"
       }
+    },
+    "./plugins/customParseFormat": {
+      "import": {
+        "types": "./dist/plugins/customParseFormat.d.ts",
+        "default": "./dist/plugins/customParseFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/customParseFormat.d.ts",
+        "default": "./dist/plugins/customParseFormat.js"
+      }
     }
   },
   "scripts": {
     "build": "tsup",
-    "test": "jest"
+    "test": "jest",
+    "prepublishOnly": "npm run build"
   },
   "tsup": {
     "entry": [
       "src/index.ts",
-      "src/plugins/relativeTime.ts"
+      "src/plugins/relativeTime.ts",
+      "src/plugins/customParseFormat.ts"
     ],
     "format": [
       "cjs",
