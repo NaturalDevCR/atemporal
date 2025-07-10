@@ -10,6 +10,14 @@ import '@js-temporal/polyfill';
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
+import {
+    isAtemporal,
+    isValid,
+    isDuration,
+    isValidTimeZone,
+    isValidLocale,
+    isPlugin
+} from './typeGuards';
 import type { DateInput, Plugin, AtemporalFactory, AtemporalFunction } from './types';
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
@@ -59,7 +67,33 @@ atemporal.unix = TemporalWrapper.unix;
  * Checks if a given input can be parsed into a valid date.
  * The function signature is inferred from `TemporalUtils.isValid`.
  */
-atemporal.isValid = TemporalUtils.isValid;
+atemporal.isValid = isValid;
+
+/**
+ * Checks if a given input is an instance of an atemporal object.
+ * This acts as a TypeScript type guard.
+ */
+atemporal.isAtemporal = isAtemporal;
+
+/**
+ * Checks if a given input is an instance of Temporal.Duration.
+ */
+atemporal.isDuration = isDuration;
+
+/**
+ * Checks if a string is a valid and supported IANA time zone identifier.
+ */
+atemporal.isValidTimeZone = isValidTimeZone;
+
+/**
+ * Checks if a string is a structurally valid locale identifier.
+ */
+atemporal.isValidLocale = isValidLocale;
+
+/**
+ * Checks if a given function has the shape of an atemporal plugin.
+ */
+atemporal.isPlugin = isPlugin as (input: any) => input is Plugin;
 
 /**
  * Sets the default locale for all new atemporal instances. Used for formatting.

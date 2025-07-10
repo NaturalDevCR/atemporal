@@ -1,5 +1,5 @@
-import { Temporal } from '@js-temporal/polyfill';
-import { TemporalWrapper } from './TemporalWrapper';
+import type { Temporal } from '@js-temporal/polyfill';
+import type { TemporalWrapper } from './TemporalWrapper';
 
 /**
  * Represents the various types of input that can be parsed into an atemporal instance.
@@ -48,6 +48,32 @@ export interface AtemporalFactory {
      * Checks if a given input can be parsed into a valid date.
      */
     isValid: (input: any) => boolean;
+
+    /**
+     * Checks if a given input is an instance of an atemporal object.
+     * This acts as a TypeScript type guard.
+     */
+    isAtemporal: (input: any) => input is TemporalWrapper;
+
+    /**
+     * Checks if a given input is an instance of Temporal.Duration.
+     */
+    isDuration: (input: any) => input is Temporal.Duration;
+
+    /**
+     * Checks if a string is a valid and supported IANA time zone identifier.
+     */
+    isValidTimeZone: (tz: string) => boolean;
+
+    /**
+     * Checks if a string is a structurally valid locale identifier.
+     */
+    isValidLocale: (code: string) => boolean;
+
+    /**
+     * Checks if a given function has the shape of an atemporal plugin.
+     */
+    isPlugin: (input: any) => input is Plugin;
 
     /**
      * Sets the default locale for all new atemporal instances.

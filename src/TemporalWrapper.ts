@@ -442,6 +442,34 @@ export class TemporalWrapper {
     }
 
     /**
+     * Checks if the current instance is the same as or before another date.
+     * @param other - The date to compare against.
+     * @returns `true` if the current instance is the same as or before the other date.
+     */
+    isSameOrBefore(other: DateInput): boolean {
+        if (!this.isValid()) return false;
+        try {
+            return TemporalUtils.isSameOrBefore(this.datetime, other);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Checks if the current instance is the same as or after another date.
+     * @param other - The date to compare against.
+     * @returns `true` if the current instance is the same as or after the other date.
+     */
+    isSameOrAfter(other: DateInput): boolean {
+        if (!this.isValid()) return false;
+        try {
+            return TemporalUtils.isSameOrAfter(this.datetime, other);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Checks if the current instance is between two other dates.
      * @param start - The start of the range.
      * @param end - The end of the range.

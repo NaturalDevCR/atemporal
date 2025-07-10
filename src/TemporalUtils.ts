@@ -193,6 +193,20 @@ export class TemporalUtils {
     }
 
     /**
+     * Checks if date `a` is the same as or before date `b`.
+     */
+    static isSameOrBefore(a: DateInput, b: DateInput): boolean {
+        return Temporal.ZonedDateTime.compare(TemporalUtils.from(a), TemporalUtils.from(b)) <= 0;
+    }
+
+    /**
+     * Checks if date `a` is the same as or after date `b`.
+     */
+    static isSameOrAfter(a: DateInput, b: DateInput): boolean {
+        return Temporal.ZonedDateTime.compare(TemporalUtils.from(a), TemporalUtils.from(b)) >= 0;
+    }
+
+    /**
      * Checks if a date `a` is between two other dates, `b` and `c`.
      */
     static isBetween(a: DateInput, b: DateInput, c: DateInput, inclusivity: '()' | '[]' | '(]' | '[)' = '[]'): boolean {
@@ -226,17 +240,5 @@ export class TemporalUtils {
      */
     static isSameDay(a: DateInput, b: DateInput): boolean {
         return TemporalUtils.from(a).toPlainDate().equals(TemporalUtils.from(b).toPlainDate());
-    }
-
-    /**
-     * Checks if a given input can be parsed into a valid date without throwing an error.
-     */
-    static isValid(input: any): boolean {
-        try {
-            TemporalUtils.from(input);
-            return true;
-        } catch (e) {
-            return false;
-        }
     }
 }
