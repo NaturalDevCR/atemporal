@@ -45,7 +45,8 @@
   "scripts": {
     "build": "tsup",
     "test": "jest --coverage",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "release": "standard-version"
   },
   "tsup": {
     "entry": [
