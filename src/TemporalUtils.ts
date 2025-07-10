@@ -1,5 +1,3 @@
-// src/TemporalUtils.ts
-
 /**
  * @file This file provides a collection of low-level, static utility functions
  * for creating and manipulating Temporal objects. It serves as the internal

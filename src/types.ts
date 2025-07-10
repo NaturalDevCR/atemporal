@@ -1,5 +1,3 @@
-// src/types.ts
-
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from './TemporalWrapper';
 
