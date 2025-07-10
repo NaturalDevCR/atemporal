@@ -65,6 +65,14 @@
   },
   "author": "Josue Orozco A.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NaturalDevCR/atemporal.git"
+  },
+  "homepage": "https://github.com/NaturalDevCR/atemporal#readme",
+  "bugs": {
+    "url": "https://github.com/NaturalDevCR/atemporal/issues"
+  },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1"
   },
