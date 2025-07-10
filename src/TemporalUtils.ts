@@ -82,11 +82,18 @@ export class TemporalUtils {
             try {
                 // STRATEGY 1: Try parsing as an Instant. This is the most robust way for
                 // full ISO strings that contain timezone information (like 'Z' or offsets).
-                // This will correctly handle the MOCK_NOW_ISO case.
                 const instant = Temporal.Instant.from(input);
-                const zdt = instant.toZonedDateTimeISO(tz);
-                // If a *different* timezone was requested, apply it.
-                return timeZone && tz !== zdt.timeZoneId ? zdt.withTimeZone(timeZone) : zdt;
+
+                // Detectar offset explícito en el string
+                const offsetMatch = input.match(/([+-]\d{2}:\d{2})/);
+                const hasOffset = offsetMatch !== null;
+
+                if (hasOffset && !timeZone) {
+                    const offset = offsetMatch![1];
+                    return instant.toZonedDateTimeISO(offset);
+                }
+
+                return instant.toZonedDateTimeISO(tz);
             } catch (e) {
                 try {
                     // STRATEGY 2: If it's not an Instant, it might be a "plain" date string
