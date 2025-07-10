@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

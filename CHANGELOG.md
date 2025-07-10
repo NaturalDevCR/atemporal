@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.5](https://github.com/NaturalDevCR/atemporal/compare/v0.0.4...v0.0.5) (2025-07-10)
+
+
+### Bug Fixes
+
+* **atemporal.timezone.test.ts:** Fixed tests to work with github CI ([639e4ff](https://github.com/NaturalDevCR/atemporal/commit/639e4ff6d035acd55404db5758e61b4b89ed57d4))
+
 ### [0.0.4](https://github.com/NaturalDevCR/atemporal/compare/v0.0.3...v0.0.4) (2025-07-10)
 
 
