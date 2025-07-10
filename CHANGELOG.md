@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.3](https://github.com/NaturalDevCR/atemporal/compare/v0.0.2...v0.0.3) (2025-07-10)
+
+
+### Bug Fixes
+
+* **core:** Refactor parsing engine to fix widespread test failures ([cca6447](https://github.com/NaturalDevCR/atemporal/commit/cca64476f1cd6713d45d5da2545b92f51d51e6aa))
+
 ### [0.0.2](https://github.com/NaturalDevCR/atemporal/compare/v0.0.1...v0.0.2) (2025-07-10)
 
 ### 0.0.1 (2025-07-10)
