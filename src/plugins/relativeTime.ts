@@ -62,12 +62,12 @@ const getRelativeTime = (
         M: 11,  // months to year
     };
 
-    const diffSeconds = instance.diff(comparisonDate, 'second');
-    const diffMinutes = instance.diff(comparisonDate, 'minute');
-    const diffHours = instance.diff(comparisonDate, 'hour');
-    const diffDays = instance.diff(comparisonDate, 'day');
-    const diffMonths = instance.diff(comparisonDate, 'month');
-    const diffYears = instance.diff(comparisonDate, 'year');
+    const diffSeconds = instance.diff(comparisonDate, 'second', true);
+    const diffMinutes = instance.diff(comparisonDate, 'minute', true);
+    const diffHours = instance.diff(comparisonDate, 'hour', true);
+    const diffDays = instance.diff(comparisonDate, 'day', true);
+    const diffMonths = instance.diff(comparisonDate, 'month', true);
+    const diffYears = instance.diff(comparisonDate, 'year', true);
 
     let bestUnit: Intl.RelativeTimeFormatUnit;
     let bestDiff: number;

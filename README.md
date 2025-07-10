@@ -1,7 +1,7 @@
 # Atemporal
 ![npm](https://img.shields.io/npm/v/atemporal)
 ![license](https://img.shields.io/npm/l/atemporal)
-
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NaturalDevCR/atemporal)
 
 
 
