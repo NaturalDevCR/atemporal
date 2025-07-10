@@ -18,15 +18,28 @@ function getDurationUnit(unit: TimeUnit): string {
 }
 
 /**
- * Creates and caches a map of formatting tokens to their corresponding string values for a given instance.
+ * Creates and caches a map of formatting tokens to their corresponding string values.
+ * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>
+ * to ensure that replacements are correctly cached per instance AND per locale.
  * @internal
  */
-const formatReplacementsCache = new WeakMap<TemporalWrapper, FormatTokenMap>();
+const formatReplacementsCache = new WeakMap<TemporalWrapper, Map<string, FormatTokenMap>>();
 
 function createTokenReplacements(instance: TemporalWrapper, locale?: string): FormatTokenMap {
-    if (formatReplacementsCache.has(instance)) {
-        return formatReplacementsCache.get(instance)!;
+    const currentLocale = locale || TemporalUtils.getDefaultLocale();
+
+    // Check for the instance in the outer cache
+    const localeCache = formatReplacementsCache.get(instance);
+
+    // If we have a cache for this instance, check for the specific locale
+    if (localeCache) {
+        const cachedReplacements = localeCache.get(currentLocale);
+        if (cachedReplacements) {
+            return cachedReplacements;
+        }
     }
+
+    // If we've reached here, no valid cache exists, so we create one.
     const replacements: FormatTokenMap = {
         YYYY: () => instance.year.toString(),
         YY: () => instance.year.toString().slice(-2),
@@ -41,14 +54,25 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
         ss: () => instance.second.toString().padStart(2, '0'),
         s: () => instance.second.toString(),
         SSS: () => instance.millisecond.toString().padStart(3, '0'),
-        dddd: () => instance.dayOfWeekName,
-        ddd: () => instance.raw.toLocaleString(locale || TemporalUtils.getDefaultLocale(), { weekday: 'short' }),
-        // Timezone tokens
+        dddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'long' }),
+        ddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'short' }),
+        // --- API de Tokens de Zona Horaria Mejorada ---
         Z: () => instance.raw.offset, // e.g., +01:00
-        ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100,
-        z: () => instance.raw.timeZoneId,
+        ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100
+        z: () => instance.raw.timeZoneId, // e.g., America/New_York
+        zzz: () => TemporalUtils.getShortTimeZoneName(instance.raw, currentLocale), // e.g., EST, GMT-5
+        zzzz: () => TemporalUtils.getLongTimeZoneName(instance.raw, currentLocale), // e.g., Eastern Standard Time
     };
-    formatReplacementsCache.set(instance, replacements);
+
+    // Update the cache
+    if (!localeCache) {
+        // If no locale map existed for this instance, create one
+        formatReplacementsCache.set(instance, new Map([[currentLocale, replacements]]));
+    } else {
+        // Otherwise, just add the new locale to the existing map
+        localeCache.set(currentLocale, replacements);
+    }
+
     return replacements;
 }
 
@@ -271,7 +295,7 @@ export class TemporalWrapper {
      * @param formatString - The string of tokens (e.g., 'YYYY-MM-DD').
      * @param localeCode - Optional locale code for localized formats like `dddd`.
      */
-    format(formatString: string): string;
+    format(formatString: string, localeCode?: string): string;
     /**
      * Formats the date using the native `Intl.DateTimeFormat` API for advanced localization.
      * @param options - An `Intl.DateTimeFormatOptions` object.
@@ -286,7 +310,7 @@ export class TemporalWrapper {
         if (typeof templateOrOptions === 'string') {
             const formatString = templateOrOptions;
             const replacements = createTokenReplacements(this, localeCode);
-            const tokenRegex = /\[([^\]]+)]|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
+            const tokenRegex = /\[([^\]]+)]|zzzz|zzz|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
 
             return formatString.replace(tokenRegex, (match, literal) => {
                 if (literal) return literal;

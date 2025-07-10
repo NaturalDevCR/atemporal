@@ -7,10 +7,52 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { DateInput, TimeUnit } from './types';
 
+
 export class TemporalUtils {
     // Private static properties to hold the global default settings.
     private static _defaultTimeZone = 'UTC';
     private static _defaultLocale = 'en-US';
+
+    /**
+     * Gets the localized short time zone name (e.g., "EST", "GMT-5").
+     * @internal
+     */
+    static getShortTimeZoneName(zdt: Temporal.ZonedDateTime, locale = TemporalUtils._defaultLocale): string {
+        try {
+            const formatter = new Intl.DateTimeFormat(locale, {
+                timeZone: zdt.timeZoneId,
+                timeZoneName: 'short',
+            });
+            // Convert Instant to milliseconds, which is what `formatToParts` expects.
+            const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
+
+            const tzPart = parts.find(p => p.type === 'timeZoneName');
+            return tzPart?.value || zdt.timeZoneId;
+        } catch {
+            return zdt.timeZoneId;
+        }
+    }
+
+
+
+    /**
+     * Gets the localized long time zone name (e.g., "Eastern Standard Time").
+     * @internal
+     */
+    static getLongTimeZoneName(zdt: Temporal.ZonedDateTime, locale = TemporalUtils._defaultLocale): string {
+        try {
+            const formatter = new Intl.DateTimeFormat(locale, {
+                timeZone: zdt.timeZoneId,
+                timeZoneName: 'long',
+            });
+            // Convert Instant to milliseconds, which is what `formatToParts` expects.
+            const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
+            const tzPart = parts.find(p => p.type === 'timeZoneName');
+            return tzPart?.value || zdt.timeZoneId;
+        } catch {
+            return zdt.timeZoneId;
+        }
+    }
 
     /**
      * Sets the default locale for all new atemporal instances. Used for formatting.
@@ -84,7 +126,7 @@ export class TemporalUtils {
                 // full ISO strings that contain timezone information (like 'Z' or offsets).
                 const instant = Temporal.Instant.from(input);
 
-                // Detectar offset explícito en el string
+                // Detect explicit offset in the string
                 const offsetMatch = input.match(/([+-]\d{2}:\d{2})/);
                 const hasOffset = offsetMatch !== null;
 

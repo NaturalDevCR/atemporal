@@ -18,6 +18,70 @@ describe('Atemporal: Time Zone Handling', () => {
         expect(afterDST.format('HH:mm Z')).toBe('01:00 -05:00'); // Note the offset change
     });
 
+    describe('Timezone Formatting Tokens (z, zzz, zzzz)', () => {
+        it('should format timezone names correctly for an IANA zone during Standard Time', () => {
+            // January is Standard Time in New York (EST)
+            const date = atemporal('2024-01-15T10:00:00', 'America/New_York');
+
+            expect(date.format('z')).toBe('America/New_York'); // IANA ID
+            expect(date.format('zzz')).toBe('EST'); // Short name
+            expect(date.format('zzzz')).toBe('Eastern Standard Time'); // Long name
+        });
+
+        it('should format timezone names correctly for an IANA zone during Daylight Saving Time', () => {
+            // July is Daylight Saving Time in New York (EDT)
+            const date = atemporal('2024-07-15T10:00:00', 'America/New_York');
+
+            expect(date.format('z')).toBe('America/New_York');
+            expect(date.format('zzz')).toBe('EDT');
+            expect(date.format('zzzz')).toBe('Eastern Daylight Time');
+        });
+
+        it('should format timezone names correctly for a fixed-offset zone', () => {
+            const date = atemporal('2024-05-15T10:00:00+08:00');
+
+            // When parsing a fixed offset, the offset itself becomes the timezone ID.
+            expect(date.format('z')).toBe('+08:00');
+
+            // Intl.DateTimeFormat will format this as a generic GMT string.
+            // Note: The exact output can vary slightly between Node.js versions ('GMT+8' vs 'GMT+08:00').
+            // We test for the most common and stable outputs.
+            expect(date.format('zzz')).toMatch(/GMT\+8|GMT\+08:00/);
+            expect(date.format('zzzz')).toBe('GMT+08:00');
+        });
+
+        it('should format timezone names correctly for UTC', () => {
+            const date = atemporal('2024-01-01T12:00:00Z');
+
+            expect(date.format('z')).toBe('UTC');
+            expect(date.format('zzz')).toBe('UTC');
+            expect(date.format('zzzz')).toBe('Coordinated Universal Time');
+        });
+
+        it('should produce localized long timezone names when a locale is provided', () => {
+            const date = atemporal('2024-01-15T10:00:00', 'America/New_York');
+
+            // The long name should be translated based on the locale.
+            // We check for containment to make the test robust against minor wording changes.
+            expect(date.format('zzzz', 'es-ES')).toContain('hora estándar');
+
+            // --- START OF FIX ---
+            // Apply the same robust check for the French locale.
+            expect(date.format('zzzz', 'fr-FR')).toContain('heure normale de l’Est');
+            // --- END OF FIX ---
+        });
+
+        it('should handle a European timezone correctly', () => {
+            // June is summer time in Madrid (CEST)
+            const date = atemporal('2024-06-15T12:00:00', 'Europe/Madrid');
+
+            expect(date.format('z')).toBe('Europe/Madrid');
+            // The short name can be the abbreviation or the GMT offset. We accept both.
+            expect(date.format('zzz')).toMatch(/CEST|GMT\+2/);
+            expect(date.format('zzzz')).toBe('Central European Summer Time');
+        });
+    });
+
     describe('atemporal time zone formatting', () => {
         it('should return the correct timezone offset after conversion', () => {
             const utcDate = atemporal('2024-01-01T00:00:00.000Z');
