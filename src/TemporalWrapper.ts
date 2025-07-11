@@ -209,6 +209,25 @@ export class TemporalWrapper {
     }
 
     /**
+     * Returns a new instance adjusted to a specific day of the week within the current week.
+     * Follows ISO 8601 standard where Monday is 1 and Sunday is 7.
+     * @param day - The target day of the week (1-7).
+     * @returns A new TemporalWrapper instance.
+     * @example
+     * const wednesday = atemporal('2024-08-14'); // A Wednesday
+     * wednesday.dayOfWeek(5); // Returns a date for Friday, Aug 16, 2024
+     * wednesday.dayOfWeek(1); // Returns a date for Monday, Aug 12, 2024
+     */
+    dayOfWeek(day: number): TemporalWrapper {
+        if (!this.isValid() || day < 1 || day > 7) {
+            return this;
+        }
+        const currentDay = this.datetime.dayOfWeek;
+        const diff = day - currentDay;
+        return this.add(diff, 'day');
+    }
+
+    /**
      * Returns a new instance set to the start of a given unit of time.
      * Note: `startOf('week')` assumes the week starts on Monday (ISO 8601 standard).
      * @param unit - The unit to set to the start of.
