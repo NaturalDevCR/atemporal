@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.15](https://github.com/NaturalDevCR/atemporal/compare/v0.0.14...v0.0.15) (2025-07-11)
+
+
+### Features
+
+* **plugin:** Add Firebase Timestamp interoperability ([576ee29](https://github.com/NaturalDevCR/atemporal/commit/576ee29eff5bcc57867082de656242b1368efd92))
+
 ### [0.0.14](https://github.com/NaturalDevCR/atemporal/compare/v0.0.13...v0.0.14) (2025-07-11)
 
 
