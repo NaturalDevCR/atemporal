@@ -181,6 +181,7 @@ date.millisecond;  // 123
 
 // Methods
 date.get('month');       // 8
+date.dayOfWeek();      // 3 (ISO 8601: 1=Monday, ..., 7=Sunday)
 date.quarter();        // 3 (third quarter)
 date.daysInMonth;      // 31
 date.weekOfYear;       // 33 (ISO week number)
@@ -433,6 +434,31 @@ console.log(now.timeZoneName);
 const tokyoTime = atemporal('2024-01-01T12:00:00', 'Asia/Tokyo');
 console.log(tokyoTime.format('HH:mm z')); // => "12:00 Asia/Tokyo"
 ```
+
+---
+
+### Error Handling
+
+Atemporal uses custom error classes so you can handle failures in a specific and robust way, rather than relying on generic error messages.
+
+```ts
+import atemporal, { InvalidTimeZoneError } from 'atemporal';
+
+try {
+  // Attempt to use an invalid time zone
+  atemporal.setDefaultTimeZone('Mars/Olympus_Mons');
+} catch (e) {
+  if (e instanceof InvalidTimeZoneError) {
+    console.error('Caught error:', e.message);
+    // => "Caught error: Invalid time zone: Mars/Olympus_Mons"
+  }
+}
+```
+
+The main error classes you can import are:
+- `InvalidTimeZoneError`: For invalid IANA time zone identifiers.
+- `InvalidDateError`: When an input cannot be parsed into a valid date.
+- `InvalidAtemporalInstanceError`: When an operation is attempted on an invalid instance (e.g., accessing `.raw`).
 
 ---
 

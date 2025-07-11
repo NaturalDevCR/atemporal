@@ -20,9 +20,20 @@ import {
 } from './typeGuards';
 import type { DateInput, Plugin, AtemporalFactory, AtemporalFunction } from './types';
 
+import {
+    InvalidAtemporalInstanceError,
+    InvalidDateError,
+    InvalidTimeZoneError
+} from './errors';
+
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
 export type { DateInput, TimeUnit, SettableUnit, Plugin } from './types';
+export {
+    InvalidAtemporalInstanceError,
+    InvalidDateError,
+    InvalidTimeZoneError
+};
 
 /**
  * The core factory function for creating atemporal instances.
