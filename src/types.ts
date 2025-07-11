@@ -22,7 +22,7 @@ export type TimeUnit =
 /**
  * Defines the units of time that can be set on an atemporal instance.
  */
-export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
+export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'quarter';
 
 /**
  * A map of format tokens to their string replacement functions. Used by the `.format()` method.

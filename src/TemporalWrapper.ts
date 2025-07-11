@@ -263,8 +263,16 @@ export class TemporalWrapper {
      */
     set(unit: SettableUnit, value: number): TemporalWrapper {
         if (!this.isValid()) return this;
-        const newDate = this.datetime.with({ [unit]: value });
-        return this._cloneWith(newDate);
+
+        switch (unit) {
+            case 'quarter':
+                // Delegate to the specialized quarter(value) method
+                return this.quarter(value);
+            default:
+                // For all other units, use the standard .with() method
+                const newDate = this.datetime.with({ [unit]: value });
+                return this._cloneWith(newDate);
+        }
     }
 
     /**
@@ -339,7 +347,15 @@ export class TemporalWrapper {
      */
     get(unit: SettableUnit): number {
         if (!this.isValid()) return NaN;
-        return this.datetime[unit];
+
+        switch (unit) {
+            case 'quarter':
+                // Delegate to the specialized quarter() method
+                return this.quarter();
+            default:
+                // For all other units, they are valid properties on ZonedDateTime
+                return this.datetime[unit];
+        }
     }
 
     // --- Getters ---
@@ -362,13 +378,44 @@ export class TemporalWrapper {
     get second(): number { return this.isValid() ? this.datetime.second : NaN; }
     /** The millisecond of the second (0-999). */
     get millisecond(): number { return this.isValid() ? this.datetime.millisecond : NaN; }
-    /** The quarter of the year (1-4). */
-    get quarter(): number { return this.isValid() ? Math.ceil(this.datetime.month / 3) : NaN; }
+    // /** The quarter of the year (1-4). */
+    // get quarter(): number { return this.isValid() ? Math.ceil(this.datetime.month / 3) : NaN; }
     /** The ISO week number of the year (1-53). */
     get weekOfYear(): number { return this.isValid() ? this.datetime.weekOfYear! : NaN; }
     get daysInMonth(): number {
         if (!this.isValid()) return NaN;
         return this.datetime.daysInMonth;
+    }
+
+    /**
+     * Gets the quarter of the year (1-4).
+     * @returns The quarter number.
+     */
+    quarter(): number;
+    /**
+     * Returns a new instance set to the beginning of the specified quarter.
+     * @param quarter The target quarter (1-4).
+     * @returns A new TemporalWrapper instance.
+     */
+    quarter(quarter: number): TemporalWrapper;
+    quarter(quarter?: number): number | TemporalWrapper {
+        if (!this.isValid()) {
+            return quarter === undefined ? NaN : this;
+        }
+
+        // Getter case
+        if (quarter === undefined) {
+            return Math.ceil(this.datetime.month / 3);
+        }
+
+        // Setter case
+        if (quarter < 1 || quarter > 4) {
+            // For invalid quarters, return the instance unmodified.
+            return this;
+        }
+
+        const startMonthOfQuarter = (quarter - 1) * 3 + 1;
+        return this.set('month', startMonthOfQuarter).startOf('month');
     }
 
     // --- Formatters ---
@@ -389,6 +436,7 @@ export class TemporalWrapper {
             return 'Invalid Date';
         }
 
+        // --- Path for string-based formatting ---
         if (typeof templateOrOptions === 'string') {
             const formatString = templateOrOptions;
             const replacements = createTokenReplacements(this, localeCode);
@@ -401,16 +449,19 @@ export class TemporalWrapper {
             });
         }
 
-        const options = templateOrOptions as Intl.DateTimeFormatOptions;
+        // --- Path for Intl.DateTimeFormatOptions ---
+        const options = templateOrOptions;
         const locale = localeCode || TemporalUtils.getDefaultLocale();
 
-        if (options && ('dateStyle' in options || 'timeStyle' in options)) {
+        // If the user provides any specific options, use them exclusively.
+        if (options && Object.keys(options).length > 0) {
             return new Intl.DateTimeFormat(locale, {
                 timeZone: this.datetime.timeZoneId,
                 ...options
             }).format(this.toDate());
         }
 
+        // If no options are provided, fall back to a sensible default format.
         const defaultOptions: Intl.DateTimeFormatOptions = {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -418,8 +469,7 @@ export class TemporalWrapper {
 
         return new Intl.DateTimeFormat(locale, {
             timeZone: this.datetime.timeZoneId,
-            ...defaultOptions,
-            ...options
+            ...defaultOptions
         }).format(this.toDate());
     }
 
@@ -561,7 +611,20 @@ export class TemporalWrapper {
     isBetween(start: DateInput, end: DateInput, inclusivity: '()' | '[]' | '(]' | '[)' = '[]'): boolean {
         if (!this.isValid()) return false;
         try {
-            return TemporalUtils.isBetween(this.datetime, start, end, inclusivity);
+            // Parse start and end dates relative to the instance's timezone for consistency
+            const startDateTime = TemporalUtils.from(start, this.datetime.timeZoneId);
+            const endDateTime = TemporalUtils.from(end, this.datetime.timeZoneId);
+
+            // Determine comparison logic based on inclusivity
+            const afterStart = inclusivity.startsWith('[')
+                ? Temporal.ZonedDateTime.compare(this.datetime, startDateTime) >= 0
+                : Temporal.ZonedDateTime.compare(this.datetime, startDateTime) > 0;
+
+            const beforeEnd = inclusivity.endsWith(']')
+                ? Temporal.ZonedDateTime.compare(this.datetime, endDateTime) <= 0
+                : Temporal.ZonedDateTime.compare(this.datetime, endDateTime) < 0;
+
+            return afterStart && beforeEnd;
         } catch (e) {
             return false;
         }

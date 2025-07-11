@@ -99,6 +99,25 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             }).toThrow('Cannot perform operations on an invalid Atemporal object.');
         });
     });
+
+    describe('Generic .get() and .set() for special units', () => {
+        const date = atemporal('2024-05-20'); // Q2
+
+        it('should get quarter using the generic get() method', () => {
+            expect(date.get('quarter')).toBe(2);
+        });
+
+        it('should set quarter using the generic set() method', () => {
+            // Test setting to a new quarter
+            const startOfQ4 = date.set('quarter', 4);
+            expect(startOfQ4.format('YYYY-MM-DD')).toBe('2024-10-01');
+
+            // Test setting to the same quarter
+            const startOfQ2 = date.set('quarter', 2);
+            expect(startOfQ2.format('YYYY-MM-DD')).toBe('2024-04-01');
+        });
+    });
+
     describe('Manipulation with unit aliases', () => {
         const baseDate = atemporal('2024-01-10T10:00:00Z');
 

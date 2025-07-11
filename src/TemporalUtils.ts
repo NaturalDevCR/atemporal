@@ -206,28 +206,6 @@ export class TemporalUtils {
     }
 
     /**
-     * Checks if a date `a` is between two other dates, `b` and `c`.
-     */
-    static isBetween(a: DateInput, b: DateInput, c: DateInput, inclusivity: '()' | '[]' | '(]' | '[)' = '[]'): boolean {
-        const date = TemporalUtils.from(a);
-        const start = TemporalUtils.from(b);
-        const end = TemporalUtils.from(c);
-
-        const compareWithStart = Temporal.ZonedDateTime.compare(date, start);
-        const compareWithEnd = Temporal.ZonedDateTime.compare(date, end);
-
-        const isAfterStart = inclusivity[0] === '['
-            ? compareWithStart >= 0 // a >= start
-            : compareWithStart > 0;  // a > start
-
-        const isBeforeEnd = inclusivity[1] === ']'
-            ? compareWithEnd <= 0 // a <= end
-            : compareWithEnd < 0;   // a < end
-
-        return isAfterStart && isBeforeEnd;
-    }
-
-    /**
      * Checks if date `a` is the same instant in time as date `b`.
      */
     static isSame(a: DateInput, b: DateInput): boolean {
