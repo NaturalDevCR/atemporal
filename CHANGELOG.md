@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.9](https://github.com/NaturalDevCR/atemporal/compare/v0.0.8...v0.0.9) (2025-07-11)
+
+
+### Features
+
+* **api:** Add Duration support and flexible unit aliases ([1994292](https://github.com/NaturalDevCR/atemporal/commit/1994292b85043b7a410cc09b564d168252095070))
+* **core:** add .dayOfWeek() manipulation method ([1fcd5bb](https://github.com/NaturalDevCR/atemporal/commit/1fcd5bbcf754d07c5ba3a2c88fb96d11d4291758))
+* **core:** add .daysInMonth getter ([8b24651](https://github.com/NaturalDevCR/atemporal/commit/8b2465194525d32e25e48cc62d1025827394382e))
+
 ### [0.0.8](https://github.com/NaturalDevCR/atemporal/compare/v0.0.7...v0.0.8) (2025-07-10)
 
 
