@@ -122,6 +122,7 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
         const baseDate = atemporal('2024-01-10T10:00:00Z');
 
         it('should handle singular, plural, and short-hand units for .add()', () => {
+            // Targets: All unit aliases in `getDurationUnit` in TemporalWrapper.ts
             // Year
             expect(baseDate.add(1, 'y').year).toBe(2025);
             expect(baseDate.add(1, 'year').year).toBe(2025);
@@ -147,6 +148,7 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
         });
 
         it('should handle singular, plural, and short-hand units for .subtract()', () => {
+            // Targets: Remaining unit aliases in `getDurationUnit`
             // Week
             expect(baseDate.subtract(1, 'w').day).toBe(3);
             expect(baseDate.subtract(1, 'week').day).toBe(3);

@@ -84,6 +84,12 @@ describe('customParseFormat plugin', () => {
                 expect(date.isValid()).toBe(false);
             });
 
+            it('should return an invalid instance if format lacks year but has other parts', () => {
+                // This specifically targets the `if (!year)` guard.
+                const date = atemporal.fromFormat('15 10:30', 'DD HH:mm');
+                expect(date.isValid()).toBe(false);
+            });
+
             it('should return an invalid instance for a partial match', () => {
                 const date = atemporal.fromFormat('2023-10', 'YYYY-MM-DD');
                 expect(date.isValid()).toBe(false);

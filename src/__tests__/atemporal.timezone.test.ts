@@ -20,6 +20,22 @@ describe('Atemporal: Time Zone Handling', () => {
         expect(afterDST.format('HH:mm Z')).toBe('01:00 -05:00'); // Note the offset change
     });
 
+    describe('Error Handling and Fallbacks', () => {
+        it('should format correctly even with an invalid locale (Intl fallback)', () => {
+            const date = atemporal('2024-01-01T00:00:00Z', 'America/New_York');
+            const invalidLocale = 'xx-XX-invalid';
+
+            // The Intl API is resilient and often falls back to the default locale
+            // instead of throwing, so the `try` block should succeed.
+            const shortName = date.format('zzz', invalidLocale);
+            const longName = date.format('zzzz', invalidLocale);
+
+            // The test now correctly expects the formatted names, not the raw ID.
+            expect(shortName).toBe('EST');
+            expect(longName).toBe('Eastern Standard Time');
+        });
+    });
+
     describe('Timezone Formatting Tokens (z, zzz, zzzz)', () => {
         it('should format timezone names correctly for an IANA zone during Standard Time', () => {
             // January is Standard Time in New York (EST)

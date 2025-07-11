@@ -20,8 +20,9 @@ console.log('\n--- Calculating Differences ---');
 const eventStart = atemporal('2024-07-20T10:00:00');
 const eventEnd = atemporal('2024-07-25T14:30:00');
 
-const diffInDays = eventEnd.diff(eventStart, 'day');
-const diffInHours = eventEnd.diff(eventStart, 'hour');
+// Use the `float` parameter for a precise, fractional difference.
+const diffInDays = eventEnd.diff(eventStart, 'day', true);
+const diffInHours = eventEnd.diff(eventStart, 'hour', true);
 console.log(`The event lasted for ${diffInDays.toFixed(2)} days.`);
 console.log(`Which is equivalent to ${diffInHours.toFixed(2)} hours.`);
 

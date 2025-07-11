@@ -193,6 +193,66 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
             const originalDate = atemporal();
             expect(originalDate.dayOfWeek(0)).toBe(originalDate);
             expect(originalDate.dayOfWeek(8)).toBe(originalDate);
+        })
+        it('should hit the format cache correctly when using different locales', () => {
+            // Targets: The cache logic in `createTokenReplacements` where a locale
+            // is added to an existing instance's cache.
+            const d = atemporal();
+            // First call, creates the instance cache and the 'es' entry
+            d.format('dddd', 'es');
+            // Second call, finds the instance cache and adds the 'fr' entry
+            d.format('dddd', 'fr');
+            // Third call, should retrieve from cache
+            const format1 = d.format('dddd', 'es');
+            const format2 = d.format('dddd', 'es');
+            expect(format1).toBe(format2);
+        });
+
+        it('should cover remaining startOf and endOf units', () => {
+            // Targets: 'hour', 'minute', 'second' cases in startOf/endOf
+            const date = atemporal('2024-03-15T10:30:45.500Z');
+            expect(date.startOf('hour').format('HH:mm:ss.SSS')).toBe('10:00:00.000');
+            expect(date.endOf('hour').format('HH:mm:ss.SSS')).toBe('10:59:59.999');
+            expect(date.startOf('minute').format('HH:mm:ss.SSS')).toBe('10:30:00.000');
+            expect(date.endOf('minute').format('HH:mm:ss.SSS')).toBe('10:30:59.999');
+            expect(date.startOf('second').format('HH:mm:ss.SSS')).toBe('10:30:45.000');
+            expect(date.endOf('second').format('HH:mm:ss.SSS')).toBe('10:30:45.999');
+        });
+    });
+    describe('Method Error Path and Default Case Coverage', () => {
+        const validDate = atemporal();
+
+        it('should return an invalid instance for a completely unsupported input type', () => {
+            // This tests that the constructor correctly handles errors from TemporalUtils.from()
+            // by returning an invalid instance instead of throwing.
+            // @ts-expect-error - Intentionally passing an unsupported type
+            const result = atemporal.from({ a: 1 });
+            expect(result.isValid()).toBe(false);
+        });
+
+        it('should trigger catch block in .diff() with invalid input', () => {
+            // @ts-expect-error
+            const result = validDate.diff({ a: 1 });
+            expect(result).toBeNaN();
+        });
+
+        it('should trigger catch block in .isBetween() with invalid input', () => {
+            const start = '2024-01-01';
+            const invalidEnd = {}; // An un-parsable object
+            // @ts-expect-error
+            expect(validDate.isBetween(start, invalidEnd)).toBe(false);
+        });
+
+        it('should trigger catch block in .isSame() with invalid input', () => {
+            // @ts-expect-error
+            expect(validDate.isSame({ foo: 'bar' })).toBe(false);
+        });
+
+        it('should cover the default case in the format() method without arguments', () => {
+            // This test ensures the branch where no options are provided is covered.
+            const formatted = validDate.format();
+            expect(typeof formatted).toBe('string');
+            expect(formatted.length).toBeGreaterThan(0);
         });
     });
 });
