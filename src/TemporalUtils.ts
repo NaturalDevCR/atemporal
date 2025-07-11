@@ -6,6 +6,7 @@
 
 import { Temporal } from '@js-temporal/polyfill';
 import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
+import { InvalidTimeZoneError, InvalidDateError } from './errors';
 
 // Variable to hold the start of the week setting. Default to 1 (Monday) for ISO 8601 compliance.
 let weekStart = 1;
@@ -81,7 +82,7 @@ export class TemporalUtils {
             new Intl.DateTimeFormat('en-US', { timeZone: tz });
             TemporalUtils._defaultTimeZone = tz;
         } catch (e) {
-            throw new Error(`Invalid time zone: ${tz}`);
+            throw new InvalidTimeZoneError(`Invalid time zone: ${tz}`);
         }
     }
 
@@ -129,7 +130,7 @@ export class TemporalUtils {
                 const pdt = Temporal.PlainDateTime.from({ year, month, day, hour, minute, second, millisecond }, { overflow: 'reject' });
                 return pdt.toZonedDateTime(tz);
             } catch (e) {
-                throw new Error(`Invalid date array: [${input.join(', ')}]`);
+                throw new InvalidDateError(`Invalid date array: [${input.join(', ')}]`);
             }
         }
 
@@ -141,7 +142,7 @@ export class TemporalUtils {
                 const pdt = Temporal.PlainDateTime.from(input as PlainDateTimeObject, { overflow: 'reject' });
                 return pdt.toZonedDateTime(tz);
             } catch (e) {
-                throw new Error(`Invalid date object: ${JSON.stringify(input)}`);
+                throw new InvalidDateError(`Invalid date object: ${JSON.stringify(input)}`);
             }
         }
 
@@ -172,7 +173,7 @@ export class TemporalUtils {
                     return pdt.toZonedDateTime(tz);
                 } catch (e2) {
                     // If both parsing attempts fail, the string is truly invalid.
-                    throw new Error(`Invalid date string: ${input}`);
+                    throw new InvalidDateError(`Invalid date string: ${input}`);
                 }
             }
         }
@@ -183,7 +184,7 @@ export class TemporalUtils {
         }
 
         // If the input type is none of the above, it's unsupported.
-        throw new Error(`Unsupported date input type: ${typeof input}`);
+        throw new InvalidDateError(`Unsupported date input type: ${typeof input}`);
     }
 
     /**

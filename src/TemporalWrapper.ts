@@ -7,6 +7,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalUtils } from './TemporalUtils';
 import type { DateInput, TimeUnit, SettableUnit, FormatTokenMap } from './types';
+import { InvalidAtemporalInstanceError } from './errors';
 
 /**
  * Normalizes and pluralizes a library time unit to its corresponding form for the Temporal API.
@@ -187,11 +188,11 @@ export class TemporalWrapper {
     /**
      * The "escape hatch" to the underlying `Temporal.ZonedDateTime` object.
      * Throws an error if the instance is invalid.
-     * @throws {Error} If the instance is invalid.
+     * @throws {InvalidAtemporalInstanceError} If the instance is invalid.
      */
     get datetime(): Temporal.ZonedDateTime {
         if (!this.isValid() || !this._datetime) {
-            throw new Error("Cannot perform operations on an invalid Atemporal object.");
+            throw new InvalidAtemporalInstanceError("Cannot perform operations on an invalid Atemporal object.");
         }
         return this._datetime;
     }
@@ -210,6 +211,7 @@ export class TemporalWrapper {
      * Returns a new instance with the specified duration added.
      * @param duration - A `Temporal.Duration` object to add.
      * @returns A new TemporalWrapper instance.
+     * @example atemporal().add(atemporal.duration({ hours: 2, minutes: 30 }));
      */
     add(duration: Temporal.Duration): TemporalWrapper;
     /**
@@ -217,6 +219,7 @@ export class TemporalWrapper {
      * @param value - The number of units to add.
      * @param unit - The unit of time to add.
      * @returns A new TemporalWrapper instance.
+     * @example atemporal().add(5, 'days');
      */
     add(value: number, unit: TimeUnit): TemporalWrapper;
     add(valueOrDuration: number | Temporal.Duration, unit?: TimeUnit): TemporalWrapper {
@@ -276,6 +279,11 @@ export class TemporalWrapper {
     }
 
     /**
+     * Gets the day of the week (1=Monday, 7=Sunday).
+     * @returns The day of the week.
+     */
+    dayOfWeek(): number;
+    /**
      * Returns a new instance adjusted to a specific day of the week within the current week.
      * Follows ISO 8601 standard where Monday is 1 and Sunday is 7.
      * @param day - The target day of the week (1-7).
@@ -285,8 +293,19 @@ export class TemporalWrapper {
      * wednesday.dayOfWeek(5); // Returns a date for Friday, Aug 16, 2024
      * wednesday.dayOfWeek(1); // Returns a date for Monday, Aug 12, 2024
      */
-    dayOfWeek(day: number): TemporalWrapper {
-        if (!this.isValid() || day < 1 || day > 7) {
+    dayOfWeek(day: number): TemporalWrapper;
+    dayOfWeek(day?: number): number | TemporalWrapper {
+        if (!this.isValid()) {
+            return day === undefined ? NaN : this;
+        }
+
+        // Getter case
+        if (day === undefined) {
+            return this.datetime.dayOfWeek;
+        }
+
+        // Setter case
+        if (day < 1 || day > 7) {
             return this;
         }
         const currentDay = this.datetime.dayOfWeek;
@@ -544,7 +563,7 @@ export class TemporalWrapper {
 
     /**
      * An alias for the `datetime` getter. Provides direct access to the underlying `Temporal.ZonedDateTime` object.
-     * @throws {Error} If the instance is invalid.
+     * @throws {InvalidAtemporalInstanceError} If the instance is invalid.
      */
     get raw(): Temporal.ZonedDateTime {
         return this.datetime;
@@ -612,6 +631,9 @@ export class TemporalWrapper {
      * @param end - The end of the range.
      * @param inclusivity - Defines if the start and end dates are inclusive. '[]' (default), '()', '[)', '(]'.
      * @returns `true` if the current instance is within the range.
+     * @example
+     * atemporal('2024-06-15').isBetween('2024-01-01', '2024-12-31'); // true
+     * atemporal('2024-01-01').isBetween('2024-01-01', '2024-12-31', '()'); // false
      */
     isBetween(start: DateInput, end: DateInput, inclusivity: '()' | '[]' | '(]' | '[)' = '[]'): boolean {
         if (!this.isValid()) return false;

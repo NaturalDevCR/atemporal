@@ -61,6 +61,8 @@ npm install atemporal
 
 > 🔧 You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
 
+> Note on the Polyfill: For maximum compatibility, atemporal automatically imports @js-temporal/polyfill. This adds the Temporal object to the global scope (globalThis.Temporal), ensuring the API is available everywhere. This is designed for convenience, but be aware that it creates a global side effect.
+
 ---
 
 ## 🚀 Quick Start

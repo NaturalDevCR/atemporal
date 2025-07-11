@@ -1,4 +1,5 @@
 import atemporal from '../index';
+import { InvalidTimeZoneError, InvalidAtemporalInstanceError } from '../errors';
 
 describe('Atemporal: Core Manipulation and Comparison', () => {
     const date1 = atemporal('2024-02-15T10:30:00Z'); // Not a leap year
@@ -88,7 +89,7 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
         it('should throw an error for an invalid timezone', () => {
             expect(() => {
                 atemporal.setDefaultTimeZone('Mars/Olympus_Mons');
-            }).toThrow('Invalid time zone: Mars/Olympus_Mons');
+            }).toThrow(InvalidTimeZoneError);
         });
 
         it('should throw when accessing .datetime on an invalid instance', () => {
@@ -96,7 +97,7 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             expect(() => {
                 // This tests the error boundary within the `datetime` getter.
                 const dt = invalidDate.datetime;
-            }).toThrow('Cannot perform operations on an invalid Atemporal object.');
+            }).toThrow(InvalidAtemporalInstanceError);
         });
     });
 

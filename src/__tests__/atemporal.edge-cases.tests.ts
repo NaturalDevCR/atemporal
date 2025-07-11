@@ -1,5 +1,6 @@
 import atemporal from '../index';
 import { Temporal } from '@js-temporal/polyfill';
+import { InvalidAtemporalInstanceError } from '../errors';
 
 describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
 
@@ -94,8 +95,8 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
         });
 
         it('should throw an error when accessing .raw or .datetime', () => {
-            expect(() => invalidDate.raw).toThrow('Cannot perform operations on an invalid Atemporal object.');
-            expect(() => invalidDate.datetime).toThrow('Cannot perform operations on an invalid Atemporal object.');
+            expect(() => invalidDate.raw).toThrow(InvalidAtemporalInstanceError);
+            expect(() => invalidDate.datetime).toThrow(InvalidAtemporalInstanceError);
         });
     });
 
