@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.17](https://github.com/NaturalDevCR/atemporal/compare/v0.0.16...v0.0.17) (2025-07-11)
+
+
+### Bug Fixes
+
+* **package.json -> plugins missing:** Added missing plugins on the package.json for tsup, and availability ([09f625c](https://github.com/NaturalDevCR/atemporal/commit/09f625cfd398655c6a2a244262c1b89462774d75))
+
 ### [0.0.16](https://github.com/NaturalDevCR/atemporal/compare/v0.0.15...v0.0.16) (2025-07-11)
 
 
