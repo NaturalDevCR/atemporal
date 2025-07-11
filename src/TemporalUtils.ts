@@ -7,6 +7,9 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { DateInput, TimeUnit } from './types';
 
+// Variable to hold the start of the week setting. Default to 1 (Monday) for ISO 8601 compliance.
+let weekStart = 1;
+
 export class TemporalUtils {
     // Private static properties to hold the global default settings.
     private static _defaultTimeZone = 'UTC';
@@ -162,6 +165,24 @@ export class TemporalUtils {
      */
     static toDate(temporal: Temporal.ZonedDateTime): Date {
         return new Date(temporal.epochMilliseconds);
+    }
+
+    /**
+     * Sets the global start of the week.
+     * @param day - The day to set as the start of the week (0 for Sunday, 1 for Monday, etc.).
+     */
+    static setWeekStartsOn(day: 0 | 1 | 2 | 3 | 4 | 5 | 6): void {
+        if (day >= 0 && day <= 6) {
+            weekStart = day;
+        }
+    }
+
+    /**
+     * Gets the currently configured start of the week.
+     * @returns The start of the week (0 for Sunday, 1 for Monday, etc.).
+     */
+    static getWeekStartsOn(): number {
+        return weekStart;
     }
 
     /**

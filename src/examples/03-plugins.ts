@@ -12,11 +12,13 @@ import { TemporalWrapper } from '../TemporalWrapper';
 import relativeTimePlugin from '../plugins/relativeTime';
 import customParseFormatPlugin from '../plugins/customParseFormat';
 import durationHumanizerPlugin from '../plugins/durationHumanizer';
+import weekDayPlugin from '../plugins/weekDay';
 
 // Extend with plugins at the start of your application
 atemporal.extend(relativeTimePlugin);
 atemporal.extend(customParseFormatPlugin);
 atemporal.extend(durationHumanizerPlugin);
+atemporal.extend(weekDayPlugin);
 
 console.log('--- 3. Plugin Usage Examples ---');
 
@@ -49,3 +51,21 @@ const today = atemporal('2024-08-15');
 console.log(`Formatted with ordinal (en-US): "${today.format('Do [of] MMMM, YYYY')}"`);
 console.log(`Formatted with ordinal (es-ES): "${today.format('Do [de] MMMM [de] YYYY', 'es')}"`);
 console.log(`Current quarter: "${today.format('Qo [Quarter]')}"`);
+
+// --- WeekDay Plugin ---
+console.log('\n--- WeekDay Plugin ---');
+const aWednesday = atemporal('2024-08-14');
+console.log(`A Wednesday: ${aWednesday.format('dddd, YYYY-MM-DD')}`);
+
+// Default behavior (week starts on Monday)
+console.log(`Default start of week: ${aWednesday.startOf('week').format('dddd, YYYY-MM-DD')}`);
+
+// Change week to start on Sunday
+atemporal.setWeekStartsOn(0);
+console.log('\n>> Set week to start on Sunday (0)');
+console.log(`New start of week: ${aWednesday.startOf('week').format('dddd, YYYY-MM-DD')}`);
+console.log(`Day of week (0=Sun): ${aWednesday.weekday()}`); // Should be 3
+
+// Reset for any subsequent examples if needed
+atemporal.setWeekStartsOn(1);
+console.log('\n>> Reset week to start on Monday (1)');
