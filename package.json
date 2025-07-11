@@ -40,6 +40,46 @@
         "types": "./dist/plugins/customParseFormat.d.ts",
         "default": "./dist/plugins/customParseFormat.js"
       }
+    },
+    "./plugins/advancedFormat": {
+      "import": {
+        "types": "./dist/plugins/advancedFormat.d.ts",
+        "default": "./dist/plugins/advancedFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/advancedFormat.d.ts",
+        "default": "./dist/plugins/advancedFormat.js"
+      }
+    },
+    "./plugins/durationHumanizer": {
+      "import": {
+        "types": "./dist/plugins/durationHumanizer.d.ts",
+        "default": "./dist/plugins/durationHumanizer.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/durationHumanizer.d.ts",
+        "default": "./dist/plugins/durationHumanizer.js"
+      }
+    },
+    "./plugins/firebaseTimestamp": {
+      "import": {
+        "types": "./dist/plugins/firebaseTimestamp.d.ts",
+        "default": "./dist/plugins/firebaseTimestamp.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/firebaseTimestamp.d.ts",
+        "default": "./dist/plugins/firebaseTimestamp.js"
+      }
+    },
+    "./plugins/weekDay": {
+      "import": {
+        "types": "./dist/plugins/weekDay.d.ts",
+        "default": "./dist/plugins/weekDay.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/weekDay.d.ts",
+        "default": "./dist/plugins/weekDay.js"
+      }
     }
   },
   "scripts": {
@@ -52,7 +92,11 @@
     "entry": [
       "src/index.ts",
       "src/plugins/relativeTime.ts",
-      "src/plugins/customParseFormat.ts"
+      "src/plugins/advancedFormat.ts",
+      "src/plugins/customParseFormat.ts",
+      "src/plugins/durationHumanizer.ts",
+      "src/plugins/firebaseTimestamp.ts",
+      "src/plugins/weekDay.ts"
     ],
     "format": [
       "cjs",
