@@ -124,10 +124,10 @@ export class TemporalUtils {
 
         // Handle Firebase Timestamp-like objects: { seconds, nanoseconds }
         // This check is specific and must come before the generic object check.
-        if (typeof input === 'object' && input !== null && 'seconds' in input && 'nanoseconds' in input) {
+        if (typeof input === 'object' && 'seconds' in input && 'nanoseconds' in input && Object.keys(input).length === 2) {
             try {
                 const { seconds, nanoseconds } = input as { seconds: number; nanoseconds: number };
-                // FIX: Use `fromEpochNanoseconds` with BigInt for precision and compatibility.
+                // Use `fromEpochNanoseconds` with BigInt for precision and compatibility.
                 const totalNanoseconds = BigInt(seconds) * 1_000_000_000n + BigInt(nanoseconds);
                 const instant = Temporal.Instant.fromEpochNanoseconds(totalNanoseconds);
                 return instant.toZonedDateTimeISO(tz);

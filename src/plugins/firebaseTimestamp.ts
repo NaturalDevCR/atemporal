@@ -1,16 +1,16 @@
 /**
  * @file This plugin adds interoperability with Firebase Timestamps.
- * It allows creating an atemporal instance from a Firebase Timestamp object
- * and converting an atemporal instance back into one.
+ * It enhances atemporal to parse Firebase Timestamp objects directly and
+ * adds a method to convert atemporal instances back into them.
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
-import type { AtemporalFactory, Plugin } from '../types';
+import type { Plugin } from '../types';
 
 /**
  * Represents the structure of a Firebase Timestamp object.
  */
-interface FirebaseTimestamp {
+export interface FirebaseTimestamp {
     seconds: number;
     nanoseconds: number;
 }
@@ -22,32 +22,28 @@ declare module '../TemporalWrapper' {
          * Converts the atemporal instance to a Firebase-compatible Timestamp object.
          * @returns An object with `seconds` and `nanoseconds` properties, or `null` if the instance is invalid.
          * @example
-         * atemporal().toFirebaseTimestamp();
+         * atemporal('2023-01-01T00:00:00.500Z').toFirebaseTimestamp();
          * // => { seconds: 1672531200, nanoseconds: 500000000 }
          */
         toFirebaseTimestamp(): FirebaseTimestamp | null;
     }
 }
 
-const firebaseTimestampPlugin: Plugin = (Atemporal: typeof TemporalWrapper, atemporal: AtemporalFactory) => {
+const firebaseTimestampPlugin: Plugin = (Atemporal) => {
     Atemporal.prototype.toFirebaseTimestamp = function (this: TemporalWrapper): FirebaseTimestamp | null {
         if (!this.isValid()) {
             return null;
         }
 
-        // --- START OF FIX ---
-        // Correctly reconstruct the total nanoseconds within the second by combining
-        // all sub-second components from the underlying Temporal object.
-        const nanosecondsWithinSecond =
-            this.raw.millisecond * 1_000_000 +
-            this.raw.microsecond * 1_000 +
-            this.raw.nanosecond;
+        // Use the underlying `Temporal.Instant` for the most direct and robust conversion.
+        // `epochSeconds` gives the whole seconds, and `epochNanoseconds` gives the remainder.
+        const instant = this.datetime.toInstant();
+        const NANO_IN_SECOND = 1_000_000_000n;
 
         return {
-            seconds: Math.floor(this.raw.epochMilliseconds / 1000),
-            nanoseconds: nanosecondsWithinSecond,
+            seconds: Number(instant.epochNanoseconds / NANO_IN_SECOND),
+            nanoseconds: Number(instant.epochNanoseconds % NANO_IN_SECOND),
         };
-        // --- END OF FIX ---
     };
 };
 

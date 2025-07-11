@@ -134,6 +134,12 @@ const clone = atemporal(original);
 
 // Specify a time zone on creation
 atemporal('2025-01-01T12:00:00', 'America/New_York');
+
+// 1. From a Firestore Timestamp to atemporal (no plugin needed, but good to show)
+const firestoreTs = { seconds: 1672531200, nanoseconds: 500000000 };
+const date = atemporal(firestoreTs);
+console.log(date.toString());
+// => "2023-01-01T00:00:00.500Z"
 ```
 
 ### Manipulation
@@ -379,6 +385,21 @@ atemporal.extend(durationHumanizer);
 const d = { years: 2, months: 3, days: 5 };
 atemporal.humanize(d); // "2 years, 3 months, and 5 days"
 atemporal.humanize(d, { locale: 'es' }); // "2 años, 3 meses y 5 días"
+```
+
+### firebaseTimestamp
+
+The plugin adds the .toFirebaseTimestamp() method to convert an atemporal instance back into a Firebase-compatible object.
+
+```ts
+import firebaseTimestamp from 'atemporal/plugins/firebaseTimestamp';
+atemporal.extend(firebaseTimestamp);
+
+const myDate = atemporal('2025-01-01T12:00:00.500Z');
+const ts = myDate.toFirebaseTimestamp();
+
+console.log(ts);
+// => { seconds: 1735732800, nanoseconds: 500000000 }
 ```
 
 ---
