@@ -55,7 +55,7 @@ function getDurationUnit(unit: TimeUnit): string {
     }
 }
 
-const tokenRegex = /\[([^\]]+)]|zzzz|zzz|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
+const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|zzzz|zzz|z/g;
 /**
  * Creates and caches a map of formatting tokens to their corresponding string values.
  * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>
@@ -66,49 +66,97 @@ const formatReplacementsCache = new WeakMap<TemporalWrapper, Map<string, FormatT
 
 function createTokenReplacements(instance: TemporalWrapper, locale?: string): FormatTokenMap {
     const currentLocale = locale || TemporalUtils.getDefaultLocale();
-
-    // Check for the instance in the outer cache
     const localeCache = formatReplacementsCache.get(instance);
 
-    // If we have a cache for this instance, check for the specific locale
-    if (localeCache) {
-        const cachedReplacements = localeCache.get(currentLocale);
-        if (cachedReplacements) {
-            return cachedReplacements;
-        }
+    // Return from cache if available for this instance and locale.
+    if (localeCache?.has(currentLocale)) {
+        return localeCache.get(currentLocale)!;
     }
 
-    // If we've reached here, no valid cache exists, so we create one.
+    // --- Token Implementations ---
+    const h12 = instance.hour % 12 === 0 ? 12 : instance.hour % 12;
+
     const replacements: FormatTokenMap = {
+        // --- Year ---
+        /** Four-digit year (e.g., 2024) */
         YYYY: () => instance.year.toString(),
+        /** Two-digit year (e.g., 24) */
         YY: () => instance.year.toString().slice(-2),
+
+        // --- Month ---
+        /** The full month name (e.g., "January") */
+        MMMM: () => instance.raw.toLocaleString(currentLocale, { month: 'long' }),
+        /** The abbreviated month name (e.g., "Jan") */
+        MMM: () => instance.raw.toLocaleString(currentLocale, { month: 'short' }),
+        /** The month, 2-digits (e.g., 01-12) */
         MM: () => instance.month.toString().padStart(2, '0'),
+        /** The month, 1-12 */
         M: () => instance.month.toString(),
+
+        // --- Day of Month ---
+        /** The day of the month, 2-digits (e.g., 01-31) */
         DD: () => instance.day.toString().padStart(2, '0'),
+        /** The day of the month, 1-31 */
         D: () => instance.day.toString(),
-        HH: () => instance.hour.toString().padStart(2, '0'),
-        H: () => instance.hour.toString(),
-        mm: () => instance.minute.toString().padStart(2, '0'),
-        m: () => instance.minute.toString(),
-        ss: () => instance.second.toString().padStart(2, '0'),
-        s: () => instance.second.toString(),
-        SSS: () => instance.millisecond.toString().padStart(3, '0'),
+
+        // --- Day of Week ---
+        /** The name of the day of the week (e.g., "Sunday") */
         dddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'long' }),
+        /** The short name of the day of the week (e.g., "Sun") */
         ddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'short' }),
-        // --- API de Tokens de Zona Horaria Mejorada ---
-        Z: () => instance.raw.offset, // e.g., +01:00
-        ZZ: () => instance.raw.offset.replace(':', ''), // e.g., +0100
-        z: () => instance.raw.timeZoneId, // e.g., America/New_York
-        zzz: () => TemporalUtils.getShortTimeZoneName(instance.raw, currentLocale), // e.g., EST, GMT-5
-        zzzz: () => TemporalUtils.getLongTimeZoneName(instance.raw, currentLocale), // e.g., Eastern Standard Time
+        /** The min name of the day of the week (e.g., "Su") */
+        dd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'narrow' }),
+        /** The day of the week, with Sunday as 0 (e.g., 0-6) */
+        d: () => (instance.raw.dayOfWeek % 7).toString(),
+
+        // --- Hour ---
+        /** The hour, 2-digits (00-23) */
+        HH: () => instance.hour.toString().padStart(2, '0'),
+        /** The hour (0-23) */
+        H: () => instance.hour.toString(),
+        /** The hour, 12-hour clock, 2-digits (01-12) */
+        hh: () => h12.toString().padStart(2, '0'),
+        /** The hour, 12-hour clock (1-12) */
+        h: () => h12.toString(),
+
+        // --- Minute ---
+        /** The minute, 2-digits (00-59) */
+        mm: () => instance.minute.toString().padStart(2, '0'),
+        /** The minute (0-59) */
+        m: () => instance.minute.toString(),
+
+        // --- Second ---
+        /** The second, 2-digits (00-59) */
+        ss: () => instance.second.toString().padStart(2, '0'),
+        /** The second (0-59) */
+        s: () => instance.second.toString(),
+
+        // --- Millisecond ---
+        /** The millisecond, 3-digits (000-999) */
+        SSS: () => instance.millisecond.toString().padStart(3, '0'),
+
+        // --- AM/PM ---
+        /** AM PM */
+        A: () => (instance.hour < 12 ? 'AM' : 'PM'),
+        /** am pm */
+        a: () => (instance.hour < 12 ? 'am' : 'pm'),
+
+        // --- Timezone ---
+        /** The offset from UTC, ±HH:mm (e.g., +05:00) */
+        Z: () => instance.raw.offset,
+        /** The offset from UTC, ±HHmm (e.g., +0500) */
+        ZZ: () => instance.raw.offset.replace(':', ''),
+        /** The IANA time zone name (e.g., "America/New_York") */
+        z: () => instance.raw.timeZoneId,
+        /** The short localized time zone name (e.g., "EST") */
+        zzz: () => TemporalUtils.getShortTimeZoneName(instance.raw, currentLocale),
+        /** The long localized time zone name (e.g., "Eastern Standard Time") */
+        zzzz: () => TemporalUtils.getLongTimeZoneName(instance.raw, currentLocale),
     };
 
-    // Update the cache
     if (!localeCache) {
-        // If no locale map existed for this instance, create one
         formatReplacementsCache.set(instance, new Map([[currentLocale, replacements]]));
     } else {
-        // Otherwise, just add the new locale to the existing map
         localeCache.set(currentLocale, replacements);
     }
 
@@ -456,6 +504,56 @@ export class TemporalWrapper {
      * @param localeCode - Optional locale code (e.g., 'es-CR').
      */
     format(options?: Intl.DateTimeFormatOptions, localeCode?: string): string;
+    /**
+     * Formats the date using a Day.js-style token string or native Intl options.
+     *
+     * @param {string | Intl.DateTimeFormatOptions} [templateOrOptions] - The format string or options object.
+     * @param {string} [localeCode] - Optional IANA locale string (e.g., 'es-CR').
+     * @returns {string} The formatted date string.
+     *
+     * @example
+     * // Token-based formatting
+     * atemporal().format('YYYY-MM-DD hh:mm:ss A');
+     * // => "2024-07-16 03:30:15 PM"
+     *
+     * @example
+     * // Intl.DateTimeFormat for advanced localization
+     * atemporal().format({ dateStyle: 'full', timeStyle: 'medium' }, 'es');
+     * // => "martes, 16 de julio de 2024, 15:30:15"
+     *
+     * @description
+     * ### Supported Format Tokens
+     * | Token  | Output Example        | Description                                  |
+     * |--------|-----------------------|----------------------------------------------|
+     * | `YYYY` | `2024`                | 4-digit year                                 |
+     * | `YY`   | `24`                  | 2-digit year                                 |
+     * | `MMMM` | `January`             | The full month name                          |
+     * | `MMM`  | `Jan`                 | The abbreviated month name                   |
+     * | `MM`   | `01`                  | The month, 2-digits (01-12)                  |
+     * | `M`    | `1`                   | The month (1-12)                             |
+     * | `DD`   | `09`                  | The day of the month, 2-digits (01-31)       |
+     * | `D`    | `9`                   | The day of the month (1-31)                  |
+     * | `dddd` | `Sunday`              | The name of the day of the week              |
+     * | `ddd`  | `Sun`                 | The short name of the day of the week        |
+     * | `dd`   | `Su`                  | The min name of the day of the week          |
+     * | `d`    | `0`                   | The day of the week, Sunday as 0 (0-6)       |
+     * | `HH`   | `15`                  | The hour, 2-digits (00-23)                   |
+     * | `H`    | `15`                  | The hour (0-23)                              |
+     * | `hh`   | `03`                  | The hour, 12-hour clock, 2-digits (01-12)    |
+     * | `h`    | `3`                   | The hour, 12-hour clock (1-12)               |
+     * | `mm`   | `05`                  | The minute, 2-digits (00-59)                 |
+     * | `m`    | `5`                   | The minute (0-59)                            |
+     * | `ss`   | `02`                  | The second, 2-digits (00-59)                 |
+     * | `s`    | `2`                   | The second (0-59)                            |
+     * | `SSS`  | `123`                 | The millisecond, 3-digits (000-999)          |
+     * | `A`    | `PM`                  | AM PM                                        |
+     * | `a`    | `pm`                  | am pm                                        |
+     * | `Z`    | `+05:30`              | The offset from UTC, ±HH:mm                  |
+     * | `ZZ`   | `+0530`               | The offset from UTC, ±HHmm                   |
+     * | `z`    | `America/New_York`    | IANA time zone name (Atemporal-specific)     |
+     * | `zzz`  | `EST`                 | Short localized time zone name (Atemporal-specific) |
+     * | `zzzz` | `Eastern Standard Time` | Long localized time zone name (Atemporal-specific) |
+     */
     format(templateOrOptions?: string | Intl.DateTimeFormatOptions, localeCode?: string): string {
         if (!this.isValid()) {
             return 'Invalid Date';

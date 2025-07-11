@@ -1,13 +1,12 @@
 /**
- * @file This plugin extends the format method to support advanced tokens,
- * including ordinal numbers and full month/day names.
+ * @file This plugin extends the format method to support advanced ordinal tokens.
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
 import { TemporalUtils } from '../TemporalUtils';
 import type { AtemporalFactory, Plugin } from '../types';
 
-// Augment the documentation for the format method to include the new tokens.
+// Augment the JSDoc to reflect only the tokens this plugin provides.
 declare module '../TemporalWrapper' {
     interface TemporalWrapper {
         /**
@@ -15,20 +14,20 @@ declare module '../TemporalWrapper' {
          * This method is extended by the advancedFormat plugin to support:
          * - `Do`: Day of month with ordinal (e.g., "1st", "22nd")
          * - `Qo`: Quarter of year with ordinal (e.g., "1st", "3rd")
-         * - `MMMM`: Full month name (e.g., "January")
-         * - `MMM`: Short month name (e.g., "Jan")
          */
         format(templateOrOptions?: string | Intl.DateTimeFormatOptions, localeCode?: string): string;
     }
 }
 
 /**
- * A map of locale-specific ordinal suffixes.
+ * A map of locale-specific ordinal suffixes for common languages.
+ * @internal
  */
 const ordinalSuffixes: { [locale: string]: { [rule: string]: string } } = {
     en: { one: 'st', two: 'nd', few: 'rd', other: 'th' },
     es: { one: 'º', other: 'º' },
     fr: { one: 'er', other: 'e' },
+    // Add other languages as needed
 };
 
 /**
@@ -37,25 +36,24 @@ const ordinalSuffixes: { [locale: string]: { [rule: string]: string } } = {
  */
 function getOrdinal(num: number, locale: string): string {
     try {
+        // Use Intl.PluralRules for robust ordinal logic.
         const pr = new Intl.PluralRules(locale, { type: 'ordinal' });
         const rule = pr.select(num);
-        const lang = locale.split('-')[0];
-        const suffix = ordinalSuffixes[lang]?.[rule] || '';
+        const lang = locale.split('-')[0]; // Use base language (e.g., 'en' from 'en-US')
+        const suffix = ordinalSuffixes[lang]?.[rule] || ''; // Fallback to empty string
         return `${num}${suffix}`;
     } catch (e) {
-        // Fallback for unsupported locales or errors
+        // Fallback for unsupported locales or errors.
         return num.toString();
     }
 }
 
-const advancedFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
-    // Save the original format method before replacing it.
+const advancedFormatPlugin: Plugin = (Atemporal) => {
+    // Save the original format method from the prototype before we wrap it.
     const originalFormat = Atemporal.prototype.format;
 
-    // --- START OF FIX ---
-    // This new regex now includes all the tokens this plugin is responsible for.
-    const advancedTokenRegex = /MMMM|MMM|Qo|Do/g;
-    // --- END OF FIX ---
+    // This regex now *only* looks for the tokens this plugin is responsible for.
+    const advancedTokenRegex = /Qo|Do/g;
 
     // Replace the original .format() with our new, extended version.
     Atemporal.prototype.format = function (
@@ -63,40 +61,34 @@ const advancedFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) =>
         templateOrOptions?: string | Intl.DateTimeFormatOptions,
         localeCode?: string
     ): string {
+        // If the input isn't a string template, or the instance is invalid,
+        // just call the original method and exit.
         if (!this.isValid() || typeof templateOrOptions !== 'string') {
             return originalFormat.apply(this, arguments as any);
         }
 
-        // --- START OF FIX ---
-        // Test if the format string contains any of our advanced tokens.
-        // We must reset the regex index since we're using a global regex.
-        advancedTokenRegex.lastIndex = 0;
-        if (!advancedTokenRegex.test(templateOrOptions)) {
-            return originalFormat.apply(this, arguments as any);
-        }
-        // --- END OF FIX ---
-
         const formatString = templateOrOptions;
         const locale = localeCode || TemporalUtils.getDefaultLocale();
 
-        // Create a map of functions to handle each advanced token.
+        // Create a map of functions to handle this plugin's specific tokens.
         const replacements = {
             Do: () => getOrdinal(this.day, locale),
             Qo: () => getOrdinal(this.quarter(), locale),
-            MMMM: () => this.raw.toLocaleString(locale, { month: 'long' }),
-            MMM: () => this.raw.toLocaleString(locale, { month: 'short' }),
         };
 
-        // Replace all advanced tokens in one go.
+        // Replace all advanced tokens, wrapping the result in brackets
+        // so the core formatter treats them as literals.
         const partiallyFormatted = formatString.replace(advancedTokenRegex, (match) => {
-            // The type assertion is safe because the regex only matches keys of `replacements`.
-            const replacementValue = (replacements as any)[match]();
-
-            return `[${replacementValue}]`;
+            const key = match as keyof typeof replacements;
+            if (key in replacements) {
+                // Wrap the result in brackets to protect it from the next formatting step.
+                return `[${replacements[key]()}]`;
+            }
+            return match;
         });
 
-        // Then, call the original format method with the partially formatted string
-        // to let it handle all the standard tokens (YYYY, MM, etc.).
+        // **Crucially, call the original format method** with the partially processed string.
+        // This lets the core handle all other tokens (YYYY, MM, a, etc.).
         return originalFormat.call(this, partiallyFormatted, localeCode);
     };
 };

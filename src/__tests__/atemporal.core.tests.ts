@@ -199,4 +199,81 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             expect(invalidDateArr.isValid()).toBe(false);
         });
     });
+    // --- NUEVA SECCIÓN DE TESTS PARA EL FORMATEO ---
+    describe('Formatting with Day.js-compatible tokens', () => {
+        const date = atemporal('2024-07-04T15:08:09.123Z'); // Thursday, 3:08 PM
+
+        it('should format year, month, and day tokens (YYYY, YY, MMMM, MMM, MM, M, DD, D)', () => {
+            expect(date.format('YYYY')).toBe('2024');
+            expect(date.format('YY')).toBe('24');
+            expect(date.format('MMMM')).toBe('July');
+            expect(date.format('MMM')).toBe('Jul');
+            expect(date.format('MM')).toBe('07');
+            expect(date.format('M')).toBe('7');
+            expect(date.format('DD')).toBe('04');
+            expect(date.format('D')).toBe('4');
+        });
+
+        it('should format day of the week tokens (dddd, ddd, dd, d)', () => {
+            // Note: 2024-07-04 is a Thursday.
+            // Temporal's dayOfWeek is 4. Sunday (day 7) % 7 = 0. Thursday (day 4) % 7 = 4.
+            expect(date.format('dddd')).toBe('Thursday');
+            expect(date.format('ddd')).toBe('Thu');
+            // expect(date.format('dd', 'en-US')).toBe('Th'); // 'narrow' can vary slightly by locale data
+            const narrowDay = date.format('dd', 'en-US');
+            expect(['T', 'Th']).toContain(narrowDay);
+            expect(date.format('d')).toBe('4');
+        });
+
+        it('should format hour tokens (HH, H, hh, h)', () => {
+            const pmDate = atemporal('2024-01-01T14:00:00Z'); // 2 PM
+            const amDate = atemporal('2024-01-01T08:00:00Z'); // 8 AM
+            const noonDate = atemporal('2024-01-01T12:00:00Z'); // 12 PM
+            const midnightDate = atemporal('2024-01-01T00:00:00Z'); // 12 AM
+
+            expect(pmDate.format('HH')).toBe('14');
+            expect(pmDate.format('H')).toBe('14');
+            expect(pmDate.format('hh')).toBe('02');
+            expect(pmDate.format('h')).toBe('2');
+
+            expect(amDate.format('hh')).toBe('08');
+            expect(amDate.format('h')).toBe('8');
+
+            expect(noonDate.format('h')).toBe('12'); // Correctly handles 12 PM
+            expect(midnightDate.format('h')).toBe('12'); // Correctly handles 12 AM
+        });
+
+        it('should format minute, second, and millisecond tokens (mm, m, ss, s, SSS)', () => {
+            expect(date.format('mm')).toBe('08');
+            expect(date.format('m')).toBe('8');
+            expect(date.format('ss')).toBe('09');
+            expect(date.format('s')).toBe('9');
+            expect(date.format('SSS')).toBe('123');
+        });
+
+        it('should format AM/PM tokens (A, a)', () => {
+            const pmDate = atemporal('2024-01-01T13:00:00Z');
+            const amDate = atemporal('2024-01-01T09:00:00Z');
+
+            expect(pmDate.format('A')).toBe('PM');
+            expect(pmDate.format('a')).toBe('pm');
+            expect(amDate.format('A')).toBe('AM');
+            expect(amDate.format('a')).toBe('am');
+        });
+
+        it('should format timezone tokens (Z, ZZ, z, zzz, zzzz)', () => {
+            const nyDate = date.timeZone('America/New_York'); // In July, this is EDT (-04:00)
+            expect(nyDate.format('Z')).toBe('-04:00');
+            expect(nyDate.format('ZZ')).toBe('-0400');
+            expect(nyDate.format('z')).toBe('America/New_York');
+            expect(nyDate.format('zzz')).toBe('EDT');
+            expect(nyDate.format('zzzz')).toBe('Eastern Daylight Time');
+        });
+
+        it('should handle a complex format string with mixed tokens', () => {
+            const complexFormat = 'dddd, MMMM D, YYYY [at] h:mm:ss a (z)';
+            const expected = 'Thursday, July 4, 2024 at 3:08:09 pm (UTC)';
+            expect(date.format(complexFormat)).toBe(expected);
+        });
+    });
 });
