@@ -370,6 +370,11 @@ export class TemporalWrapper {
         if (!this.isValid()) return 'Invalid Date';
         return this.datetime.toLocaleString(TemporalUtils.getDefaultLocale(), { weekday: 'long' });
     }
+    /** The IANA time zone identifier (e.g., "America/New_York"). */
+    get timeZoneName(): string {
+        if (!this.isValid()) return 'Invalid TimeZone';
+        return this.datetime.timeZoneId;
+    }
     /** The hour of the day (0-23). */
     get hour(): number { return this.isValid() ? this.datetime.hour : NaN; }
     /** The minute of the hour (0-59). */

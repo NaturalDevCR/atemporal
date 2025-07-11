@@ -2,9 +2,34 @@ import type { Temporal } from '@js-temporal/polyfill';
 import type { TemporalWrapper } from './TemporalWrapper';
 
 /**
- * Represents the various types of input that can be parsed into an atemporal instance.
+ * Represents a plain object that can be used to construct a date-time.
+ * This makes the API more flexible, similar to other date libraries.
  */
-export type DateInput = string | number | Date | Temporal.ZonedDateTime | Temporal.PlainDateTime | TemporalWrapper;
+export interface PlainDateTimeObject {
+    year: number;
+    month?: number;
+    day?: number;
+    hour?: number;
+    minute?: number;
+    second?: number;
+    millisecond?: number;
+}
+
+/**
+ * Represents the various types of input that can be parsed into an atemporal instance.
+ * Now includes support for arrays and plain objects.
+ */
+export type DateInput =
+    | string
+    | number
+    | Date
+    | Temporal.ZonedDateTime
+    | Temporal.PlainDateTime
+    | TemporalWrapper
+    | PlainDateTimeObject // <-- Añadido
+    | number[]            // <-- Añadido
+    | undefined
+    | null;
 
 /**
  * Defines the units of time that can be used for durations and differences.

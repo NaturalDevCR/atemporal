@@ -161,4 +161,41 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             expect(d.subtract(10, 'seconds').second).toBe(20);
         });
     });
+
+    describe('Atemporal: Creation from various inputs', () => {
+        it('should create a date from an array of numbers [Y, M, D]', () => {
+            const date = atemporal([2024, 8, 15]);
+            expect(date.isValid()).toBe(true);
+            expect(date.format('YYYY-MM-DD')).toBe('2024-08-15');
+        });
+
+        it('should create a date and time from a full array', () => {
+            const date = atemporal([2024, 8, 15, 10, 30, 25]);
+            expect(date.format('YYYY-MM-DD HH:mm:ss')).toBe('2024-08-15 10:30:25');
+        });
+
+        it('should create a date from a plain object {year, month, day}', () => {
+            const date = atemporal({ year: 2023, month: 11, day: 20 });
+            expect(date.isValid()).toBe(true);
+            expect(date.format('YYYY-MM-DD')).toBe('2023-11-20');
+        });
+
+        it('should create a date and time from a plain object', () => {
+            const date = atemporal({ year: 2023, month: 11, day: 20, hour: 22, minute: 5 });
+            expect(date.format('YYYY-MM-DD HH:mm')).toBe('2023-11-20 22:05');
+        });
+
+        it('should respect the timezone when creating from an object', () => {
+            const date = atemporal({ year: 2024, month: 1, day: 1 }, 'America/New_York');
+            expect(date.timeZoneName).toBe('America/New_York');
+        });
+
+        it('should handle invalid array/object inputs gracefully by creating an invalid instance', () => {
+            const invalidDateObj = atemporal({ year: 2024, month: 13, day: 1 });
+            expect(invalidDateObj.isValid()).toBe(false);
+
+            const invalidDateArr = atemporal([2024, 2, 30]); // February 30th does not exist
+            expect(invalidDateArr.isValid()).toBe(false);
+        });
+    });
 });

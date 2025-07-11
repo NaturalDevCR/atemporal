@@ -5,7 +5,7 @@
  */
 
 import { Temporal } from '@js-temporal/polyfill';
-import type { DateInput, TimeUnit } from './types';
+import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
 
 // Variable to hold the start of the week setting. Default to 1 (Monday) for ISO 8601 compliance.
 let weekStart = 1;
@@ -120,6 +120,32 @@ export class TemporalUtils {
         if (input instanceof Date) {
             return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(tz);
         }
+
+        // Handle Array inputs: [YYYY, MM, DD, hh, mm, ss]
+        if (Array.isArray(input)) {
+            const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, millisecond = 0] = input;
+            try {
+                // --- FIX: Add overflow: 'reject' to enforce strict validation ---
+                const pdt = Temporal.PlainDateTime.from({ year, month, day, hour, minute, second, millisecond }, { overflow: 'reject' });
+                return pdt.toZonedDateTime(tz);
+            } catch (e) {
+                throw new Error(`Invalid date array: [${input.join(', ')}]`);
+            }
+        }
+
+        // Handle Object inputs: { year: YYYY, month: MM, ... }
+        // This check is carefully placed to not catch other object types like Date or our wrapper.
+        if (typeof input === 'object' && 'year' in input) {
+            try {
+                // --- FIX: Add overflow: 'reject' to enforce strict validation ---
+                const pdt = Temporal.PlainDateTime.from(input as PlainDateTimeObject, { overflow: 'reject' });
+                return pdt.toZonedDateTime(tz);
+            } catch (e) {
+                throw new Error(`Invalid date object: ${JSON.stringify(input)}`);
+            }
+        }
+
+
 
         // Handle string inputs with a more robust strategy
         if (typeof input === 'string') {

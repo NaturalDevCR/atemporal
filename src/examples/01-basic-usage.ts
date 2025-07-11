@@ -20,6 +20,15 @@ const specificDate: TemporalWrapper = atemporal('2024-07-26T15:30:00Z');
 const fromJsDate: TemporalWrapper = atemporal(new Date());
 console.log('Current time:', now.toString());
 console.log('From ISO string:', specificDate.toString());
+// --- NEW: From an Array ---
+const fromArray = atemporal([2025, 1, 20, 14, 0]); // [Y, M, D, H, m]
+console.log(`From Array [Y,M,D,H,m]:  ${fromArray.format('YYYY-MM-DD HH:mm')}`);
+
+// --- NEW: From a Plain Object ---
+const fromObject = atemporal({ year: 2025, month: 6, day: 10 });
+console.log(`From Object {y,m,d}:     ${fromObject.format('YYYY-MM-DD')}`);
+
+
 
 // --- Manipulation (Immutable) ---
 console.log('\n--- Date & Time Manipulation ---');
