@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.12](https://github.com/NaturalDevCR/atemporal/compare/v0.0.11...v0.0.12) (2025-07-11)
+
+
+### Features
+
+* **core:** allow instance creation from arrays and objects ([2725da4](https://github.com/NaturalDevCR/atemporal/commit/2725da493f50441a583f8fdb7093f792324fa62a))
+* **plugin:** add advancedFormat plugin for ordinals and long-form dates ([c30786f](https://github.com/NaturalDevCR/atemporal/commit/c30786f52324957e8768c4cc1e538221fe74ad5d))
+* **plugin:** add weekDay plugin for customizable week start ([3a9c0aa](https://github.com/NaturalDevCR/atemporal/commit/3a9c0aa07e78b2d95eb494ba1475ce059992cc1f))
+
 ### [0.0.11](https://github.com/NaturalDevCR/atemporal/compare/v0.0.10...v0.0.11) (2025-07-11)
 
 ### [0.0.10](https://github.com/NaturalDevCR/atemporal/compare/v0.0.9...v0.0.10) (2025-07-11)
