@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.16](https://github.com/NaturalDevCR/atemporal/compare/v0.0.15...v0.0.16) (2025-07-11)
+
+
+### Features
+
+* **core:** Add Firebase Timestamp support and improve parsing ([64b184c](https://github.com/NaturalDevCR/atemporal/commit/64b184c9ca3e3bc65298a4adf0237ddbdf730ed5))
+
 ### [0.0.15](https://github.com/NaturalDevCR/atemporal/compare/v0.0.14...v0.0.15) (2025-07-11)
 
 
