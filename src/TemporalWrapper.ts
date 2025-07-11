@@ -288,6 +288,10 @@ export class TemporalWrapper {
     get quarter(): number { return this.isValid() ? Math.ceil(this.datetime.month / 3) : NaN; }
     /** The ISO week number of the year (1-53). */
     get weekOfYear(): number { return this.isValid() ? this.datetime.weekOfYear! : NaN; }
+    get daysInMonth(): number {
+        if (!this.isValid()) return NaN;
+        return this.datetime.daysInMonth;
+    }
 
     // --- Formatters ---
     /**

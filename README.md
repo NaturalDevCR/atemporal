@@ -29,6 +29,7 @@ This is a work in progress, and is in a very alpha state, please don't use it in
   - [Manipulation](#manipulation)
   - [Formatting](#formatting)
   - [Comparison](#comparison)
+  - [Calculating Differences](#diff)
 - [Localization and Time Zones](#-localization-and-time-zones)
 - [Plugins](#-plugins)
 - [API Summary](#-api-summary)
@@ -99,9 +100,10 @@ atemporal().startOf('week');         // start of week
 atemporal().endOf('month');          // end of month
 ```
 
+
 ### Formatting
 
-### Token-based (Day.js style)
+#### Token-based (Day.js style)
 
 The `format()` method accepts a string of tokens to display date and time parts.
 
@@ -119,10 +121,17 @@ The `format()` method accepts a string of tokens to display date and time parts.
 | `m`    | `5`                   | Minute (0-59)                |
 | `ss`   | `02`                  | Second, 2-digits (00-59)     |
 | `s`    | `2`                   | Second (0-59)                |
+| `SSS`  | `123`                 | Millisecond, 3-digits        |
 | `dddd` | `Wednesday`           | Full day of the week name    |
 | `ddd`  | `Wed`                 | Short day of the week name   |
 | `Z`    | `+02:00`              | Time zone offset with colon  |
 | `ZZ`   | `+0200`               | Time zone offset without colon |
+| `z`    | `America/New_York`    | IANA time zone name          |
+| `zzz`  | `EST`                 | Short localized time zone name |
+| `zzzz` | `Eastern Standard Time` | Long localized time zone name |
+
+
+*(Note: Characters in brackets `[]` are displayed literally.)*
 
 
 *(Note: Characters in brackets `[]` are displayed literally.)*

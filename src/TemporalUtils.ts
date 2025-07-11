@@ -7,7 +7,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import type { DateInput, TimeUnit } from './types';
 
-
 export class TemporalUtils {
     // Private static properties to hold the global default settings.
     private static _defaultTimeZone = 'UTC';
