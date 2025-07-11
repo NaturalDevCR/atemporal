@@ -16,6 +16,14 @@ export interface PlainDateTimeObject {
 }
 
 /**
+ * Represents the structure of a Firebase Timestamp object.
+ */
+export interface FirebaseTimestampLike {
+    seconds: number;
+    nanoseconds: number;
+}
+
+/**
  * Represents the various types of input that can be parsed into an atemporal instance.
  * Now includes support for arrays and plain objects.
  */
@@ -26,8 +34,9 @@ export type DateInput =
     | Temporal.ZonedDateTime
     | Temporal.PlainDateTime
     | TemporalWrapper
-    | PlainDateTimeObject // <-- Añadido
-    | number[]            // <-- Añadido
+    | PlainDateTimeObject
+    | number[]
+    | FirebaseTimestampLike
     | undefined
     | null;
 

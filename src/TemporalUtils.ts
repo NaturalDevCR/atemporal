@@ -122,6 +122,20 @@ export class TemporalUtils {
             return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(tz);
         }
 
+        // Handle Firebase Timestamp-like objects: { seconds, nanoseconds }
+        // This check is specific and must come before the generic object check.
+        if (typeof input === 'object' && input !== null && 'seconds' in input && 'nanoseconds' in input) {
+            try {
+                const { seconds, nanoseconds } = input as { seconds: number; nanoseconds: number };
+                // FIX: Use `fromEpochNanoseconds` with BigInt for precision and compatibility.
+                const totalNanoseconds = BigInt(seconds) * 1_000_000_000n + BigInt(nanoseconds);
+                const instant = Temporal.Instant.fromEpochNanoseconds(totalNanoseconds);
+                return instant.toZonedDateTimeISO(tz);
+            } catch (e) {
+                throw new InvalidDateError(`Invalid Firebase Timestamp object: ${JSON.stringify(input)}`);
+            }
+        }
+
         // Handle Array inputs: [YYYY, MM, DD, hh, mm, ss]
         if (Array.isArray(input)) {
             const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0, millisecond = 0] = input;

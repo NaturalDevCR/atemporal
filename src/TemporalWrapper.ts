@@ -55,6 +55,7 @@ function getDurationUnit(unit: TimeUnit): string {
     }
 }
 
+const tokenRegex = /\[([^\]]+)]|zzzz|zzz|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
 /**
  * Creates and caches a map of formatting tokens to their corresponding string values.
  * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>
@@ -464,7 +465,6 @@ export class TemporalWrapper {
         if (typeof templateOrOptions === 'string') {
             const formatString = templateOrOptions;
             const replacements = createTokenReplacements(this, localeCode);
-            const tokenRegex = /\[([^\]]+)]|zzzz|zzz|YYYY|YY|MM|M|DD|D|HH|H|mm|m|SSS|ss|s|dddd|ddd|z|Z|ZZ/g;
 
             return formatString.replace(tokenRegex, (match, literal) => {
                 if (literal) return literal;
