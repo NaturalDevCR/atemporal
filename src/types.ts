@@ -9,7 +9,15 @@ export type DateInput = string | number | Date | Temporal.ZonedDateTime | Tempor
 /**
  * Defines the units of time that can be used for durations and differences.
  */
-export type TimeUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
+export type TimeUnit =
+    | 'year' | 'years' | 'y'
+    | 'month' | 'months' // 'm' is ambiguous with minute, so we omit it for month
+    | 'week' | 'weeks' | 'w'
+    | 'day' | 'days' | 'd'
+    | 'hour' | 'hours' | 'h'
+    | 'minute' | 'minutes' | 'm'
+    | 'second' | 'seconds' | 's'
+    | 'millisecond' | 'milliseconds' | 'ms';
 
 /**
  * Defines the units of time that can be set on an atemporal instance.
@@ -94,6 +102,14 @@ export interface AtemporalFactory {
      * Extends atemporal's functionality with a plugin.
      */
     extend: (plugin: Plugin, options?: any) => void;
+
+
+    /**
+     * Creates a Temporal.Duration object from a duration-like object or an ISO 8601 string.
+     * @param durationLike - An object like `{ hours: 2, minutes: 30 }` or a string like `'PT2H30M'`.
+     * @returns A Temporal.Duration instance.
+     */
+    duration(durationLike: Temporal.DurationLike | string): Temporal.Duration;
 }
 
 /**

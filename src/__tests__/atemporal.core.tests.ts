@@ -99,4 +99,45 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             }).toThrow('Cannot perform operations on an invalid Atemporal object.');
         });
     });
+    describe('Manipulation with unit aliases', () => {
+        const baseDate = atemporal('2024-01-10T10:00:00Z');
+
+        it('should handle singular, plural, and short-hand units for .add()', () => {
+            // Year
+            expect(baseDate.add(1, 'y').year).toBe(2025);
+            expect(baseDate.add(1, 'year').year).toBe(2025);
+            expect(baseDate.add(1, 'years').year).toBe(2025);
+
+            // Day
+            expect(baseDate.add(2, 'd').day).toBe(12);
+            expect(baseDate.add(2, 'day').day).toBe(12);
+            expect(baseDate.add(2, 'days').day).toBe(12);
+
+            // Hour
+            expect(baseDate.add(3, 'h').hour).toBe(13);
+            expect(baseDate.add(3, 'hour').hour).toBe(13);
+            expect(baseDate.add(3, 'hours').hour).toBe(13);
+
+            // Minute
+            expect(baseDate.add(10, 'm').minute).toBe(10);
+            expect(baseDate.add(10, 'minute').minute).toBe(10);
+            expect(baseDate.add(10, 'minutes').minute).toBe(10);
+
+            // Millisecond
+            expect(baseDate.add(100, 'ms').millisecond).toBe(100);
+        });
+
+        it('should handle singular, plural, and short-hand units for .subtract()', () => {
+            // Week
+            expect(baseDate.subtract(1, 'w').day).toBe(3);
+            expect(baseDate.subtract(1, 'week').day).toBe(3);
+            expect(baseDate.subtract(1, 'weeks').day).toBe(3);
+
+            // Second
+            const d = baseDate.set('second', 30);
+            expect(d.subtract(10, 's').second).toBe(20);
+            expect(d.subtract(10, 'second').second).toBe(20);
+            expect(d.subtract(10, 'seconds').second).toBe(20);
+        });
+    });
 });

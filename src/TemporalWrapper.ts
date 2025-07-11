@@ -9,12 +9,49 @@ import { TemporalUtils } from './TemporalUtils';
 import type { DateInput, TimeUnit, SettableUnit, FormatTokenMap } from './types';
 
 /**
- * Converts a library time unit to its plural form for the Temporal API.
+ * Normalizes and pluralizes a library time unit to its corresponding form for the Temporal API.
+ * Accepts singular, plural, and short-hand aliases (e.g., 'hour', 'hours', 'h' all become 'hours').
  * @internal
  */
 function getDurationUnit(unit: TimeUnit): string {
-    if (unit === 'millisecond') return 'milliseconds';
-    return `${unit}s`;
+    const u = unit.toLowerCase();
+    switch (u) {
+        case 'year':
+        case 'years':
+        case 'y':
+            return 'years';
+        case 'month':
+        case 'months':
+            return 'months';
+        case 'week':
+        case 'weeks':
+        case 'w':
+            return 'weeks';
+        case 'day':
+        case 'days':
+        case 'd':
+            return 'days';
+        case 'hour':
+        case 'hours':
+        case 'h':
+            return 'hours';
+        case 'minute':
+        case 'minutes':
+        case 'm':
+            return 'minutes';
+        case 'second':
+        case 'seconds':
+        case 's':
+            return 'seconds';
+        case 'millisecond':
+        case 'milliseconds':
+        case 'ms':
+            return 'milliseconds';
+        // This default case should ideally not be reached if using TypeScript types,
+        // but it's a safeguard.
+        default:
+            return u;
+    }
 }
 
 /**
@@ -170,27 +207,49 @@ export class TemporalWrapper {
     }
 
     /**
+     * Returns a new instance with the specified duration added.
+     * @param duration - A `Temporal.Duration` object to add.
+     * @returns A new TemporalWrapper instance.
+     */
+    add(duration: Temporal.Duration): TemporalWrapper;
+    /**
      * Returns a new instance with the specified amount of time added.
      * @param value - The number of units to add.
      * @param unit - The unit of time to add.
      * @returns A new TemporalWrapper instance.
      */
-    add(value: number, unit: TimeUnit): TemporalWrapper {
+    add(value: number, unit: TimeUnit): TemporalWrapper;
+    add(valueOrDuration: number | Temporal.Duration, unit?: TimeUnit): TemporalWrapper {
         if (!this.isValid()) return this;
-        const duration = { [getDurationUnit(unit)]: value };
+
+        const duration = typeof valueOrDuration === 'number'
+            ? { [getDurationUnit(unit!)]: valueOrDuration }
+            : valueOrDuration;
+
         const newDate = this.datetime.add(duration);
         return this._cloneWith(newDate);
     }
 
+    /**
+     * Returns a new instance with the specified duration subtracted.
+     * @param duration - A `Temporal.Duration` object to subtract.
+     * @returns A new TemporalWrapper instance.
+     */
+    subtract(duration: Temporal.Duration): TemporalWrapper;
     /**
      * Returns a new instance with the specified amount of time subtracted.
      * @param value - The number of units to subtract.
      * @param unit - The unit of time to subtract.
      * @returns A new TemporalWrapper instance.
      */
-    subtract(value: number, unit: TimeUnit): TemporalWrapper {
+    subtract(value: number, unit: TimeUnit): TemporalWrapper;
+    subtract(valueOrDuration: number | Temporal.Duration, unit?: TimeUnit): TemporalWrapper {
         if (!this.isValid()) return this;
-        const duration = { [getDurationUnit(unit)]: value };
+
+        const duration = typeof valueOrDuration === 'number'
+            ? { [getDurationUnit(unit!)]: valueOrDuration }
+            : valueOrDuration;
+
         const newDate = this.datetime.subtract(duration);
         return this._cloneWith(newDate);
     }

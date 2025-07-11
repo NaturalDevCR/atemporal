@@ -51,6 +51,10 @@ const atemporal = atemporalFn as AtemporalFactory;
 
 // --- Attach all static methods from TemporalWrapper and TemporalUtils ---
 
+atemporal.duration = (durationLike: Temporal.DurationLike | string): Temporal.Duration => {
+    return Temporal.Duration.from(durationLike);
+};
+
 /**
  * Creates a new TemporalWrapper instance.
  * The function signature is inferred from `TemporalWrapper.from`.
