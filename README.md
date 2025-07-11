@@ -135,7 +135,7 @@ const clone = atemporal(original);
 // Specify a time zone on creation
 atemporal('2025-01-01T12:00:00', 'America/New_York');
 
-// 1. From a Firestore Timestamp to atemporal (no plugin needed, but good to show)
+// From a Firestore Timestamp to atemporal (no plugin needed, but good to show)
 const firestoreTs = { seconds: 1672531200, nanoseconds: 500000000 };
 const date = atemporal(firestoreTs);
 console.log(date.toString());
@@ -389,17 +389,36 @@ atemporal.humanize(d, { locale: 'es' }); // "2 años, 3 meses y 5 días"
 
 ### firebaseTimestamp
 
-The plugin adds the .toFirebaseTimestamp() method to convert an atemporal instance back into a Firebase-compatible object.
+Enables seamless interoperability with Firebase/Firestore Timestamps.
+
+The core `atemporal()` factory can now directly parse Firebase Timestamp instances. This plugin adds the `.toFirebaseTimestamp()` method to convert an `atemporal` instance back into a plain object compatible with the `new firebase.firestore.Timestamp()` constructor.
 
 ```ts
+import { Timestamp } from 'firebase/firestore'; // Example import
+import atemporal from 'atemporal';
 import firebaseTimestamp from 'atemporal/plugins/firebaseTimestamp';
+
 atemporal.extend(firebaseTimestamp);
 
-const myDate = atemporal('2025-01-01T12:00:00.500Z');
-const ts = myDate.toFirebaseTimestamp();
+// 1. From a Firestore Timestamp to atemporal
+// Imagine `doc.createdAt` is a real Timestamp instance from Firestore
+const firestoreTs = new Timestamp(1672531200, 500000000);
+const date = atemporal(firestoreTs); // It just works!
 
-console.log(ts);
+console.log(date.toString());
+// => "2023-01-01T00:00:00.500Z"
+
+// 2. From atemporal back to a Firestore-compatible object
+const myDate = atemporal('2025-01-01T12:00:00.500Z');
+const plainObject = myDate.toFirebaseTimestamp();
+
+console.log(plainObject);
 // => { seconds: 1735732800, nanoseconds: 500000000 }
+
+// You can then use this to create a new Firebase Timestamp
+if (plainObject) {
+  const newFirestoreTs = new Timestamp(plainObject.seconds, plainObject.nanoseconds);
+}
 ```
 
 ---

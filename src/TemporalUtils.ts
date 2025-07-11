@@ -122,17 +122,39 @@ export class TemporalUtils {
             return Temporal.Instant.fromEpochMilliseconds(input.getTime()).toZonedDateTimeISO(tz);
         }
 
-        // Handle Firebase Timestamp-like objects: { seconds, nanoseconds }
-        // This check is specific and must come before the generic object check.
-        if (typeof input === 'object' && input !== null && 'seconds' in input && 'nanoseconds' in input) {
+        // Handle Firebase Timestamp instances or compatible objects.
+        // This is the most reliable check: a real Firebase Timestamp has these properties and methods.
+        if (
+            typeof input === 'object' &&
+            input !== null &&
+            'seconds' in input &&
+            'nanoseconds' in input &&
+            typeof (input as any).toDate === 'function'
+        ) {
+            try {
+                // Use Firebase's own .toDate() method for perfect accuracy, then convert.
+                const jsDate = (input as any).toDate();
+                return Temporal.Instant.fromEpochMilliseconds(jsDate.getTime()).toZonedDateTimeISO(tz);
+            } catch (e) {
+                throw new InvalidDateError(`Invalid Firebase Timestamp object: ${JSON.stringify(input)}`);
+            }
+        }
+
+        // Handle plain objects that mimic a Firebase Timestamp (e.g., from JSON).
+        if (
+            typeof input === 'object' &&
+            input !== null &&
+            'seconds' in input &&
+            'nanoseconds' in input &&
+            !('year' in input) // Differentiates from a PlainDateTimeObject
+        ) {
             try {
                 const { seconds, nanoseconds } = input as { seconds: number; nanoseconds: number };
-                // Use `fromEpochNanoseconds` with BigInt for precision and compatibility.
                 const totalNanoseconds = BigInt(seconds) * 1_000_000_000n + BigInt(nanoseconds);
                 const instant = Temporal.Instant.fromEpochNanoseconds(totalNanoseconds);
                 return instant.toZonedDateTimeISO(tz);
             } catch (e) {
-                throw new InvalidDateError(`Invalid Firebase Timestamp object: ${JSON.stringify(input)}`);
+                throw new InvalidDateError(`Invalid Firebase-like Timestamp object: ${JSON.stringify(input)}`);
             }
         }
 
