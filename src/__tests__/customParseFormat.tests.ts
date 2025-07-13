@@ -84,19 +84,14 @@ describe('customParseFormat plugin', () => {
                 expect(date.isValid()).toBe(false);
             });
 
-            it('should return an invalid instance if format lacks year but has other parts', () => {
-                // This specifically targets the `if (!year)` guard.
+            it('should return an invalid instance if the format string lacks a year', () => {
+                // This specifically targets the `if (!year)` guard in parseToISO.
                 const date = atemporal.fromFormat('15 10:30', 'DD HH:mm');
                 expect(date.isValid()).toBe(false);
             });
 
             it('should return an invalid instance for a partial match', () => {
                 const date = atemporal.fromFormat('2023-10', 'YYYY-MM-DD');
-                expect(date.isValid()).toBe(false);
-            });
-
-            it('should return an invalid instance if the format string is missing a year', () => {
-                const date = atemporal.fromFormat('10-27', 'MM-DD');
                 expect(date.isValid()).toBe(false);
             });
 
@@ -108,8 +103,7 @@ describe('customParseFormat plugin', () => {
             });
 
             it('should return an invalid instance for logically impossible dates', () => {
-                // El parser crea '2023-02-30T00:00:00', pero el constructor de TemporalWrapper
-                // lo invalidará porque el motor de Temporal sabe que no es una fecha real.
+                // With the `overflow: 'reject'` fix in TemporalUtils, this will now fail correctly.
                 const date = atemporal.fromFormat('2023-02-30', 'YYYY-MM-DD');
                 expect(date.isValid()).toBe(false);
             });

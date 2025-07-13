@@ -103,4 +103,20 @@ describe('Duration Humanizer Plugin', () => {
             expect(atemporal.humanize(duration)).toBe('5 hours and 15 minutes');
         });
     });
+
+    describe('Error handling and fallbacks', () => {
+        it('should use string fallback if Intl.NumberFormat throws', () => {
+            // Mock the Intl API to force the catch block to execute
+            const spy = jest.spyOn(Intl, 'NumberFormat').mockImplementation(() => {
+                throw new Error('Forced error for testing');
+            });
+
+            const duration = { weeks: 2, days: 1 };
+            // The catch block uses a simple string concatenation fallback
+            expect(atemporal.humanize(duration)).toBe('2 weeks and 1 day');
+
+            spy.mockRestore(); // Clean up the mock
+        });
+    });
+
 });

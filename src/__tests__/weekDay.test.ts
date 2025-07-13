@@ -109,4 +109,20 @@ describe('WeekDay Plugin', () => {
             expect(date.endOf('month').format('YYYY-MM-DD')).toBe('2024-02-29');
         });
     });
+
+    describe('Invalid Instance Handling', () => {
+        const invalidDate = atemporal('invalid');
+
+        it('should return NaN from weekday() for an invalid instance', () => {
+            expect(invalidDate.weekday()).toBeNaN();
+        });
+
+        it('should return the same invalid instance from startOf("week")', () => {
+            expect(invalidDate.startOf('week')).toBe(invalidDate);
+        });
+
+        it('should return the same invalid instance from endOf("week")', () => {
+            expect(invalidDate.endOf('week')).toBe(invalidDate);
+        });
+    });
 });

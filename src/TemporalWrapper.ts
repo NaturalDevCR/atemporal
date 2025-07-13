@@ -55,7 +55,7 @@ function getDurationUnit(unit: TimeUnit): string {
     }
 }
 
-const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|zzzz|zzz|z/g;
+const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|z/g;
 /**
  * Creates and caches a map of formatting tokens to their corresponding string values.
  * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>
@@ -147,11 +147,7 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
         /** The offset from UTC, ±HHmm (e.g., +0500) */
         ZZ: () => instance.raw.offset.replace(':', ''),
         /** The IANA time zone name (e.g., "America/New_York") */
-        z: () => instance.raw.timeZoneId,
-        /** The short localized time zone name (e.g., "EST") */
-        zzz: () => TemporalUtils.getShortTimeZoneName(instance.raw, currentLocale),
-        /** The long localized time zone name (e.g., "Eastern Standard Time") */
-        zzzz: () => TemporalUtils.getLongTimeZoneName(instance.raw, currentLocale),
+        z: () => instance.raw.timeZoneId
     };
 
     if (!localeCache) {

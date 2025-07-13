@@ -19,11 +19,33 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
             expect(changedTz.raw.timeZoneId).toBe('Asia/Tokyo');
         });
 
+        it('should parse an ISO string with offset and preserve it when no timezone is given', () => {
+            // Esta prueba cubre la rama donde un string tiene offset pero no se pasa
+            // un segundo argumento de timezone a atemporal().
+            const date = atemporal('2024-10-27T10:00:00+02:00');
+            expect(date.format('Z')).toBe('+02:00');
+            expect(date.timeZoneName).not.toBe('UTC'); // Debe usar el offset, no el default.
+        });
+
         it('should return an invalid instance for unsupported input types', () => {
             // @ts-expect-error - We are intentionally passing an invalid type
             expect(atemporal(true).isValid()).toBe(false);
             // @ts-expect-error
             expect(atemporal({ a: 1 }).isValid()).toBe(false);
+        });
+
+        it('should return an invalid instance for impossible numeric/object inputs', () => {
+            const impossibleTimestamp = { seconds: Infinity, nanoseconds: 0 };
+            expect(atemporal(impossibleTimestamp).isValid()).toBe(false);
+
+            const impossibleArray = [2023, 2, 32];
+            expect(atemporal(impossibleArray).isValid()).toBe(false);
+
+            const impossibleObject = { year: 2023, month: 13, day: 1 };
+            expect(atemporal(impossibleObject).isValid()).toBe(false);
+
+            const invalidString = "This will definitely fail";
+            expect(atemporal(invalidString).isValid()).toBe(false);
         });
 
         it('should correctly parse a Temporal.PlainDateTime object', () => {
@@ -134,6 +156,12 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
             expect(date.format('[The year is] YYYY')).toBe('The year is 2024');
         });
 
+        it('should cover toString() for non-UTC date without milliseconds', () => {
+            // This covers the branch in toString() for non-UTC dates where fractionalSecondDigits is 0.
+            const date = atemporal('2024-01-15T12:00:00', 'America/New_York');
+            expect(date.toString()).toBe('2024-01-15T12:00:00-05:00');
+        });
+
         it('should handle format with only Intl options and no locale', () => {
             const d = atemporal('2024-01-05T12:00:00Z');
             const formatted = d.format({ year: '2-digit', month: 'numeric', day: 'numeric' });
@@ -229,6 +257,18 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
             // @ts-expect-error - Intentionally passing an unsupported type
             const result = atemporal.from({ a: 1 });
             expect(result.isValid()).toBe(false);
+        });
+
+        it('should throw an error when using an invalid unit in add/subtract', () => {
+            // This test covers the default case in getDurationUnit, which passes
+            // the invalid unit to the underlying Temporal.ZonedDateTime.add,
+            // which is expected to throw.
+            const date = atemporal();
+            const invalidUnit = 'non-existent-unit' as any;
+
+            expect(() => {
+                date.add(1, invalidUnit);
+            }).toThrow(); // The underlying polyfill will throw an error
         });
 
         it('should trigger catch block in .diff() with invalid input', () => {

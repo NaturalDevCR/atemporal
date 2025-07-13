@@ -261,19 +261,76 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             expect(amDate.format('a')).toBe('am');
         });
 
-        it('should format timezone tokens (Z, ZZ, z, zzz, zzzz)', () => {
-            const nyDate = date.timeZone('America/New_York'); // In July, this is EDT (-04:00)
-            expect(nyDate.format('Z')).toBe('-04:00');
-            expect(nyDate.format('ZZ')).toBe('-0400');
-            expect(nyDate.format('z')).toBe('America/New_York');
-            expect(nyDate.format('zzz')).toBe('EDT');
-            expect(nyDate.format('zzzz')).toBe('Eastern Daylight Time');
-        });
-
         it('should handle a complex format string with mixed tokens', () => {
             const complexFormat = 'dddd, MMMM D, YYYY [at] h:mm:ss a (z)';
             const expected = 'Thursday, July 4, 2024 at 3:08:09 pm (UTC)';
             expect(date.format(complexFormat)).toBe(expected);
+        });
+    });
+
+    describe('Atemporal: Core Time Zone Functionality', () => {
+
+        afterEach(() => {
+            atemporal.setDefaultTimeZone('UTC');
+        });
+
+        it('should format basic timezone tokens (z, Z, ZZ)', () => {
+            const nyDate = atemporal('2024-01-15T10:00:00', 'America/New_York'); // EST is -05:00
+            expect(nyDate.format('z')).toBe('America/New_York'); // IANA ID
+            expect(nyDate.format('Z')).toBe('-05:00'); // Offset with colon
+            expect(nyDate.format('ZZ')).toBe('-0500'); // Offset without colon
+        });
+
+        it('should correctly handle timezone transitions (Daylight Saving Time)', () => {
+            const beforeDST = atemporal('2024-11-03T01:00:00-04:00', 'America/New_York');
+            const afterDST = beforeDST.add(1, 'hour');
+            expect(afterDST.format('HH:mm Z')).toBe('01:00 -05:00');
+        });
+
+        it('should parse an ISO string with offset and preserve it', () => {
+            const isoStringWithOffset = '2024-05-15T10:00:00+08:00';
+            const date = atemporal(isoStringWithOffset);
+            expect(date.isValid()).toBe(true);
+            expect(date.format('Z')).toBe('+08:00');
+            expect(date.toString()).toBe('2024-05-15T10:00:00+08:00');
+        });
+
+        it('should correctly change timezone with .timeZone()', () => {
+            const utcDate = atemporal('2024-01-01T00:00:00.000Z');
+            const saoPauloDate = utcDate.timeZone('America/Sao_Paulo');
+            expect(saoPauloDate.hour).toBe(21);
+            expect(saoPauloDate.format('Z')).toBe('-03:00');
+        });
+
+        it('should allow setting and using a default time zone', () => {
+            atemporal.setDefaultTimeZone('Asia/Tokyo');
+            const nowInTokyo = atemporal();
+            expect(nowInTokyo.raw.timeZoneId).toBe('Asia/Tokyo');
+        });
+    });
+    describe('Core Method Branch Coverage', () => {
+        it('should cover the original startOf("week") implementation', () => {
+            // This test ensures the original implementation in TemporalWrapper is covered,
+            // as the weekDay plugin overrides it. This test should NOT import weekDay.
+            // 2024-02-15 is a Thursday (day 4). The original logic subtracts dayOfWeek - 1.
+            // 4 - 1 = 3 days. 15 - 3 = 12. So it should be Monday the 12th.
+            const date = atemporal('2024-02-15T12:00:00Z');
+            const startOfWeek = date.startOf('week');
+            expect(startOfWeek.format('YYYY-MM-DD')).toBe('2024-02-12');
+        });
+
+        it('should handle setting an invalid quarter', () => {
+            // This covers the `if (quarter < 1 || quarter > 4)` branch in the quarter() method.
+            const date = atemporal('2024-05-20');
+            const invalidQuarter = date.quarter(5);
+            // Should return the original instance unmodified
+            expect(invalidQuarter).toBe(date);
+        });
+
+        it('should handle month aliases for add/subtract', () => {
+            const date = atemporal('2024-01-15');
+            expect(date.add(1, 'month').month).toBe(2);
+            expect(date.add(1, 'months').month).toBe(2);
         });
     });
 });

@@ -5,6 +5,7 @@
 import { TemporalWrapper } from '../TemporalWrapper';
 import { TemporalUtils } from '../TemporalUtils';
 import type { AtemporalFactory, Plugin } from '../types';
+import {Temporal} from "@js-temporal/polyfill";
 
 // Augment the JSDoc to reflect only the tokens this plugin provides.
 declare module '../TemporalWrapper' {
@@ -18,6 +19,45 @@ declare module '../TemporalWrapper' {
         format(templateOrOptions?: string | Intl.DateTimeFormatOptions, localeCode?: string): string;
     }
 }
+
+/**
+ * Gets the localized short time zone name (e.g., "EST", "GMT-5").
+ * @internal
+ */
+function getShortTimeZoneName(zdt: Temporal.ZonedDateTime, locale: string): string {
+    try {
+        const formatter = new Intl.DateTimeFormat(locale, {
+            timeZone: zdt.timeZoneId,
+            timeZoneName: 'short',
+        });
+        const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
+        const tzPart = parts.find(p => p.type === 'timeZoneName');
+        return tzPart?.value || zdt.timeZoneId;
+    } catch {
+        return zdt.timeZoneId;
+    }
+}
+
+
+
+/**
+ * Gets the localized long time zone name (e.g., "Eastern Standard Time").
+ * @internal
+ */
+function getLongTimeZoneName(zdt: Temporal.ZonedDateTime, locale: string): string {
+    try {
+        const formatter = new Intl.DateTimeFormat(locale, {
+            timeZone: zdt.timeZoneId,
+            timeZoneName: 'long',
+        });
+        const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
+        const tzPart = parts.find(p => p.type === 'timeZoneName');
+        return tzPart?.value || zdt.timeZoneId;
+    } catch {
+        return zdt.timeZoneId;
+    }
+}
+
 
 /**
  * A map of locale-specific ordinal suffixes for common languages.
@@ -53,7 +93,7 @@ const advancedFormatPlugin: Plugin = (Atemporal) => {
     const originalFormat = Atemporal.prototype.format;
 
     // This regex now *only* looks for the tokens this plugin is responsible for.
-    const advancedTokenRegex = /Qo|Do/g;
+    const advancedTokenRegex = /Qo|Do|zzzz|zzz/g;
 
     // Replace the original .format() with our new, extended version.
     Atemporal.prototype.format = function (
@@ -74,6 +114,8 @@ const advancedFormatPlugin: Plugin = (Atemporal) => {
         const replacements = {
             Do: () => getOrdinal(this.day, locale),
             Qo: () => getOrdinal(this.quarter(), locale),
+            zzz: () => getShortTimeZoneName(this.raw, locale),
+            zzzz: () => getLongTimeZoneName(this.raw, locale),
         };
 
         // Replace all advanced tokens, wrapping the result in brackets

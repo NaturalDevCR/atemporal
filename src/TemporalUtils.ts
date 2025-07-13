@@ -17,47 +17,6 @@ export class TemporalUtils {
     private static _defaultLocale = 'en-US';
 
     /**
-     * Gets the localized short time zone name (e.g., "EST", "GMT-5").
-     * @internal
-     */
-    static getShortTimeZoneName(zdt: Temporal.ZonedDateTime, locale = TemporalUtils._defaultLocale): string {
-        try {
-            const formatter = new Intl.DateTimeFormat(locale, {
-                timeZone: zdt.timeZoneId,
-                timeZoneName: 'short',
-            });
-            // Convert Instant to milliseconds, which is what `formatToParts` expects.
-            const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
-
-            const tzPart = parts.find(p => p.type === 'timeZoneName');
-            return tzPart?.value || zdt.timeZoneId;
-        } catch {
-            return zdt.timeZoneId;
-        }
-    }
-
-
-
-    /**
-     * Gets the localized long time zone name (e.g., "Eastern Standard Time").
-     * @internal
-     */
-    static getLongTimeZoneName(zdt: Temporal.ZonedDateTime, locale = TemporalUtils._defaultLocale): string {
-        try {
-            const formatter = new Intl.DateTimeFormat(locale, {
-                timeZone: zdt.timeZoneId,
-                timeZoneName: 'long',
-            });
-            // Convert Instant to milliseconds, which is what `formatToParts` expects.
-            const parts = formatter.formatToParts(zdt.toInstant().epochMilliseconds);
-            const tzPart = parts.find(p => p.type === 'timeZoneName');
-            return tzPart?.value || zdt.timeZoneId;
-        } catch {
-            return zdt.timeZoneId;
-        }
-    }
-
-    /**
      * Sets the default locale for all new atemporal instances. Used for formatting.
      */
     static setDefaultLocale(code: string) {
@@ -287,13 +246,6 @@ export class TemporalUtils {
      */
     static isSameOrAfter(a: DateInput, b: DateInput): boolean {
         return Temporal.ZonedDateTime.compare(TemporalUtils.from(a), TemporalUtils.from(b)) >= 0;
-    }
-
-    /**
-     * Checks if date `a` is the same instant in time as date `b`.
-     */
-    static isSame(a: DateInput, b: DateInput): boolean {
-        return Temporal.ZonedDateTime.compare(TemporalUtils.from(a), TemporalUtils.from(b)) === 0;
     }
 
     /**

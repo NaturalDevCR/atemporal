@@ -128,18 +128,18 @@ atemporal([2025, 7, 9, 15, 30]);
 // From an object
 atemporal({ year: 2025, month: 7, day: 9 });
 
+// From a Firebase/Firestore Timestamp object (built-in support)
+const firestoreTs = { seconds: 1672531200, nanoseconds: 500000000 };
+const date = atemporal(firestoreTs);
+console.log(date.toString());
+// => "2023-01-01T00:00:00.500Z"
+
 // Clone an existing instance
 const original = atemporal();
 const clone = atemporal(original);
 
 // Specify a time zone on creation
 atemporal('2025-01-01T12:00:00', 'America/New_York');
-
-// From a Firestore Timestamp to atemporal (no plugin needed, but good to show)
-const firestoreTs = { seconds: 1672531200, nanoseconds: 500000000 };
-const date = atemporal(firestoreTs);
-console.log(date.toString());
-// => "2023-01-01T00:00:00.500Z"
 ```
 
 ### Manipulation
@@ -161,13 +161,15 @@ date.subtract(30, 'm');    // Subtract 30 minutes (alias)
 // Set a value
 date.set('year', 2025);    // Set the year to 2025
 date.set('hour', 9);       // Set the hour to 9
+date.set('quarter', 1);    // Set the date to the start of the 1st quarter
 
 // Move to the start or end of a unit
 date.startOf('month');     // Start of the month (e.g., 2024-08-01T00:00:00.000)
 date.endOf('day');         // End of the day (e.g., 2024-08-14T23:59:59.999)
 
-// Move to a specific day of the week (1=Monday, 7=Sunday)
-date.dayOfWeek(1);         // Moves the date to the Monday of that week
+// Get or set the day of the week (1=Monday, 7=Sunday)
+date.dayOfWeek();          // Getter: returns 3 (for a Wednesday)
+date.dayOfWeek(1);         // Setter: moves the date to the Monday of that week
 ```
 
 ### Getters
@@ -184,17 +186,16 @@ date.hour;         // 10
 date.minute;       // 30
 date.second;       // 45
 date.millisecond;  // 123
+date.daysInMonth;  // 31
+date.weekOfYear;   // 33 (ISO week number)
 
 // Methods
-date.get('month');       // 8
-date.dayOfWeek();      // 3 (ISO 8601: 1=Monday, ..., 7=Sunday)
-date.quarter();        // 3 (third quarter)
-date.daysInMonth;      // 31
-date.weekOfYear;       // 33 (ISO week number)
-date.isLeapYear();     // true (2024 is a leap year)
-date.toDate();         // Convert to a JS `Date` object
-date.toString();       // '2024-08-14T10:30:45.123Z'
-date.raw;              // Access the underlying `Temporal.ZonedDateTime` object
+date.get('month'); // 8
+date.quarter();    // 3 (third quarter)
+date.isLeapYear(); // true (2024 is a leap year)
+date.toDate();     // Convert to a JS `Date` object
+date.toString();   // '2024-08-14T10:30:45.123Z'
+date.raw;          // Access the underlying `Temporal.ZonedDateTime` object
 ```
 
 ### Formatting (`.format()`)
@@ -213,6 +214,8 @@ The `.format()` method is very versatile. It accepts a token string or an `Intl`
 | `D`    | `9`                   | Day of month (1-31)          |
 | `HH`   | `14`                  | Hour, 2-digits (00-23)       |
 | `H`    | `14`                  | Hour (0-23)                  |
+| `hh`   | `02`                  | Hour, 12-hour clock, 2-digits (01-12)|
+| `h`    | `2`                   | Hour, 12-hour clock (1-12)    |
 | `mm`   | `05`                  | Minute, 2-digits (00-59)     |
 | `m`    | `5`                   | Minute (0-59)                |
 | `ss`   | `02`                  | Second, 2-digits (00-59)     |
@@ -223,8 +226,12 @@ The `.format()` method is very versatile. It accepts a token string or an `Intl`
 | `Z`    | `+02:00`              | Time zone offset with colon  |
 | `ZZ`   | `+0200`               | Time zone offset without colon|
 | `z`    | `America/New_York`    | IANA time zone name          |
-| `zzz`  | `EST`                 | Short localized time zone name |
-| `zzzz` | `Eastern Standard Time` | Long localized time zone name |
+| `zzz`  | `EST`                 | Short localized time zone name¹ |
+| `zzzz` | `Eastern Standard Time` | Long localized time zone name¹ |
+| `Do`   | `22nd`                | Day of month with ordinal¹   |
+| `Qo`   | `2nd`                 | Quarter of year with ordinal¹|
+
+¹ *Requires the `advancedFormat` plugin.*
 
 *(Note: Characters in brackets `[]` are displayed literally.)*
 
@@ -253,7 +260,7 @@ d1.isBefore(d2);        // true
 d2.isAfter(d1);         // true
 d1.isSame(d3);          // true
 
-// Compare only up to the specified unit
+// Compare only up to a specific unit
 d1.isSame('2024-01-01T12:00:00', 'day'); // true
 d1.isSameDay('2024-01-01T12:00:00');    // true (alias for .isSame(..., 'day'))
 
@@ -340,7 +347,7 @@ console.log(date.toString());
 
 ### advancedFormat
 
-Extends `.format()` with advanced tokens like ordinals and full month names.
+Extends `.format()` with advanced tokens like ordinals and quarters.
 
 ```ts
 import advancedFormat from 'atemporal/plugins/advancedFormat';
@@ -350,10 +357,14 @@ const date = atemporal('2024-01-22');
 date.format('Do MMMM YYYY'); // "22nd January 2024"
 
 // With localization
-date.format('Do MMMM YYYY', 'es'); // "22º enero 2024"
+date.format('Do MMMM YYYY', 'es'); // "22º de enero de 2024"
 
-// Quarter token
-atemporal('2024-05-10').format('Qo [Quarter]'); // "2nd Quarter"
+// Ordinal and Quarter tokens
+date.format('Do MMMM YYYY'); // "22nd January 2024"
+date.format('Qo [Quarter]'); // "1st Quarter"
+
+// Timezone name tokens
+date.format('HH:mm zzzz'); // "12:00 Eastern Standard Time"
 ```
 
 ### weekDay
@@ -364,19 +375,21 @@ Allows customizing the start of the week and adds the `.weekday()` method.
 import weekDay from 'atemporal/plugins/weekDay';
 atemporal.extend(weekDay);
 
-// By default, the week starts on Monday (1)
 const wed = atemporal('2024-08-14'); // A Wednesday
-wed.startOf('week').format('dddd'); // "Monday"
+
+// Default: week starts on Monday (1). .weekday() is 0-indexed from start.
+console.log(wed.weekday()); // 2 (Mon=0, Tue=1, Wed=2)
+console.log(wed.startOf('week').format('dddd')); // "Monday"
 
 // Change the start of the week to Sunday (0)
 atemporal.setWeekStartsOn(0);
-wed.startOf('week').format('dddd'); // "Sunday"
-wed.weekday(); // 3 (Sunday=0, Monday=1, Tuesday=2, Wednesday=3)
+console.log(wed.weekday()); // 3 (Sun=0, Mon=1, Tue=2, Wed=3)
+console.log(wed.startOf('week').format('dddd')); // "Sunday"
 ```
 
 ### durationHumanizer
 
-Adds the static method `atemporal.humanize()` to turn durations into readable text.
+Adds the static method `atemporal.humanize()` to turn durations into readable text. It also supports different display styles.
 
 ```ts
 import durationHumanizer from 'atemporal/plugins/durationHumanizer';
@@ -385,40 +398,9 @@ atemporal.extend(durationHumanizer);
 const d = { years: 2, months: 3, days: 5 };
 atemporal.humanize(d); // "2 years, 3 months, and 5 days"
 atemporal.humanize(d, { locale: 'es' }); // "2 años, 3 meses y 5 días"
-```
 
-### firebaseTimestamp
-
-Enables seamless interoperability with Firebase/Firestore Timestamps.
-
-The core `atemporal()` factory can now directly parse Firebase Timestamp instances. This plugin adds the `.toFirebaseTimestamp()` method to convert an `atemporal` instance back into a plain object compatible with the `new firebase.firestore.Timestamp()` constructor.
-
-```ts
-import { Timestamp } from 'firebase/firestore'; // Example import
-import atemporal from 'atemporal';
-import firebaseTimestamp from 'atemporal/plugins/firebaseTimestamp';
-
-atemporal.extend(firebaseTimestamp);
-
-// 1. From a Firestore Timestamp to atemporal
-// Imagine `doc.createdAt` is a real Timestamp instance from Firestore
-const firestoreTs = new Timestamp(1672531200, 500000000);
-const date = atemporal(firestoreTs); // It just works!
-
-console.log(date.toString());
-// => "2023-01-01T00:00:00.500Z"
-
-// 2. From atemporal back to a Firestore-compatible object
-const myDate = atemporal('2025-01-01T12:00:00.500Z');
-const plainObject = myDate.toFirebaseTimestamp();
-
-console.log(plainObject);
-// => { seconds: 1735732800, nanoseconds: 500000000 }
-
-// You can then use this to create a new Firebase Timestamp
-if (plainObject) {
-  const newFirestoreTs = new Timestamp(plainObject.seconds, plainObject.nanoseconds);
-}
+// Using different unit displays
+atemporal.humanize(d, { unitDisplay: 'short' }); // "2 yr, 3 mo, and 5 days"
 ```
 
 ---
@@ -498,7 +480,7 @@ try {
 The main error classes you can import are:
 - `InvalidTimeZoneError`: For invalid IANA time zone identifiers.
 - `InvalidDateError`: When an input cannot be parsed into a valid date.
-- `InvalidAtemporalInstanceError`: When an operation is attempted on an invalid instance (e.g., accessing `.raw`).
+- `InvalidAtemporalInstanceError`: When an operation is attempted on an invalid instance.
 
 ---
 
@@ -541,3 +523,20 @@ This library was developed with the support of AI coding assistants. These tools
 <a href="https://buymeacoffee.com/naturaldevcr" target="_blank"><img src="https://github.com/user-attachments/assets/98a65e1b-2843-4333-8955-0db7a20477bf" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
 
 ### [Donate - Paypal](https://www.paypal.com/donate/?hosted_button_id=A8MKF5RNGQ77U).
+
+---
+
+### Acciones recomendadas para eliminar el plugin `firebaseTimestamp`
+
+Para alinear completamente el código con la decisión de eliminar el plugin, te recomiendo realizar las siguientes acciones:
+
+1.  **Eliminar los archivos del plugin:**
+  *   `src/plugins/firebaseTimestamp.ts`
+  *   `src/__tests__/firebaseTimestamps.test.ts`
+  *   `src/examples/07-firebase-interop.ts`
+
+2.  **Actualizar `package.json`:**
+  *   En la sección `"exports"`, elimina el bloque completo correspondiente a `./plugins/firebaseTimestamp`.
+  *   En la sección `"tsup.entry"`, elimina la línea `"src/plugins/firebaseTimestamp.ts"`.
+
+Estos cambios harán que la librería sea más ligera y mantendrán su núcleo independiente de implementaciones de terceros, lo cual es una decisión de diseño muy sólida.
