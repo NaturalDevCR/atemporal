@@ -61,16 +61,6 @@
         "default": "./dist/plugins/durationHumanizer.js"
       }
     },
-    "./plugins/firebaseTimestamp": {
-      "import": {
-        "types": "./dist/plugins/firebaseTimestamp.d.ts",
-        "default": "./dist/plugins/firebaseTimestamp.mjs"
-      },
-      "require": {
-        "types": "./dist/plugins/firebaseTimestamp.d.ts",
-        "default": "./dist/plugins/firebaseTimestamp.js"
-      }
-    },
     "./plugins/weekDay": {
       "import": {
         "types": "./dist/plugins/weekDay.d.ts",
@@ -95,7 +85,6 @@
       "src/plugins/advancedFormat.ts",
       "src/plugins/customParseFormat.ts",
       "src/plugins/durationHumanizer.ts",
-      "src/plugins/firebaseTimestamp.ts",
       "src/plugins/weekDay.ts"
     ],
     "format": [
