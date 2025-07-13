@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.21](https://github.com/NaturalDevCR/atemporal/compare/v0.0.20...v0.0.21) (2025-07-13)
+
+
+### Bug Fixes
+
+* README.md oops ([98bc5d5](https://github.com/NaturalDevCR/atemporal/commit/98bc5d5a3414fb962c7a0a2121dc87ba9f9c4ac4))
+
 ### [0.0.20](https://github.com/NaturalDevCR/atemporal/compare/v0.0.19...v0.0.20) (2025-07-13)
 
 ### [0.0.19](https://github.com/NaturalDevCR/atemporal/compare/v0.0.18...v0.0.19) (2025-07-11)
