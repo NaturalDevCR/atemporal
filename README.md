@@ -523,20 +523,3 @@ This library was developed with the support of AI coding assistants. These tools
 <a href="https://buymeacoffee.com/naturaldevcr" target="_blank"><img src="https://github.com/user-attachments/assets/98a65e1b-2843-4333-8955-0db7a20477bf" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
 
 ### [Donate - Paypal](https://www.paypal.com/donate/?hosted_button_id=A8MKF5RNGQ77U).
-
----
-
-### Acciones recomendadas para eliminar el plugin `firebaseTimestamp`
-
-Para alinear completamente el código con la decisión de eliminar el plugin, te recomiendo realizar las siguientes acciones:
-
-1.  **Eliminar los archivos del plugin:**
-  *   `src/plugins/firebaseTimestamp.ts`
-  *   `src/__tests__/firebaseTimestamps.test.ts`
-  *   `src/examples/07-firebase-interop.ts`
-
-2.  **Actualizar `package.json`:**
-  *   En la sección `"exports"`, elimina el bloque completo correspondiente a `./plugins/firebaseTimestamp`.
-  *   En la sección `"tsup.entry"`, elimina la línea `"src/plugins/firebaseTimestamp.ts"`.
-
-Estos cambios harán que la librería sea más ligera y mantendrán su núcleo independiente de implementaciones de terceros, lo cual es una decisión de diseño muy sólida.
