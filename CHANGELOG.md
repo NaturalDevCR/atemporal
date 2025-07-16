@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.23](https://github.com/NaturalDevCR/atemporal/compare/v0.0.22...v0.0.23) (2025-07-16)
+
+
+### Features
+
+* **core:** add .range() method ([a9da291](https://github.com/NaturalDevCR/atemporal/commit/a9da291c302f6690eedef304902688a643fb46d9))
+
 ### [0.0.22](https://github.com/NaturalDevCR/atemporal/compare/v0.0.21...v0.0.22) (2025-07-13)
 
 ### [0.0.21](https://github.com/NaturalDevCR/atemporal/compare/v0.0.20...v0.0.21) (2025-07-13)
