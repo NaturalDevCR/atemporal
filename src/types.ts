@@ -24,6 +24,19 @@ export interface FirebaseTimestampLike {
 }
 
 /**
+ * Options for the .range() method.
+ */
+export interface RangeOptions {
+    /** Defines if the start and end dates are included. Defaults to '[]'. */
+    inclusivity?: '()' | '[]' | '(]' | '[)';
+    /** If provided, returns an array of formatted strings instead of atemporal instances. */
+    format?: string | Intl.DateTimeFormatOptions;
+}
+
+export type StartOfUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second';
+
+
+/**
  * Represents the various types of input that can be parsed into an atemporal instance.
  * Now includes support for arrays and plain objects.
  */

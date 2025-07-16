@@ -27,6 +27,7 @@ This is a work in progress and is in a very alpha state. Please don't use it in 
   - [Comparison](#comparison)
   - [Differences (`.diff()`)](#differences-diff)
   - [Durations](#durations)
+  - [Generating Date Ranges (`.range()`)](#generating-date-ranges-range)
 - [Plugins](#-plugins)
   - [How to Use Plugins](#how-to-use-plugins)
   - [relativeTime](#relativetime)
@@ -304,6 +305,37 @@ const future = now.add(duration);
 console.log(future.format('HH:mm')); // => 3 hours and 30 minutes in the future
 ```
 
+### Generating Date Ranges (`.range()`)
+
+The `.range()` method generates an array of dates between a start and end date. It can return either `atemporal` instances or formatted strings.
+
+**API:** `start.range(endDate, unit, options)`
+*   `endDate`: The end of the range.
+*   `unit`: The step unit (e.g., `'day'`, `'week'`).
+*   `options` (optional):
+  *   `inclusivity`: `'[]'` (default), `'()'`, `'[)'`, `'(]'`.
+  *   `format`: If provided, returns a `string[]` instead of `atemporal[]`.
+
+```ts
+const start = atemporal('2024-04-28');
+const end = atemporal('2024-05-02');
+
+// 1. Get an array of atemporal instances (default)
+const dateRange = start.range(end, 'day');
+// => [atemporal, atemporal, atemporal, atemporal, atemporal]
+
+// 2. Get an array of formatted strings directly
+const formattedRange = start.range(end, 'day', {
+  format: 'YYYY-MM-DD',
+  inclusivity: '[)' // Include start, exclude end
+});
+// => ['2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01']
+
+// 3. Generate by week
+const weeklyRange = start.range(end, 'week', { format: 'MMMM Do' });
+// => ['April 28th']
+```
+
 ---
 
 ## 🔌 Plugins
@@ -347,18 +379,13 @@ console.log(date.toString());
 
 ### advancedFormat
 
-Extends `.format()` with advanced tokens like ordinals and quarters.
+Extends `.format()` with advanced tokens like ordinals, quarters, and localized timezone names.
 
 ```ts
 import advancedFormat from 'atemporal/plugins/advancedFormat';
 atemporal.extend(advancedFormat);
 
-const date = atemporal('2024-01-22');
-date.format('Do MMMM YYYY'); // "22nd January 2024"
-
-// With localization
-date.format('Do MMMM YYYY', 'es'); // "22º de enero de 2024"
-
+const date = atemporal('2024-01-22T12:00:00', 'America/New_York');
 // Ordinal and Quarter tokens
 date.format('Do MMMM YYYY'); // "22nd January 2024"
 date.format('Qo [Quarter]'); // "1st Quarter"

@@ -6,8 +6,24 @@
 
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalUtils } from './TemporalUtils';
-import type { DateInput, TimeUnit, SettableUnit, FormatTokenMap } from './types';
+import type {DateInput, TimeUnit, SettableUnit, FormatTokenMap, StartOfUnit} from './types';
 import { InvalidAtemporalInstanceError } from './errors';
+
+/**
+ * Maps a flexible TimeUnit to the strict unit required by startOf/endOf.
+ * @internal
+ */
+function toStartOfUnit(unit: TimeUnit): StartOfUnit | null {
+    const u = unit.toLowerCase();
+    if (u.startsWith('year')) return 'year';
+    if (u.startsWith('month')) return 'month';
+    if (u.startsWith('week')) return 'week';
+    if (u.startsWith('day')) return 'day';
+    if (u.startsWith('hour')) return 'hour';
+    if (u.startsWith('minute')) return 'minute';
+    if (u.startsWith('second')) return 'second';
+    return null; // Non supported units by startOf as 'millisecond'
+}
 
 /**
  * Normalizes and pluralizes a library time unit to its corresponding form for the Temporal API.
@@ -797,5 +813,104 @@ export class TemporalWrapper {
     isLeapYear(): boolean {
         if (!this.isValid()) return false;
         return this.datetime.inLeapYear;
+    }
+
+    // Overload 1: Returns an array of formatted strings
+    /**
+     * Generates an array of formatted date strings within a given date range.
+     * The output type is `string[]` when a `format` option is provided.
+     *
+     * @param endDate The end date of the range.
+     * @param unit The unit of time to increment by (e.g., 'day', 'week').
+     * @param options An object containing inclusivity rules and a `format` string or Intl options.
+     * @returns An array of formatted date strings.
+     * @example
+     * const start = atemporal('2023-01-01');
+     * const end = atemporal('2023-01-03');
+     * start.range(end, 'day', { format: 'YYYY-MM-DD' });
+     * // => ['2023-01-01', '2023-01-02', '2023-01-03']
+     */
+    range(endDate: DateInput, unit: TimeUnit, options: { inclusivity?: '()' | '[]' | '(]' | '[)', format: string | Intl.DateTimeFormatOptions }): string[];
+
+    // Overload 2: Returns an array of atemporal instances
+    /**
+     * Generates an array of atemporal instances within a given date range.
+     * This is the default behavior when no `format` option is provided.
+     *
+     * @param endDate The end date of the range.
+     * @param unit The unit of time to increment by (e.g., 'day', 'week').
+     * @param options An object containing inclusivity rules.
+     * @returns An array of atemporal instances.
+     * @example
+     * const start = atemporal('2023-01-01');
+     * const end = atemporal('2023-01-03');
+     * start.range(end, 'day');
+     * // => [Atemporal, Atemporal, Atemporal]
+     */
+    // ▼▼▼ AQUÍ ESTÁ LA CORRECCIÓN: '[]' fue cambiado a '[)' ▼▼▼
+    range(endDate: DateInput, unit: TimeUnit, options?: { inclusivity?: '()' | '[]' | '(]' | '[)' }): TemporalWrapper[];
+
+    // Actual Implementation
+    range(
+        endDate: DateInput,
+        unit: TimeUnit,
+        options: any = {}
+    ): TemporalWrapper[] | string[] {
+        if (!this.isValid()) {
+            return [];
+        }
+
+        const endAtemporal = endDate instanceof TemporalWrapper ? endDate : TemporalWrapper.from(endDate);
+        if (!endAtemporal.isValid() || this.isAfter(endAtemporal)) {
+            return [];
+        }
+
+        const { inclusivity = '[]', format } = options;
+        const results: TemporalWrapper[] = [];
+        let cursor = this.clone();
+
+        if (inclusivity.startsWith('(')) {
+            cursor = cursor.add(1, unit);
+        }
+
+        const isInclusiveEnd = inclusivity.endsWith(']');
+        const startOfUnit = toStartOfUnit(unit);
+
+        while (true) {
+            let shouldStop = false;
+            if (isInclusiveEnd) {
+                if (cursor.isAfter(endAtemporal)) {
+                    shouldStop = true;
+                }
+            } else {
+                if (startOfUnit) {
+                    const endBoundary = endAtemporal.startOf(startOfUnit);
+                    if (cursor.isSameOrAfter(endBoundary)) {
+                        shouldStop = true;
+                    }
+                } else {
+                    if (cursor.isSameOrAfter(endAtemporal)) {
+                        shouldStop = true;
+                    }
+                }
+            }
+
+            if (shouldStop) {
+                break;
+            }
+
+            results.push(cursor);
+            cursor = cursor.add(1, unit);
+        }
+
+        if (format) {
+            if (typeof format === 'string') {
+                return results.map(date => date.format(format));
+            } else {
+                return results.map(date => date.format(format));
+            }
+        }
+
+        return results;
     }
 }
