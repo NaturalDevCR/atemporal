@@ -32,8 +32,17 @@ console.log(`"${inThreeDays.fromNow()}"`); // "in 3 days"
 
 // --- Custom Parse Format Plugin ---
 console.log('\n--- Custom Parse Format Plugin ---');
+// Ejemplo 1: Parseando una fecha completa
 const fromCustomFormat: TemporalWrapper = atemporal.fromFormat('25/12/2024', 'DD/MM/YYYY');
 console.log(`Parsed "25/12/2024" -> ${fromCustomFormat.format('YYYY-MM-DD')}`);
+
+// Ejemplo 2: Demostración de la corrección del bug (parsear solo la hora)
+// Si no se proporciona una fecha, atemporal usará la fecha actual.
+const fromTimeOnly = atemporal.fromFormat('830', 'Hmm');
+console.log(`Parsed "830" with "Hmm" format -> ${fromTimeOnly.format('YYYY-MM-DD h:mm A')}`);
+
+const fromTimeOnly2 = atemporal.fromFormat('14:45', 'HH:mm');
+console.log(`Parsed "14:45" with "HH:mm" format -> ${fromTimeOnly2.format('YYYY-MM-DD HH:mm')}`);
 
 // --- Duration Humanizer Plugin ---
 console.log('\n--- Duration Humanizer Plugin ---');

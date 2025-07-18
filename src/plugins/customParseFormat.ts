@@ -27,15 +27,15 @@ declare module '../types' {
 const tokenMap: { [key: string]: string } = {
     YYYY: '(\\d{4})',
     YY: '(\\d{2})',
-    MM: '(\\d{1,2})',
+    MM: '(\\d{2})',      // <-- Cambiado
     M: '(\\d{1,2})',
-    DD: '(\\d{1,2})',
+    DD: '(\\d{2})',      // <-- Cambiado
     D: '(\\d{1,2})',
-    HH: '(\\d{1,2})',
+    HH: '(\\d{2})',      // <-- Cambiado
     H: '(\\d{1,2})',
-    mm: '(\\d{1,2})',
+    mm: '(\\d{2})',      // <-- Cambiado
     m: '(\\d{1,2})',
-    ss: '(\\d{1,2})',
+    ss: '(\\d{2})',      // <-- Cambiado
     s: '(\\d{1,2})',
 };
 
@@ -70,17 +70,15 @@ function parseToISO(dateString: string, formatString: string): string | null {
         dateParts[token] = values[index + 1];
     });
 
-    // The 'YY' token assumes the 21st century. This is a common and acceptable simplification.
-    const year = dateParts.YYYY || (dateParts.YY ? `20${dateParts.YY}` : null);
+    const now = new Date();
+    const defaultYear = now.getFullYear().toString();
+    const defaultMonth = (now.getMonth() + 1).toString();
+    const defaultDay = now.getDate().toString();
 
-    // A year is essential for a valid ISO date. If not present in the format, parsing fails.
-    if (!year) {
-        return null;
-    }
 
-    // Build the rest of the ISO string, providing default values for time parts if they are missing.
-    const month = (dateParts.MM || dateParts.M || '01').padStart(2, '0');
-    const day = (dateParts.DD || dateParts.D || '01').padStart(2, '0');
+    const year = dateParts.YYYY || (dateParts.YY ? `20${dateParts.YY}` : defaultYear);
+    const month = (dateParts.MM || dateParts.M || defaultMonth).padStart(2, '0');
+    const day = (dateParts.DD || dateParts.D || defaultDay).padStart(2, '0');
     const hour = (dateParts.HH || dateParts.H || '00').padStart(2, '0');
     const minute = (dateParts.mm || dateParts.m || '00').padStart(2, '0');
     const second = (dateParts.ss || dateParts.s || '00').padStart(2, '0');

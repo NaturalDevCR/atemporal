@@ -84,10 +84,17 @@ describe('customParseFormat plugin', () => {
                 expect(date.isValid()).toBe(false);
             });
 
-            it('should return an invalid instance if the format string lacks a year', () => {
-                // This specifically targets the `if (!year)` guard in parseToISO.
+            it('should use the current date for parts not in the format string', () => {
+                // Este formato no tiene año ni mes, por lo que debe usar los actuales.
                 const date = atemporal.fromFormat('15 10:30', 'DD HH:mm');
-                expect(date.isValid()).toBe(false);
+                const now = new Date();
+
+                expect(date.isValid()).toBe(true);
+                expect(date.year).toBe(now.getFullYear());
+                expect(date.month).toBe(now.getMonth() + 1);
+                expect(date.day).toBe(15);
+                expect(date.hour).toBe(10);
+                expect(date.minute).toBe(30);
             });
 
             it('should return an invalid instance for a partial match', () => {
@@ -110,3 +117,31 @@ describe('customParseFormat plugin', () => {
         });
     });
 });
+
+it('should handle ambiguous formats like Hmm correctly', () => {
+    // Caso del bug: 3 dígitos para H y mm
+    const date1 = atemporal.fromFormat('600', 'Hmm');
+    expect(date1.isValid()).toBe(true);
+    expect(date1.hour).toBe(6);
+    expect(date1.minute).toBe(0);
+    expect(date1.format('h:mm A')).toBe('6:00 AM');
+
+    // Caso de 4 dígitos para HH y mm
+    const date2 = atemporal.fromFormat('0600', 'HHmm');
+    expect(date2.isValid()).toBe(true);
+    expect(date2.hour).toBe(6);
+    expect(date2.minute).toBe(0);
+});
+
+it('should parse formats with single and double digit tokens together', () => {
+    // Probar D/M/YYYY
+    const date1 = atemporal.fromFormat('5/7/2023', 'D/M/YYYY');
+    expect(date1.month).toBe(7);
+    expect(date1.day).toBe(5);
+
+    // Probar DD/MM/YYYY
+    const date2 = atemporal.fromFormat('05/07/2023', 'DD/MM/YYYY');
+    expect(date2.month).toBe(7);
+    expect(date2.day).toBe(5);
+});
+
