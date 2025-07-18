@@ -333,4 +333,33 @@ describe('Atemporal: Core Manipulation and Comparison', () => {
             expect(date.add(1, 'months').month).toBe(2);
         });
     });
+    describe('Atemporal: Immutability Guarantees', () => {
+        it('should remain immutable after timezone manipulation operations', () => {
+            // Este test replica un conocido bug de mutabilidad en Day.js
+            // relacionado con .utcOffset() para asegurar que atemporal no lo sufre.
+
+            // 1. Creamos la instancia original
+            const originalDate = atemporal('2000-01-01T06:01:02Z');
+            const originalValue = originalDate.raw.epochMilliseconds;
+
+            // 2. Realizamos una operación que en Day.js mutaba el original.
+            // El equivalente en atemporal es .timeZone().
+            const modifiedDate = originalDate.timeZone('+01:00');
+
+            // 3. Verificamos el valor de la instancia original OTRA VEZ.
+            const valueAfterOperation = originalDate.raw.epochMilliseconds;
+
+            // --- Aserciones Clave ---
+
+            // A. La instancia original NO debe haber cambiado su valor.
+            expect(valueAfterOperation).toBe(originalValue);
+
+            // B. La nueva instancia debe ser una referencia de objeto diferente.
+            expect(modifiedDate).not.toBe(originalDate);
+
+            // C. El IDENTIFICADOR DE ZONA HORARIA de la nueva instancia debe ser diferente.
+            // ESTO prueba que la operación tuvo efecto, sin cambiar el instante de tiempo.
+            expect(modifiedDate.raw.timeZoneId).not.toBe(originalDate.raw.timeZoneId);
+        });
+    });
 });
