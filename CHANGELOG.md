@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.1.0](https://github.com/NaturalDevCR/atemporal/compare/v0.0.23...v0.1.0) (2025-07-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **customParseFormat:** Formats that only contain time or partial date parts (e.g., `HH:mm`, `DD HH:mm`) will now successfully parse using the current date for missing components. Previously, these formats would result in an invalid atemporal instance.
+
+### Bug Fixes
+
+* **customParseFormat:** default to current date for time-only formats ([cd3f1b6](https://github.com/NaturalDevCR/atemporal/commit/cd3f1b686cdfab631c5b9580893733976fc389c3))
+
 ### [0.0.23](https://github.com/NaturalDevCR/atemporal/compare/v0.0.22...v0.0.23) (2025-07-16)
 
 
