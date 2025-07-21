@@ -3,7 +3,7 @@
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
-import { TemporalUtils } from '../TemporalUtils';
+import { TemporalUtils, IntlCache } from '../TemporalUtils'; // Importar el cache
 import type { AtemporalFactory, Plugin } from '../types';
 import {Temporal} from "@js-temporal/polyfill";
 
@@ -26,7 +26,8 @@ declare module '../TemporalWrapper' {
  */
 function getShortTimeZoneName(zdt: Temporal.ZonedDateTime, locale: string): string {
     try {
-        const formatter = new Intl.DateTimeFormat(locale, {
+        // Use cached DateTimeFormat for better performance
+        const formatter = IntlCache.getDateTimeFormatter(locale, {
             timeZone: zdt.timeZoneId,
             timeZoneName: 'short',
         });
@@ -38,15 +39,14 @@ function getShortTimeZoneName(zdt: Temporal.ZonedDateTime, locale: string): stri
     }
 }
 
-
-
 /**
  * Gets the localized long time zone name (e.g., "Eastern Standard Time").
  * @internal
  */
 function getLongTimeZoneName(zdt: Temporal.ZonedDateTime, locale: string): string {
     try {
-        const formatter = new Intl.DateTimeFormat(locale, {
+        // Use cached DateTimeFormat for better performance
+        const formatter = IntlCache.getDateTimeFormatter(locale, {
             timeZone: zdt.timeZoneId,
             timeZoneName: 'long',
         });

@@ -255,3 +255,86 @@ export class TemporalUtils {
         return TemporalUtils.from(a).toPlainDate().equals(TemporalUtils.from(b).toPlainDate());
     }
 }
+
+
+/**
+ * Cache for Intl objects to improve performance by avoiding repeated instantiation.
+ * @internal
+ */
+class IntlCache {
+    private static dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+    private static relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+    private static numberFormatters = new Map<string, Intl.NumberFormat>();
+    private static listFormatters = new Map<string, Intl.ListFormat>();
+
+    /**
+     * Gets a cached DateTimeFormat instance or creates a new one.
+     */
+    static getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOptions = {}): Intl.DateTimeFormat {
+        const key = `${locale}-${JSON.stringify(options)}`;
+        if (!this.dateTimeFormatters.has(key)) {
+            this.dateTimeFormatters.set(key, new Intl.DateTimeFormat(locale, options));
+        }
+        return this.dateTimeFormatters.get(key)!;
+    }
+
+    /**
+     * Gets a cached RelativeTimeFormat instance or creates a new one.
+     */
+    static getRelativeTimeFormatter(locale: string, options: Intl.RelativeTimeFormatOptions = {}): Intl.RelativeTimeFormat {
+        const key = `${locale}-${JSON.stringify(options)}`;
+        if (!this.relativeTimeFormatters.has(key)) {
+            this.relativeTimeFormatters.set(key, new Intl.RelativeTimeFormat(locale, options));
+        }
+        return this.relativeTimeFormatters.get(key)!;
+    }
+
+    /**
+     * Gets a cached NumberFormat instance or creates a new one.
+     */
+    static getNumberFormatter(locale: string, options: Intl.NumberFormatOptions = {}): Intl.NumberFormat {
+        const key = `${locale}-${JSON.stringify(options)}`;
+        if (!this.numberFormatters.has(key)) {
+            this.numberFormatters.set(key, new Intl.NumberFormat(locale, options));
+        }
+        return this.numberFormatters.get(key)!;
+    }
+
+    /**
+     * Gets a cached ListFormat instance or creates a new one.
+     */
+    static getListFormatter(locale: string, options: Intl.ListFormatOptions = {}): Intl.ListFormat {
+        const key = `${locale}-${JSON.stringify(options)}`;
+        if (!this.listFormatters.has(key)) {
+            this.listFormatters.set(key, new Intl.ListFormat(locale, options));
+        }
+        return this.listFormatters.get(key)!;
+    }
+
+    /**
+     * Clears all caches. Useful for testing or memory management.
+     */
+    static clearAll(): void {
+        this.dateTimeFormatters.clear();
+        this.relativeTimeFormatters.clear();
+        this.numberFormatters.clear();
+        this.listFormatters.clear();
+    }
+
+    /**
+     * Gets cache statistics for monitoring.
+     */
+    static getStats() {
+        return {
+            dateTimeFormatters: this.dateTimeFormatters.size,
+            relativeTimeFormatters: this.relativeTimeFormatters.size,
+            numberFormatters: this.numberFormatters.size,
+            listFormatters: this.listFormatters.size,
+            total: this.dateTimeFormatters.size + this.relativeTimeFormatters.size + 
+                   this.numberFormatters.size + this.listFormatters.size
+        };
+    }
+}
+
+// Exportar la clase para uso en plugins
+export { IntlCache };

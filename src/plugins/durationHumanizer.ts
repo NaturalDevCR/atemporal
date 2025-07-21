@@ -5,6 +5,7 @@
  */
 
 import { Temporal } from '@js-temporal/polyfill';
+import { IntlCache } from '../TemporalUtils'; // Importar el cache
 import type { Plugin } from '../types';
 
 /**
@@ -39,11 +40,11 @@ const DURATION_UNITS_ORDERED: (keyof Temporal.DurationLike)[] = ['years', 'month
  */
 function humanize(durationLike: Temporal.Duration | Temporal.DurationLike, options: HumanizeOptions = {}): string {
     // Guard to robustly handle null, undefined, or empty object inputs.
-    // It specifically checks that the input is not a valid Duration instance before checking its keys.
     if (!durationLike || (!(durationLike instanceof Temporal.Duration) && typeof durationLike === 'object' && Object.keys(durationLike).length === 0)) {
         try {
             const { locale = 'en', unitDisplay = 'long' } = options;
-            const nf = new Intl.NumberFormat(locale, { style: 'unit', unit: 'second', unitDisplay });
+            // Use cached NumberFormat for better performance
+            const nf = IntlCache.getNumberFormatter(locale, { style: 'unit', unit: 'second', unitDisplay });
             return nf.format(0);
         } catch (e) {
             return '0 seconds'; // Final fallback
@@ -62,17 +63,15 @@ function humanize(durationLike: Temporal.Duration | Temporal.DurationLike, optio
             // `Intl.NumberFormat` requires the singular form of the unit.
             const singularUnit = unit.endsWith('s') ? unit.slice(0, -1) : unit;
             try {
-                // The 'unit' must be passed to the constructor, not to `.format()`.
-                const nf = new Intl.NumberFormat(locale, {
+                // Use cached NumberFormat for better performance
+                const nf = IntlCache.getNumberFormatter(locale, {
                     style: 'unit',
                     unit: singularUnit,
                     unitDisplay,
                 });
-                // `.format()` only receives the numeric value.
                 parts.push(nf.format(value));
             } catch (e) {
                 // Fallback for units not supported by Intl.NumberFormat (e.g., 'week').
-                // This provides a simple pluralization that works for English.
                 const plural = value !== 1 ? 's' : '';
                 parts.push(`${value} ${singularUnit}${plural}`);
             }
@@ -82,15 +81,16 @@ function humanize(durationLike: Temporal.Duration | Temporal.DurationLike, optio
     if (parts.length === 0) {
         // Handles cases like `{ seconds: 0 }` where the duration is valid but has no value.
         try {
-            const nf = new Intl.NumberFormat(locale, { style: 'unit', unit: 'second', unitDisplay });
+            // Use cached NumberFormat for better performance
+            const nf = IntlCache.getNumberFormatter(locale, { style: 'unit', unit: 'second', unitDisplay });
             return nf.format(0);
         } catch (e) {
             return '0 seconds';
         }
     }
 
-    // Use `Intl.ListFormat` to join the parts in a localized way (e.g., using "and", "y", ",").
-    const listFormatter = new Intl.ListFormat(locale, { style: listStyle, type: 'conjunction' });
+    // Use cached ListFormat for better performance
+    const listFormatter = IntlCache.getListFormatter(locale, { style: listStyle, type: 'conjunction' });
     return listFormatter.format(parts);
 }
 

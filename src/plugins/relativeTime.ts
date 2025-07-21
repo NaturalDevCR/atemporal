@@ -5,6 +5,7 @@
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
+import { IntlCache } from '../TemporalUtils'; // Importar el cache
 import type { AtemporalFactory, Plugin, TimeUnit } from '../types';
 
 // Augment the TemporalWrapper interface to include the new methods.
@@ -62,49 +63,52 @@ const getRelativeTime = (
         M: 11,  // months to year
     };
 
+    // Optimización: Calcular solo el diff en segundos primero
     const diffSeconds = instance.diff(comparisonDate, 'second', true);
-    const diffMinutes = instance.diff(comparisonDate, 'minute', true);
-    const diffHours = instance.diff(comparisonDate, 'hour', true);
-    const diffDays = instance.diff(comparisonDate, 'day', true);
-    const diffMonths = instance.diff(comparisonDate, 'month', true);
-    const diffYears = instance.diff(comparisonDate, 'year', true);
+    const absDiffSeconds = Math.abs(diffSeconds);
 
     let bestUnit: Intl.RelativeTimeFormatUnit;
     let bestDiff: number;
 
-    // Determine the best unit based on thresholds
-    if (Math.abs(diffSeconds) < THRESHOLDS.s) {
+    // Optimización: Usar el diff en segundos para determinar la unidad
+    // y solo calcular el diff específico cuando sea necesario
+    if (absDiffSeconds < THRESHOLDS.s) {
         bestUnit = 'second';
         bestDiff = Math.round(diffSeconds);
-    } else if (Math.abs(diffMinutes) < THRESHOLDS.m) {
+    } else if (absDiffSeconds < THRESHOLDS.s * 60) { // < 45 minutos
         bestUnit = 'minute';
-        bestDiff = Math.round(diffMinutes);
-    } else if (Math.abs(diffHours) < THRESHOLDS.h) {
+        bestDiff = Math.round(diffSeconds / 60);
+    } else if (absDiffSeconds < THRESHOLDS.s * 60 * THRESHOLDS.h) { // < 22 horas
         bestUnit = 'hour';
-        bestDiff = Math.round(diffHours);
-    } else if (Math.abs(diffDays) < THRESHOLDS.d) {
+        bestDiff = Math.round(diffSeconds / 3600);
+    } else if (absDiffSeconds < THRESHOLDS.s * 60 * 24 * THRESHOLDS.d) { // < 26 días
         bestUnit = 'day';
-        bestDiff = Math.round(diffDays);
-    } else if (Math.abs(diffMonths) < THRESHOLDS.M) {
-        bestUnit = 'month';
-        bestDiff = Math.round(diffMonths);
+        bestDiff = Math.round(diffSeconds / 86400);
     } else {
-        bestUnit = 'year';
-        bestDiff = Math.round(diffYears);
+        // Para períodos más largos, usar los métodos específicos
+        const diffMonths = instance.diff(comparisonDate, 'month', true);
+        if (Math.abs(diffMonths) < THRESHOLDS.M) {
+            bestUnit = 'month';
+            bestDiff = Math.round(diffMonths);
+        } else {
+            const diffYears = instance.diff(comparisonDate, 'year', true);
+            bestUnit = 'year';
+            bestDiff = Math.round(diffYears);
+        }
     }
 
     if (withoutSuffix) {
-        // Use Intl.NumberFormat for a robust way to get the number and the
-        // correctly pluralized, localized unit without any "ago" or "in" suffix.
-        return new Intl.NumberFormat(locale, {
+        // Use cached Intl.NumberFormat for better performance
+        const nf = IntlCache.getNumberFormatter(locale, {
             style: 'unit',
             unit: bestUnit,
             unitDisplay: 'long',
-        }).format(Math.abs(bestDiff));
+        });
+        return nf.format(Math.abs(bestDiff));
     }
 
-    // For the default case, use Intl.RelativeTimeFormat which adds the suffix.
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    // Use cached Intl.RelativeTimeFormat for better performance
+    const rtf = IntlCache.getRelativeTimeFormatter(locale, { numeric: 'auto' });
     return rtf.format(bestDiff, bestUnit);
 };
 

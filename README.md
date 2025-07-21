@@ -367,15 +367,58 @@ atemporal().add(2, 'hours').fromNow();        // "in 2 hours"
 
 ### customParseFormat
 
-Allows creating an `atemporal` instance from a string with a custom format.
+Allows creating an `atemporal` instance from a string with a custom format. Supports advanced parsing features including two-digit years, milliseconds, and ambiguous time formats.
 
 ```ts
 import customParseFormat from 'atemporal/plugins/customParseFormat';
 atemporal.extend(customParseFormat);
 
-const date = atemporal.fromFormat('15/03/2024 10:30', 'DD/MM/YYYY HH:mm');
-console.log(date.toString());
+// Basic date parsing
+const date1 = atemporal.fromFormat('15/03/2024 10:30', 'DD/MM/YYYY HH:mm');
+console.log(date1.toString()); // "2024-03-15T10:30:00.000Z"
+
+// Time-only formats (uses current date for missing parts)
+const time = atemporal.fromFormat('14:30', 'HH:mm');
+console.log(time.format('YYYY-MM-DD HH:mm')); // Uses today's date with 14:30
+
+// Two-digit year support (Y2K compliant: 00-68 → 2000-2068, 69-99 → 1969-1999)
+const y2k1 = atemporal.fromFormat('25-12-31', 'YY-MM-DD'); // 2025-12-31
+const y2k2 = atemporal.fromFormat('85-06-15', 'YY-MM-DD'); // 1985-06-15
+
+// Milliseconds support
+const precise1 = atemporal.fromFormat('2024-01-01 12:30:45.123', 'YYYY-MM-DD HH:mm:ss.SSS');
+const precise2 = atemporal.fromFormat('2024-01-01 12:30:45.12', 'YYYY-MM-DD HH:mm:ss.SS'); // 120ms
+const precise3 = atemporal.fromFormat('2024-01-01 12:30:45.1', 'YYYY-MM-DD HH:mm:ss.S');   // 100ms
+
+// Ambiguous time formats
+const ambiguous = atemporal.fromFormat('630', 'Hmm'); // 6:30 AM
+const standard = atemporal.fromFormat('0630', 'HHmm');  // 6:30 AM
+
+// Mixed single/double digit tokens
+const mixed1 = atemporal.fromFormat('5/7/2024', 'D/M/YYYY');     // 5th July 2024
+const mixed2 = atemporal.fromFormat('05/07/2024', 'DD/MM/YYYY'); // 5th July 2024
+
+// With timezone
+const withTz = atemporal.fromFormat('2024-01-01 15:30', 'YYYY-MM-DD HH:mm', 'America/New_York');
 ```
+
+**Supported Format Tokens:**
+- `YYYY` - 4-digit year (e.g., 2024)
+- `YY` - 2-digit year with Y2K logic (e.g., 24 → 2024, 85 → 1985)
+- `MM` - 2-digit month (01-12)
+- `M` - 1-2 digit month (1-12)
+- `DD` - 2-digit day (01-31)
+- `D` - 1-2 digit day (1-31)
+- `HH` - 2-digit hour (00-23)
+- `H` - 1-2 digit hour (0-23)
+- `mm` - 2-digit minute (00-59)
+- `m` - 1-2 digit minute (0-59)
+- `ss` - 2-digit second (00-59)
+- `s` - 1-2 digit second (0-59)
+- `SSS` - 3-digit milliseconds (000-999)
+- `SS` - 2-digit centiseconds (00-99, converted to milliseconds)
+- `S` - 1-digit deciseconds (0-9, converted to milliseconds)
+- `Hmm` - Ambiguous hour+minute format (e.g., 630 = 6:30)
 
 ### advancedFormat
 
