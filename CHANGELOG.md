@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/NaturalDevCR/atemporal/compare/v0.1.0...v0.1.1) (2025-07-21)
+
+
+### Features
+
+* **customParseFormat:** enhance parsing with advanced features ([4fba49b](https://github.com/NaturalDevCR/atemporal/commit/4fba49b483e19eba277c39385b1bde9ab5aeae93))
+
+
+### Bug Fixes
+
+* **cache:** add null check for oldestKey in LRUCache implementation ([0571825](https://github.com/NaturalDevCR/atemporal/commit/0571825fbaf3e4e5145e939ba631ac0c3dc61c93))
+
 ## [0.1.0](https://github.com/NaturalDevCR/atemporal/compare/v0.0.23...v0.1.0) (2025-07-18)
 
 
