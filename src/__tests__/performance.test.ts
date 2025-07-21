@@ -6,17 +6,20 @@ import atemporal from '../index';
 import relativeTimePlugin from '../plugins/relativeTime';
 import advancedFormatPlugin from '../plugins/advancedFormat';
 import durationHumanizer from '../plugins/durationHumanizer';
+import customParseFormatPlugin from '../plugins/customParseFormat';
 import { IntlCache } from '../TemporalUtils';
 
 // Extend atemporal with plugins
 atemporal.extend(relativeTimePlugin);
 atemporal.extend(advancedFormatPlugin);
 atemporal.extend(durationHumanizer);
+atemporal.extend(customParseFormatPlugin);
 
 describe('Performance Tests', () => {
     beforeEach(() => {
         // Clear cache before each test
         IntlCache.clearAll();
+        (atemporal as any).clearFormatCache?.();
     });
 
     test('relativeTime performance with cache', () => {
@@ -85,6 +88,77 @@ describe('Performance Tests', () => {
         
         expect(executionTime).toBeLessThan(1000);
     });
+    
+    test('customParseFormat performance with regex cache', () => {
+        const dateString = '2023-12-25 15:30:45';
+        const formatString = 'YYYY-MM-DD HH:mm:ss';
+        
+        // Warm up - primera llamada crea el cache
+        atemporal.fromFormat(dateString, formatString);
+        
+        const iterations = 1000;
+        const start = performance.now();
+        
+        for (let i = 0; i < iterations; i++) {
+            atemporal.fromFormat(dateString, formatString);
+        }
+        
+        const end = performance.now();
+        const executionTime = end - start;
+        
+        console.log(`CustomParseFormat: ${iterations} iterations took ${executionTime.toFixed(2)}ms`);
+        console.log('Format cache size:', (atemporal as any).getFormatCacheSize?.());
+        
+        expect(executionTime).toBeLessThan(1000);
+    });
+    
+    test('customParseFormat with multiple formats', () => {
+        // Probar con múltiples formatos para verificar el comportamiento del cache
+        const formats = [
+            'YYYY-MM-DD',
+            'MM/DD/YYYY',
+            'DD.MM.YYYY',
+            'YYYY-MM-DD HH:mm',
+            'MM/DD/YYYY HH:mm:ss',
+            'DD.MM.YYYY HH:mm:ss.SSS'
+        ];
+        
+        const dateStrings = [
+            '2023-12-25',
+            '12/25/2023',
+            '25.12.2023',
+            '2023-12-25 15:30',
+            '12/25/2023 15:30:45',
+            '25.12.2023 15:30:45.123'
+        ];
+        
+        // Warm up - cargar todos los formatos en el cache
+        for (let i = 0; i < formats.length; i++) {
+            atemporal.fromFormat(dateStrings[i], formats[i]);
+        }
+        
+        const cacheSize = (atemporal as any).getFormatCacheSize?.();
+        console.log('Format cache size after loading multiple formats:', cacheSize);
+        
+        // Verificar que el cache tiene el tamaño esperado
+        expect(cacheSize).toBe(formats.length);
+        
+        // Medir rendimiento con cache lleno
+        const iterations = 100;
+        const start = performance.now();
+        
+        for (let j = 0; j < iterations; j++) {
+            for (let i = 0; i < formats.length; i++) {
+                atemporal.fromFormat(dateStrings[i], formats[i]);
+            }
+        }
+        
+        const end = performance.now();
+        const executionTime = end - start;
+        
+        console.log(`Multiple formats: ${iterations * formats.length} parses took ${executionTime.toFixed(2)}ms`);
+        expect(executionTime).toBeLessThan(1000);
+    });
 
     test('cache effectiveness', () => {
         // Test that cache is actually being used
@@ -101,5 +175,29 @@ describe('Performance Tests', () => {
         
         // Should have cached formatters
         expect(stats.total).toBeGreaterThan(0);
+        
+        // Verificar que el tamaño no excede el máximo
+        expect(stats.total).toBeLessThanOrEqual(stats.maxSize);
+    });
+    
+    test('LRU cache behavior', () => {
+        // Configurar un tamaño de cache muy pequeño para probar el comportamiento LRU
+        IntlCache.setMaxCacheSize(3);
+        
+        // Crear más formateadores de los que caben en el cache
+        const locales = ['en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT'];
+        
+        for (const locale of locales) {
+            IntlCache.getDateTimeFormatter(locale, { dateStyle: 'full' });
+        }
+        
+        const stats = IntlCache.getStats();
+        console.log('LRU test cache stats:', stats);
+        
+        // El cache debería mantener solo 3 elementos (el tamaño máximo configurado)
+        expect(stats.dateTimeFormatters).toBe(3);
+        
+        // Restaurar el tamaño del cache para otros tests
+        IntlCache.setMaxCacheSize(50);
     });
 });

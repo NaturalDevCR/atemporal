@@ -258,24 +258,106 @@ export class TemporalUtils {
 
 
 /**
+ * A Least Recently Used (LRU) cache implementation to limit memory usage.
+ * @internal
+ */
+class LRUCache<K, V> {
+    private cache = new Map<K, V>();
+    private maxSize: number;
+    
+    constructor(maxSize = 100) {
+        this.maxSize = maxSize;
+    }
+    
+    get(key: K): V | undefined {
+        const value = this.cache.get(key);
+        if (value) {
+            // Actualizar posición (LRU)
+            this.cache.delete(key);
+            this.cache.set(key, value);
+        }
+        return value;
+    }
+    
+    set(key: K, value: V): void {
+        if (this.cache.has(key)) {
+            this.cache.delete(key);
+        } else if (this.cache.size >= this.maxSize) {
+            // Eliminar el elemento menos usado recientemente
+            const oldestKey = this.cache.keys().next().value;
+            if (oldestKey !== undefined) {
+                this.cache.delete(oldestKey);
+            }
+        }
+        this.cache.set(key, value);
+    }
+    
+    has(key: K): boolean {
+        return this.cache.has(key);
+    }
+    
+    clear(): void {
+        this.cache.clear();
+    }
+    
+    get size(): number {
+        return this.cache.size;
+    }
+}
+
+/**
  * Cache for Intl objects to improve performance by avoiding repeated instantiation.
  * @internal
  */
 class IntlCache {
-    private static dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
-    private static relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
-    private static numberFormatters = new Map<string, Intl.NumberFormat>();
-    private static listFormatters = new Map<string, Intl.ListFormat>();
+    // Inicialización perezosa con límite de tamaño
+    private static _dateTimeFormatters: LRUCache<string, Intl.DateTimeFormat> | null = null;
+    private static _relativeTimeFormatters: LRUCache<string, Intl.RelativeTimeFormat> | null = null;
+    private static _numberFormatters: LRUCache<string, Intl.NumberFormat> | null = null;
+    private static _listFormatters: LRUCache<string, Intl.ListFormat> | null = null;
+    
+    // Tamaño máximo configurable para cada cache
+    private static readonly MAX_CACHE_SIZE = 50;
+    
+    private static get dateTimeFormatters(): LRUCache<string, Intl.DateTimeFormat> {
+        if (!this._dateTimeFormatters) {
+            this._dateTimeFormatters = new LRUCache<string, Intl.DateTimeFormat>(this.MAX_CACHE_SIZE);
+        }
+        return this._dateTimeFormatters;
+    }
+    
+    private static get relativeTimeFormatters(): LRUCache<string, Intl.RelativeTimeFormat> {
+        if (!this._relativeTimeFormatters) {
+            this._relativeTimeFormatters = new LRUCache<string, Intl.RelativeTimeFormat>(this.MAX_CACHE_SIZE);
+        }
+        return this._relativeTimeFormatters;
+    }
+    
+    private static get numberFormatters(): LRUCache<string, Intl.NumberFormat> {
+        if (!this._numberFormatters) {
+            this._numberFormatters = new LRUCache<string, Intl.NumberFormat>(this.MAX_CACHE_SIZE);
+        }
+        return this._numberFormatters;
+    }
+    
+    private static get listFormatters(): LRUCache<string, Intl.ListFormat> {
+        if (!this._listFormatters) {
+            this._listFormatters = new LRUCache<string, Intl.ListFormat>(this.MAX_CACHE_SIZE);
+        }
+        return this._listFormatters;
+    }
 
     /**
      * Gets a cached DateTimeFormat instance or creates a new one.
      */
     static getDateTimeFormatter(locale: string, options: Intl.DateTimeFormatOptions = {}): Intl.DateTimeFormat {
         const key = `${locale}-${JSON.stringify(options)}`;
-        if (!this.dateTimeFormatters.has(key)) {
-            this.dateTimeFormatters.set(key, new Intl.DateTimeFormat(locale, options));
+        let formatter = this.dateTimeFormatters.get(key);
+        if (!formatter) {
+            formatter = new Intl.DateTimeFormat(locale, options);
+            this.dateTimeFormatters.set(key, formatter);
         }
-        return this.dateTimeFormatters.get(key)!;
+        return formatter;
     }
 
     /**
@@ -283,10 +365,12 @@ class IntlCache {
      */
     static getRelativeTimeFormatter(locale: string, options: Intl.RelativeTimeFormatOptions = {}): Intl.RelativeTimeFormat {
         const key = `${locale}-${JSON.stringify(options)}`;
-        if (!this.relativeTimeFormatters.has(key)) {
-            this.relativeTimeFormatters.set(key, new Intl.RelativeTimeFormat(locale, options));
+        let formatter = this.relativeTimeFormatters.get(key);
+        if (!formatter) {
+            formatter = new Intl.RelativeTimeFormat(locale, options);
+            this.relativeTimeFormatters.set(key, formatter);
         }
-        return this.relativeTimeFormatters.get(key)!;
+        return formatter;
     }
 
     /**
@@ -294,10 +378,12 @@ class IntlCache {
      */
     static getNumberFormatter(locale: string, options: Intl.NumberFormatOptions = {}): Intl.NumberFormat {
         const key = `${locale}-${JSON.stringify(options)}`;
-        if (!this.numberFormatters.has(key)) {
-            this.numberFormatters.set(key, new Intl.NumberFormat(locale, options));
+        let formatter = this.numberFormatters.get(key);
+        if (!formatter) {
+            formatter = new Intl.NumberFormat(locale, options);
+            this.numberFormatters.set(key, formatter);
         }
-        return this.numberFormatters.get(key)!;
+        return formatter;
     }
 
     /**
@@ -305,34 +391,55 @@ class IntlCache {
      */
     static getListFormatter(locale: string, options: Intl.ListFormatOptions = {}): Intl.ListFormat {
         const key = `${locale}-${JSON.stringify(options)}`;
-        if (!this.listFormatters.has(key)) {
-            this.listFormatters.set(key, new Intl.ListFormat(locale, options));
+        let formatter = this.listFormatters.get(key);
+        if (!formatter) {
+            formatter = new Intl.ListFormat(locale, options);
+            this.listFormatters.set(key, formatter);
         }
-        return this.listFormatters.get(key)!;
+        return formatter;
     }
 
     /**
      * Clears all caches. Useful for testing or memory management.
      */
     static clearAll(): void {
-        this.dateTimeFormatters.clear();
-        this.relativeTimeFormatters.clear();
-        this.numberFormatters.clear();
-        this.listFormatters.clear();
+        if (this._dateTimeFormatters) this._dateTimeFormatters.clear();
+        if (this._relativeTimeFormatters) this._relativeTimeFormatters.clear();
+        if (this._numberFormatters) this._numberFormatters.clear();
+        if (this._listFormatters) this._listFormatters.clear();
     }
 
     /**
      * Gets cache statistics for monitoring.
      */
     static getStats() {
+        const dtfSize = this._dateTimeFormatters ? this._dateTimeFormatters.size : 0;
+        const rtfSize = this._relativeTimeFormatters ? this._relativeTimeFormatters.size : 0;
+        const nfSize = this._numberFormatters ? this._numberFormatters.size : 0;
+        const lfSize = this._listFormatters ? this._listFormatters.size : 0;
+        
         return {
-            dateTimeFormatters: this.dateTimeFormatters.size,
-            relativeTimeFormatters: this.relativeTimeFormatters.size,
-            numberFormatters: this.numberFormatters.size,
-            listFormatters: this.listFormatters.size,
-            total: this.dateTimeFormatters.size + this.relativeTimeFormatters.size + 
-                   this.numberFormatters.size + this.listFormatters.size
+            dateTimeFormatters: dtfSize,
+            relativeTimeFormatters: rtfSize,
+            numberFormatters: nfSize,
+            listFormatters: lfSize,
+            total: dtfSize + rtfSize + nfSize + lfSize,
+            maxSize: this.MAX_CACHE_SIZE * 4 // Tamaño máximo total posible
         };
+    }
+    
+    /**
+     * Configura el tamaño máximo para todos los caches.
+     * @param size Nuevo tamaño máximo para cada cache
+     */
+    static setMaxCacheSize(size: number): void {
+        if (size < 1) throw new Error('Cache size must be at least 1');
+        
+        // Crear nuevos caches con el tamaño actualizado
+        this._dateTimeFormatters = new LRUCache<string, Intl.DateTimeFormat>(size);
+        this._relativeTimeFormatters = new LRUCache<string, Intl.RelativeTimeFormat>(size);
+        this._numberFormatters = new LRUCache<string, Intl.NumberFormat>(size);
+        this._listFormatters = new LRUCache<string, Intl.ListFormat>(size);
     }
 }
 
