@@ -43,7 +43,10 @@ const tokenMap: { [key: string]: string } = {
 };
 
 // Order tokens by length (longer ones first) to avoid parsing conflicts
-const tokenRegex = /YYYY|MM|DD|HH|mm|ss|SSS|SS|YY|M|D|H|m|s|S/g;
+import { RegexCache } from '../RegexCache';
+
+// Usar las expresiones regulares precompiladas
+const tokenRegex = RegexCache.getPrecompiled('customFormatTokenRegex')!;
 
 // Cache para expresiones regulares y resultados de formato
 class FormatCache {
@@ -71,9 +74,13 @@ class FormatCache {
         try {
             const formatTokens: string[] = [];
             // Escape regex special characters in the format string (like '.', '/') to prevent interference.
-            const safeFormatString = formatString.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-            const regexString = safeFormatString.replace(tokenRegex, (match) => {
+            const escapeRegexChars = RegexCache.getPrecompiled('escapeRegexChars')!;
+            const safeFormatString = formatString.replace(escapeRegexChars, '\\$&');
+            
+            const tokenRegexPattern = RegexCache.getPrecompiled('customFormatTokenRegex')!;
+            
+            // Construir la expresión regular para el formato
+            const regexString = safeFormatString.replace(tokenRegexPattern, (match) => {
                 formatTokens.push(match);
                 return tokenMap[match];
             });

@@ -71,7 +71,13 @@ function getDurationUnit(unit: TimeUnit): string {
     }
 }
 
-const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|z/g;
+// Reemplazar la línea 73
+// const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|z/g;
+
+import { RegexCache } from './RegexCache';
+
+// Usar la expresión regular precompilada
+const tokenRegex = RegexCache.getPrecompiled('tokenRegex')!;
 /**
  * Creates and caches a map of formatting tokens to their corresponding string values.
  * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>

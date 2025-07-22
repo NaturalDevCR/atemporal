@@ -344,6 +344,8 @@ Atemporal has a plugin system to extend its functionality.
 
 ### How to Use Plugins
 
+#### Standard Plugin Loading
+
 Import the plugin and extend `atemporal` using `atemporal.extend()`.
 
 ```ts
@@ -351,6 +353,30 @@ import atemporal from 'atemporal';
 import myPlugin from 'atemporal/plugins/myPlugin';
 
 atemporal.extend(myPlugin);
+```
+
+#### Lazy Loading Plugins
+
+To reduce the initial bundle size, you can load plugins on demand:
+
+```ts
+import atemporal from 'atemporal';
+
+// Load the plugin only when needed
+async function showRelativeTime() {
+  // Load the plugin on demand
+  await atemporal.lazyLoad('relativeTime');
+  
+  // Now you can use the plugin's functionality
+  const twoHoursAgo = atemporal().subtract(2, 'hour');
+  console.log(twoHoursAgo.fromNow()); // "2 hours ago"
+}
+
+// Check if a plugin is loaded
+console.log(atemporal.isPluginLoaded('relativeTime')); // false
+
+// View all loaded plugins
+console.log(atemporal.getLoadedPlugins()); // []
 ```
 
 ### relativeTime
@@ -551,6 +577,37 @@ The main error classes you can import are:
 - `InvalidTimeZoneError`: For invalid IANA time zone identifiers.
 - `InvalidDateError`: When an input cannot be parsed into a valid date.
 - `InvalidAtemporalInstanceError`: When an operation is attempted on an invalid instance.
+
+---
+
+## 🚀 Performance Optimizations
+
+Atemporal includes several performance optimizations to ensure efficient operation:
+
+### RegexCache System
+
+A unified caching system for regular expressions that improves performance by:
+
+- **Precompiling Common Patterns**: Frequently used regex patterns are precompiled and stored for immediate use
+- **Dynamic Caching**: Less common patterns are cached in an LRU (Least Recently Used) cache
+- **Reduced Memory Usage**: Prevents duplicate regex objects across the library
+
+```typescript
+// Internal usage example (you don't need to use this directly)
+import { RegexCache } from 'atemporal/RegexCache';
+
+// Get a precompiled regex
+const tokenRegex = RegexCache.getPrecompiled('tokenRegex');
+
+// Get or create a dynamic regex
+const dynamicRegex = RegexCache.getDynamic(pattern, flags);
+```
+
+### Other Optimizations
+
+- **Memoization**: The `diff` method uses memoization to improve performance for repeated calculations
+- **Dynamic Cache Sizing**: Cache sizes automatically adjust based on usage patterns
+- **Fast Paths**: The `from` method includes optimized paths for common input types
 
 ---
 

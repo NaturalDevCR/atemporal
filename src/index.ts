@@ -132,8 +132,137 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
  * Extends atemporal's functionality with a plugin.
  * The function signature is defined by its implementation.
  */
+const appliedPlugins = new Set<Plugin>();
+
 atemporal.extend = (plugin: Plugin, options) => {
-    plugin(TemporalWrapper, atemporal, options);
+    if (appliedPlugins.has(plugin)) {
+        // Plugin already applied, skip to avoid duplicates
+        return;
+    }
+    try {
+        plugin(TemporalWrapper, atemporal, options);
+        appliedPlugins.add(plugin);
+    } catch (error) {
+        console.error('Error applying plugin:', error);
+        throw error;
+    }
+};
+
+// Añade estas funciones antes de la exportación final
+
+/**
+ * Tracks which plugins have been loaded
+ */
+const loadedPlugins = new Map<string, Plugin>();
+
+/**
+ * List of available plugins in the library
+ */
+const AVAILABLE_PLUGINS = [
+    'relativeTime',
+    'customParseFormat',
+    'advancedFormat',
+    'durationHumanizer',
+    'weekDay'
+];
+
+/**
+ * Loads a plugin lazily (on-demand) when needed
+ * @param pluginName - Name of the plugin to load (without the path)
+ * @param options - Optional options for the plugin
+ * @returns A promise that resolves when the plugin has been loaded and applied
+ * @throws Error if the plugin doesn't exist or fails to load
+ */
+atemporal.lazyLoad = async (pluginName: string, options?: any): Promise<void> => {
+    // Skip if already loaded
+    if (loadedPlugins.has(pluginName)) {
+        return;
+    }
+    
+    // Validate plugin name
+    if (!AVAILABLE_PLUGINS.includes(pluginName)) {
+        throw new Error(
+            `Plugin '${pluginName}' not found. Available plugins are: ${AVAILABLE_PLUGINS.join(', ')}`
+        );
+    }
+    
+    try {
+        // Importar dinámicamente el plugin con la extensión correcta
+        let plugin;
+        try {
+            // Primero intentamos importar con la extensión .ts (para desarrollo con ts-node)
+            const pluginModule = await import(`./plugins/${pluginName}.ts`);
+            plugin = pluginModule.default;
+        } catch (e) {
+            try {
+                // Si falla, intentamos sin extensión (para producción/npm)
+                const pluginModule = await import(`./plugins/${pluginName}`);
+                plugin = pluginModule.default;
+            } catch (e2) {
+                // Último intento: importar desde el paquete raíz (para uso como dependencia npm)
+                const pluginModule = await import(`atemporal/plugins/${pluginName}`);
+                plugin = pluginModule.default;
+            }
+        }
+        
+        if (!plugin || typeof plugin !== 'function') {
+            throw new Error(`Invalid plugin format for '${pluginName}'`);
+        }
+        
+        // Aplicar el plugin
+        atemporal.extend(plugin, options);
+        
+        // Registrar que el plugin ha sido cargado
+        loadedPlugins.set(pluginName, plugin);
+    } catch (error) {
+        if (error instanceof Error) {
+            // Proporcionar un mensaje de error más descriptivo
+            throw new Error(`Error loading plugin '${pluginName}': ${error.message}`);
+        }
+        throw error;
+    }
+};
+
+/**
+ * Loads multiple plugins at once
+ * @param pluginNames - Array of plugin names to load
+ * @param options - Optional options object where keys are plugin names
+ * @returns A promise that resolves when all plugins have been loaded
+ */
+atemporal.lazyLoadMultiple = async (
+    pluginNames: string[],
+    options?: Record<string, any>
+): Promise<void> => {
+    await Promise.all(
+        pluginNames.map(name => 
+            atemporal.lazyLoad(name, options?.[name])
+        )
+    );
+};
+
+/**
+ * Checks if a specific plugin has been loaded
+ * @param pluginName - Name of the plugin to check
+ * @returns true if the plugin has been loaded, false otherwise
+ */
+atemporal.isPluginLoaded = (pluginName: string): boolean => {
+    return loadedPlugins.has(pluginName);
+};
+
+/**
+ * Gets the list of all plugins that have been loaded
+ * @returns Array of loaded plugin names
+ */
+atemporal.getLoadedPlugins = (): string[] => {
+    return Array.from(loadedPlugins.keys());
+};
+
+/**
+ * Gets the list of all available plugins
+ * @returns Array of available plugin names
+ */
+atemporal.getAvailablePlugins = (): string[] => {
+    return [...AVAILABLE_PLUGINS];
 };
 
 // Export the final, augmented factory function as the default export of the library.

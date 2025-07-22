@@ -3,6 +3,7 @@
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
+import { RegexCache } from '../RegexCache';
 import { TemporalUtils, IntlCache } from '../TemporalUtils'; // Importar el cache
 import type { AtemporalFactory, Plugin } from '../types';
 import {Temporal} from "@js-temporal/polyfill";
@@ -93,7 +94,11 @@ const advancedFormatPlugin: Plugin = (Atemporal) => {
     const originalFormat = Atemporal.prototype.format;
 
     // This regex now *only* looks for the tokens this plugin is responsible for.
-    const advancedTokenRegex = /Qo|Do|zzzz|zzz/g;
+    // Reemplazar la línea 96
+    // const advancedTokenRegex = /Qo|Do|zzzz|zzz/g;
+    
+    // Usar la expresión regular precompilada
+    const advancedTokenRegex = RegexCache.getPrecompiled('advancedTokenRegex')!;
 
     // Replace the original .format() with our new, extended version.
     Atemporal.prototype.format = function (
