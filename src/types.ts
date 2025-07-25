@@ -156,17 +156,8 @@ export interface AtemporalFactory {
      * @param pluginName - Name of the plugin to load (without the path)
      * @param options - Optional options for the plugin
      * @returns A promise that resolves when the plugin has been loaded and applied
-     * @throws Error if the plugin doesn't exist or fails to load
      */
     lazyLoad: (pluginName: string, options?: any) => Promise<void>;
-
-    /**
-     * Loads multiple plugins at once.
-     * @param pluginNames - Array of plugin names to load
-     * @param options - Optional options object where keys are plugin names
-     * @returns A promise that resolves when all plugins have been loaded
-     */
-    lazyLoadMultiple: (pluginNames: string[], options?: Record<string, any>) => Promise<void>;
 
     /**
      * Checks if a specific plugin has already been loaded.
@@ -177,15 +168,9 @@ export interface AtemporalFactory {
 
     /**
      * Gets the list of all plugins that have been loaded.
-     * @returns Array of loaded plugin names
+     * @returns An array with the names of the loaded plugins
      */
     getLoadedPlugins: () => string[];
-
-    /**
-     * Gets the list of all available plugins.
-     * @returns Array of available plugin names
-     */
-    getAvailablePlugins: () => string[];
 
     /**
      * Creates a Temporal.Duration object from a duration-like object or an ISO 8601 string.
