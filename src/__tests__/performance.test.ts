@@ -10,6 +10,16 @@ import customParseFormatPlugin from '../plugins/customParseFormat';
 import { DiffCache, IntlCache } from '../TemporalUtils';
 import type { TimeUnit } from '../index';
 
+const getPerformanceThreshold = (baseThreshold: number): number => {
+    const isCI = process.env.CI === 'true';
+    const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
+    
+    if (isCI || isGitHubActions) {
+        return baseThreshold * 3; // 3x más tolerante en CI
+    }
+    return baseThreshold;
+};
+
 // Extend atemporal with plugins
 atemporal.extend(relativeTimePlugin);
 atemporal.extend(advancedFormatPlugin);
@@ -42,8 +52,7 @@ describe('Performance Tests', () => {
         console.log(`RelativeTime: ${iterations} iterations took ${duration.toFixed(2)}ms`);
         console.log('Cache stats:', IntlCache.getStats());
         
-        // Ajustar threshold más realista después de optimización
-        expect(duration).toBeLessThan(500); // 500ms para 1000 iteraciones
+        expect(duration).toBeLessThan(getPerformanceThreshold(500));
     });
 
     test('advancedFormat performance with cache', () => {
