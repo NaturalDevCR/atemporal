@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.5](https://github.com/NaturalDevCR/atemporal/compare/v0.1.4...v0.1.5) (2025-08-06)
+
+
+### Bug Fixes
+
+* add missing method signatures to AtemporalFactory interface ([f8d757e](https://github.com/NaturalDevCR/atemporal/commit/f8d757ecf19247d93efb36aff1fe9816690376a9))
+
 ### [0.1.4](https://github.com/NaturalDevCR/atemporal/compare/v0.1.3...v0.1.4) (2025-08-06)
 
 ### [0.1.3](https://github.com/NaturalDevCR/atemporal/compare/v0.1.2...v0.1.3) (2025-08-06)
