@@ -29,6 +29,11 @@ jobs:
         run: npm install
 
       - name: Run tests with coverage
-        run: npm run test
+        run: |
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "Timezone: $(date)"
+          npm run test -- --verbose
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
+          TZ: 'UTC'
