@@ -55,6 +55,41 @@ describe('RegexCache', () => {
     });
   });
 
+  // NEW: Test for getCustomFormatTokenRegex method (covers lines 39-44)
+  describe('getCustomFormatTokenRegex', () => {
+    /**
+     * Test that getCustomFormatTokenRegex returns the correct precompiled regex
+     */
+    it('should return the custom format token regex', () => {
+      const regex = RegexCache.getCustomFormatTokenRegex();
+      expect(regex).toBeInstanceOf(RegExp);
+      expect(regex.source).toContain('YYYY|YY|MMMM|MMM|MM|M|DDDD|DDD|DD|D');
+      expect(regex.global).toBe(true);
+    });
+
+    /**
+     * Test error handling when the regex is not found in cache
+     * This covers the error throw condition in lines 41-43
+     */
+    it('should throw an error if custom format token regex is not found', () => {
+      // Mock the private _precompiledRegex to simulate missing regex
+      const originalGet = (RegexCache as any)._precompiledRegex.get;
+      (RegexCache as any)._precompiledRegex.get = jest.fn((key: string) => {
+        if (key === 'customFormatTokenRegex') {
+          return undefined; // Simulate missing regex
+        }
+        return originalGet.call((RegexCache as any)._precompiledRegex, key);
+      });
+
+      expect(() => {
+        RegexCache.getCustomFormatTokenRegex();
+      }).toThrow('Custom format token regex not found in precompiled cache');
+
+      // Restore original method
+      (RegexCache as any)._precompiledRegex.get = originalGet;
+    });
+  });
+
   describe('getDynamic', () => {
     it('should create and cache a new regex', () => {
       const pattern = '\\d{4}';

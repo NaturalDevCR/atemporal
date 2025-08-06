@@ -263,3 +263,191 @@ it('should parse formats with single and double digit tokens together', () => {
     expect(date2.day).toBe(5);
 });
 
+// Add these test cases after the existing tests, before the closing brackets
+
+describe('Extended Token Support', () => {
+    describe('12-hour format and AM/PM', () => {
+        it('should parse 12-hour format with AM/PM', () => {
+            const date1 = atemporal.fromFormat('2023-01-15 3:30 PM', 'YYYY-MM-DD h:mm A');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.hour).toBe(15); // 3 PM = 15:00
+            expect(date1.minute).toBe(30);
+            
+            const date2 = atemporal.fromFormat('2023-01-15 11:45 AM', 'YYYY-MM-DD h:mm A');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.hour).toBe(11);
+            expect(date2.minute).toBe(45);
+        });
+        
+        it('should parse 12-hour format with lowercase am/pm', () => {
+            const date1 = atemporal.fromFormat('2023-01-15 9:15 pm', 'YYYY-MM-DD h:mm a');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.hour).toBe(21); // 9 PM = 21:00
+            
+            const date2 = atemporal.fromFormat('2023-01-15 6:30 am', 'YYYY-MM-DD h:mm a');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.hour).toBe(6);
+        });
+        
+        it('should handle 12 AM and 12 PM correctly', () => {
+            const date1 = atemporal.fromFormat('2023-01-15 12:00 AM', 'YYYY-MM-DD h:mm A');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.hour).toBe(0); // 12 AM = 00:00
+            
+            const date2 = atemporal.fromFormat('2023-01-15 12:00 PM', 'YYYY-MM-DD h:mm A');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.hour).toBe(12); // 12 PM = 12:00
+        });
+        
+        it('should parse padded 12-hour format', () => {
+            const date = atemporal.fromFormat('2023-01-15 09:30 AM', 'YYYY-MM-DD hh:mm A');
+            expect(date.isValid()).toBe(true);
+            expect(date.hour).toBe(9);
+            expect(date.minute).toBe(30);
+        });
+        
+        it('should reject 12-hour format without AM/PM', () => {
+            const date = atemporal.fromFormat('2023-01-15 3:30', 'YYYY-MM-DD h:mm');
+            expect(date.isValid()).toBe(false);
+        });
+    });
+    
+    describe('Month names', () => {
+        it('should parse full month names', () => {
+            const date1 = atemporal.fromFormat('15 January 2023', 'DD MMMM YYYY');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(1);
+            expect(date1.day).toBe(15);
+            expect(date1.year).toBe(2023);
+            
+            const date2 = atemporal.fromFormat('December 25, 2023', 'MMMM DD, YYYY');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(12);
+            expect(date2.day).toBe(25);
+        });
+        
+        it('should parse abbreviated month names', () => {
+            const date1 = atemporal.fromFormat('15 Jan 2023', 'DD MMM YYYY');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(1);
+            expect(date1.day).toBe(15);
+            
+            const date2 = atemporal.fromFormat('Dec 25, 2023', 'MMM DD, YYYY');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(12);
+            expect(date2.day).toBe(25);
+        });
+        
+        it('should handle May correctly (same for full and abbreviated)', () => {
+            const date1 = atemporal.fromFormat('15 May 2023', 'DD MMMM YYYY');
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(5);
+            
+            const date2 = atemporal.fromFormat('15 May 2023', 'DD MMM YYYY');
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(5);
+        });
+        
+        it('should reject invalid month names', () => {
+            const date1 = atemporal.fromFormat('15 InvalidMonth 2023', 'DD MMMM YYYY');
+            expect(date1.isValid()).toBe(false);
+            
+            const date2 = atemporal.fromFormat('15 Xyz 2023', 'DD MMM YYYY');
+            expect(date2.isValid()).toBe(false);
+        });
+    });
+    
+    describe('Day of year', () => {
+        it('should parse day of year with padding', () => {
+            const date1 = atemporal.fromFormat('2023-001', 'YYYY-DDD'); // January 1st
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(1);
+            expect(date1.day).toBe(1);
+            
+            const date2 = atemporal.fromFormat('2023-032', 'YYYY-DDD'); // February 1st
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(2);
+            expect(date2.day).toBe(1);
+        });
+        
+        it('should parse day of year without padding', () => {
+            const date1 = atemporal.fromFormat('2023-1', 'YYYY-DDDD'); // January 1st
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(1);
+            expect(date1.day).toBe(1);
+            
+            const date2 = atemporal.fromFormat('2023-365', 'YYYY-DDDD'); // December 31st (non-leap year)
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(12);
+            expect(date2.day).toBe(31);
+        });
+        
+        it('should handle leap years correctly', () => {
+            const date1 = atemporal.fromFormat('2024-060', 'YYYY-DDD'); // February 29th in leap year
+            expect(date1.isValid()).toBe(true);
+            expect(date1.month).toBe(2);
+            expect(date1.day).toBe(29);
+            
+            const date2 = atemporal.fromFormat('2024-366', 'YYYY-DDD'); // December 31st in leap year
+            expect(date2.isValid()).toBe(true);
+            expect(date2.month).toBe(12);
+            expect(date2.day).toBe(31);
+        });
+        
+        it('should reject invalid day of year', () => {
+            const date1 = atemporal.fromFormat('2023-000', 'YYYY-DDD');
+            expect(date1.isValid()).toBe(false);
+            
+            const date2 = atemporal.fromFormat('2023-366', 'YYYY-DDD'); // 366 in non-leap year
+            expect(date2.isValid()).toBe(false);
+            
+            const date3 = atemporal.fromFormat('2024-367', 'YYYY-DDD'); // 367 even in leap year
+            expect(date3.isValid()).toBe(false);
+        });
+    });
+    
+    describe('Combined extended formats', () => {
+        it('should parse complex formats with multiple new tokens', () => {
+            const date = atemporal.fromFormat('January 15, 2023 at 3:30 PM', 'MMMM DD, YYYY [at] h:mm A');
+            console.log('complex formats: ', date)
+            expect(date.isValid()).toBe(true);
+            expect(date.year).toBe(2023);
+            expect(date.month).toBe(1);
+            expect(date.day).toBe(15);
+            expect(date.hour).toBe(15);
+            expect(date.minute).toBe(30);
+        });
+        
+        it('should parse day of year with 12-hour time', () => {
+            const date = atemporal.fromFormat('2023-032 11:45 PM', 'YYYY-DDD h:mm A');
+            expect(date.isValid()).toBe(true);
+            expect(date.month).toBe(2); // Day 32 = February 1st
+            expect(date.day).toBe(1);
+            expect(date.hour).toBe(23);
+            expect(date.minute).toBe(45);
+        });
+    });
+});
+
+it('should reject February 29th in non-leap years', () => {
+    const date1 = atemporal.fromFormat('2023-02-29', 'YYYY-MM-DD'); // 2023 is not a leap year
+    expect(date1.isValid()).toBe(false);
+    
+    const date2 = atemporal.fromFormat('2024-02-29', 'YYYY-MM-DD'); // 2024 is a leap year
+    expect(date2.isValid()).toBe(true);
+});
+
+it('should reject invalid days for specific months', () => {
+    // April has only 30 days
+    const date1 = atemporal.fromFormat('2023-04-31', 'YYYY-MM-DD');
+    expect(date1.isValid()).toBe(false);
+    
+    // February in non-leap year has only 28 days
+    const date2 = atemporal.fromFormat('2023-02-29', 'YYYY-MM-DD');
+    expect(date2.isValid()).toBe(false);
+    
+    // Valid cases
+    const date3 = atemporal.fromFormat('2023-04-30', 'YYYY-MM-DD');
+    expect(date3.isValid()).toBe(true);
+});
+

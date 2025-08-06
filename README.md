@@ -393,10 +393,10 @@ atemporal().add(2, 'hours').fromNow();        // "in 2 hours"
 
 ### customParseFormat
 
-Allows creating an `atemporal` instance from a string with a custom format. Supports advanced parsing features including two-digit years, milliseconds, and ambiguous time formats.
+Allows creating an `atemporal` instance from a string with a custom format. Features high-performance parsing with intelligent caching, comprehensive error handling, and support for advanced date formats including 12-hour format with AM/PM, month names, day of year, and ambiguous time formats.
 
 ```ts
-import customParseFormat from 'atemporal/plugins/customParseFormat';
+import customParseFormat, { getParseError } from 'atemporal/plugins/customParseFormat';
 atemporal.extend(customParseFormat);
 
 // Basic date parsing
@@ -416,6 +416,21 @@ const precise1 = atemporal.fromFormat('2024-01-01 12:30:45.123', 'YYYY-MM-DD HH:
 const precise2 = atemporal.fromFormat('2024-01-01 12:30:45.12', 'YYYY-MM-DD HH:mm:ss.SS'); // 120ms
 const precise3 = atemporal.fromFormat('2024-01-01 12:30:45.1', 'YYYY-MM-DD HH:mm:ss.S');   // 100ms
 
+// 12-hour format with AM/PM
+const ampm1 = atemporal.fromFormat('2024-01-01 02:30 PM', 'YYYY-MM-DD hh:mm A');
+const ampm2 = atemporal.fromFormat('2024-01-01 11:45 am', 'YYYY-MM-DD h:mm a');
+
+// Month names
+const monthName1 = atemporal.fromFormat('January 15, 2024', 'MMMM DD, YYYY');
+const monthName2 = atemporal.fromFormat('Jan 15, 2024', 'MMM DD, YYYY');
+
+// Day of year
+const dayOfYear = atemporal.fromFormat('2024-100', 'YYYY-DDD'); // 100th day of 2024
+
+// Week of year
+const weekOfYear1 = atemporal.fromFormat('2024-W15', 'YYYY-[W]WW'); // 15th week of 2024
+const weekOfYear2 = atemporal.fromFormat('2024-W5', 'YYYY-[W]W');   // 5th week of 2024
+
 // Ambiguous time formats
 const ambiguous = atemporal.fromFormat('630', 'Hmm'); // 6:30 AM
 const standard = atemporal.fromFormat('0630', 'HHmm');  // 6:30 AM
@@ -426,6 +441,34 @@ const mixed2 = atemporal.fromFormat('05/07/2024', 'DD/MM/YYYY'); // 5th July 202
 
 // With timezone
 const withTz = atemporal.fromFormat('2024-01-01 15:30', 'YYYY-MM-DD HH:mm', 'America/New_York');
+
+// Error handling - Default behavior (backward compatible)
+const invalidDate = atemporal.fromFormat('invalid-date', 'YYYY-MM-DD');
+if (!invalidDate.isValid()) {
+    // Get detailed error information
+    const error = getParseError(invalidDate);
+    if (error) {
+        console.log(`Error Type: ${error.type}`);
+        console.log(`Error Message: ${error.message}`);
+        console.log(`Input: ${error.dateString}`);
+        console.log(`Format: ${error.formatString}`);
+    }
+}
+
+// Strict error handling (throws exceptions)
+try {
+    const strictDate = atemporal.fromFormatStrict('2024-13-45', 'YYYY-MM-DD');
+} catch (error) {
+    if (error instanceof FormatMismatchError) {
+        console.log('Format mismatch:', error.message);
+    } else if (error instanceof InvalidDateComponentsError) {
+        console.log('Invalid date components:', error.message);
+    }
+}
+
+// Performance optimization - Cache management
+console.log('Cache size:', atemporal.getFormatCacheSize());
+atemporal.clearFormatCache(); // Clear cache if needed
 ```
 
 **Supported Format Tokens:**
@@ -433,10 +476,15 @@ const withTz = atemporal.fromFormat('2024-01-01 15:30', 'YYYY-MM-DD HH:mm', 'Ame
 - `YY` - 2-digit year with Y2K logic (e.g., 24 → 2024, 85 → 1985)
 - `MM` - 2-digit month (01-12)
 - `M` - 1-2 digit month (1-12)
+- `MMMM` - Full month name (e.g., January)
+- `MMM` - Abbreviated month name (e.g., Jan)
 - `DD` - 2-digit day (01-31)
 - `D` - 1-2 digit day (1-31)
+- `DDD` - Day of year (001-366)
 - `HH` - 2-digit hour (00-23)
 - `H` - 1-2 digit hour (0-23)
+- `hh` - 2-digit hour (01-12)
+- `h` - 1-2 digit hour (1-12)
 - `mm` - 2-digit minute (00-59)
 - `m` - 1-2 digit minute (0-59)
 - `ss` - 2-digit second (00-59)
@@ -444,209 +492,71 @@ const withTz = atemporal.fromFormat('2024-01-01 15:30', 'YYYY-MM-DD HH:mm', 'Ame
 - `SSS` - 3-digit milliseconds (000-999)
 - `SS` - 2-digit centiseconds (00-99, converted to milliseconds)
 - `S` - 1-digit deciseconds (0-9, converted to milliseconds)
+- `A` - Uppercase AM/PM
+- `a` - Lowercase am/pm
+- `W` - Week of year (0-53)
+- `WW` - Week of year with leading zero (00-53)
 - `Hmm` - Ambiguous hour+minute format (e.g., 630 = 6:30)
 
-### advancedFormat
+**Enhanced Features:**
 
-Extends `.format()` with advanced tokens like ordinals, quarters, and localized timezone names.
+🚀 **High Performance**
+- Intelligent regex caching with LRU eviction
+- Pre-compiled month name lookups
+- Optimized parsing algorithms
+- Fast path for common formats
+
+🛡️ **Robust Error Handling**
+- **Default mode**: Returns invalid `TemporalWrapper` with error metadata (backward compatible)
+- **Strict mode**: `fromFormatStrict()` throws detailed exceptions
+- **Error inspection**: Use `getParseError()` to get detailed error information
+- **Error types**: `InvalidFormat`, `FormatMismatch`, `InvalidDateComponents`, `InvalidAmPm`, `UnexpectedError`
+
+📅 **Advanced Date Parsing**
+- **12-hour format support**: Parse times with AM/PM indicators
+- **Month name parsing**: Support for both full and abbreviated month names (English)
+- **Day of year parsing**: Parse dates using day-of-year format (1-366)
+- **Week of year parsing**: Support for week-based date formats
+- **Ambiguous time formats**: Handle formats like 'Hmm' intelligently
+- **Mixed precision**: Combine single and double-digit tokens seamlessly
+
+⚡ **Performance Optimizations**
+- Format regex compilation is cached (up to 100 formats)
+- Month name lookups use `Map` for O(1) access
+- Optimized validation functions
+- Minimal memory allocation during parsing
+
+**API Methods:**
 
 ```ts
-import advancedFormat from 'atemporal/plugins/advancedFormat';
-atemporal.extend(advancedFormat);
+// Main parsing method (backward compatible)
+atemporal.fromFormat(dateString: string, formatString: string, timeZone?: string): TemporalWrapper
 
-const date = atemporal('2024-01-22T12:00:00', 'America/New_York');
-// Ordinal and Quarter tokens
-date.format('Do MMMM YYYY'); // "22nd January 2024"
-date.format('Qo [Quarter]'); // "1st Quarter"
+// Strict parsing method (throws errors)
+atemporal.fromFormatStrict(dateString: string, formatString: string, timeZone?: string): TemporalWrapper
 
-// Timezone name tokens
-date.format('HH:mm zzzz'); // "12:00 Eastern Standard Time"
+// Error inspection
+getParseError(instance: TemporalWrapper): ParseErrorInfo | null
+
+// Cache management
+atemporal.getFormatCacheSize(): number
+atemporal.clearFormatCache(): void
 ```
 
-### weekDay
-
-Allows customizing the start of the week and adds the `.weekday()` method.
+**Error Types:**
 
 ```ts
-import weekDay from 'atemporal/plugins/weekDay';
-atemporal.extend(weekDay);
-
-const wed = atemporal('2024-08-14'); // A Wednesday
-
-// Default: week starts on Monday (1). .weekday() is 0-indexed from start.
-console.log(wed.weekday()); // 2 (Mon=0, Tue=1, Wed=2)
-console.log(wed.startOf('week').format('dddd')); // "Monday"
-
-// Change the start of the week to Sunday (0)
-atemporal.setWeekStartsOn(0);
-console.log(wed.weekday()); // 3 (Sun=0, Mon=1, Tue=2, Wed=3)
-console.log(wed.startOf('week').format('dddd')); // "Sunday"
-```
-
-### durationHumanizer
-
-Adds the static method `atemporal.humanize()` to turn durations into readable text. It also supports different display styles.
-
-```ts
-import durationHumanizer from 'atemporal/plugins/durationHumanizer';
-atemporal.extend(durationHumanizer);
-
-const d = { years: 2, months: 3, days: 5 };
-atemporal.humanize(d); // "2 years, 3 months, and 5 days"
-atemporal.humanize(d, { locale: 'es' }); // "2 años, 3 meses y 5 días"
-
-// Using different unit displays
-atemporal.humanize(d, { unitDisplay: 'short' }); // "2 yr, 3 mo, and 5 days"
-```
-
----
-
-## 🛡️ Validators and Type Guards
-
-Atemporal includes static utilities for writing more robust code.
-
-```ts
-import atemporal from 'atemporal';
-import { Temporal } from '@js-temporal/polyfill';
-
-// Check if an input is an atemporal instance
-atemporal.isAtemporal(atemporal()); // true
-atemporal.isAtemporal(new Date());   // false
-
-// Check if an input can be parsed into a valid date
-atemporal.isValid('2024-05-10');   // true
-atemporal.isValid('not a date');   // false
-
-// Check if an object is a Temporal.Duration instance
-atemporal.isDuration(Temporal.Duration.from({ hours: 1 })); // true
-
-// Check if a string is a valid IANA time zone
-atemporal.isValidTimeZone('America/Costa_Rica'); // true
-atemporal.isValidTimeZone('Mars/Olympus_Mons');  // false
-
-// Check if a string is a valid locale code
-atemporal.isValidLocale('en-US'); // true
-atemporal.isValidLocale('en_US'); // false
-```
-
----
-
-## 🌍 Localization and Time Zones
-
-Configure global defaults for your entire application.
-
-```ts
-// Set the default locale and time zone
-atemporal.setDefaultLocale('es-CR');
-atemporal.setDefaultTimeZone('America/Costa_Rica');
-
-// All new instances without arguments will use these defaults
-const now = atemporal();
-console.log(now.format('dddd, DD [de] MMMM [de] YYYY', 'es-CR'));
-// => "miércoles, 14 de agosto de 2024" (example)
-
-console.log(now.timeZoneName);
-// => "America/Costa_Rica"
-
-// You can override the time zone when creating an instance
-const tokyoTime = atemporal('2024-01-01T12:00:00', 'Asia/Tokyo');
-console.log(tokyoTime.format('HH:mm z')); // => "12:00 Asia/Tokyo"
-```
-
----
-
-### Error Handling
-
-Atemporal uses custom error classes so you can handle failures in a specific and robust way, rather than relying on generic error messages.
-
-```ts
-import atemporal, { InvalidTimeZoneError } from 'atemporal';
-
-try {
-  // Attempt to use an invalid time zone
-  atemporal.setDefaultTimeZone('Mars/Olympus_Mons');
-} catch (e) {
-  if (e instanceof InvalidTimeZoneError) {
-    console.error('Caught error:', e.message);
-    // => "Caught error: Invalid time zone: Mars/Olympus_Mons"
-  }
+interface ParseErrorInfo {
+    type: 'InvalidFormat' | 'FormatMismatch' | 'InvalidDateComponents' | 'InvalidAmPm' | 'UnexpectedError';
+    message: string;
+    dateString?: string;
+    formatString?: string;
 }
 ```
 
-The main error classes you can import are:
-- `InvalidTimeZoneError`: For invalid IANA time zone identifiers.
-- `InvalidDateError`: When an input cannot be parsed into a valid date.
-- `InvalidAtemporalInstanceError`: When an operation is attempted on an invalid instance.
-
----
-
-## 🚀 Performance Optimizations
-
-Atemporal includes several performance optimizations to ensure efficient operation:
-
-### RegexCache System
-
-A unified caching system for regular expressions that improves performance by:
-
-- **Precompiling Common Patterns**: Frequently used regex patterns are precompiled and stored for immediate use
-- **Dynamic Caching**: Less common patterns are cached in an LRU (Least Recently Used) cache
-- **Reduced Memory Usage**: Prevents duplicate regex objects across the library
-
-```typescript
-// Internal usage example (you don't need to use this directly)
-import { RegexCache } from 'atemporal/RegexCache';
-
-// Get a precompiled regex
-const tokenRegex = RegexCache.getPrecompiled('tokenRegex');
-
-// Get or create a dynamic regex
-const dynamicRegex = RegexCache.getDynamic(pattern, flags);
-```
-
-### Other Optimizations
-
-- **Memoization**: The `diff` method uses memoization to improve performance for repeated calculations
-- **Dynamic Cache Sizing**: Cache sizes automatically adjust based on usage patterns
-- **Fast Paths**: The `from` method includes optimized paths for common input types
-
----
-
-## 📜 License
-
-MIT — Josue Orozco A.
-
----
-
-## 🛠️ Roadmap (v1.0)
-
-- **Unit Tests**: Specially Coverage
-- **Performance Optimizations**: Fine-tuning internal operations for faster response times.
-- **Expanded Documentation**: More examples, guides, and API details.
-- **Additional Locale Support**: Increasing the number of built-in translations and custom locale options.
-- **Better Error Handling**: Clearer and more descriptive error messages for easier debugging.
-
----
-
-## 🛠️ Want to contribute?
-
-Contributions are always welcome! This project follows the [standard fork & pull request workflow](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
-
-To get started:
-1.  Fork the repository.
-2.  Clone your fork: `git clone https://github.com/YOUR_USERNAME/atemporal.git`
-3.  Install dependencies: `npm install`
-4.  Run the tests: `npm test`
-
-[//]: # (Please see our **Contributing Guide** for more details on our code standards and practices.)
-
----
-
-## A Note on AI-Assisted Development
-This library was developed with the support of AI coding assistants. These tools were instrumental in providing architectural guidance, accelerating debugging, and exploring code optimization strategies. The final architecture, implementation, and tests are the result of the author's direct work and final decisions.
-
----
-
-## Want to support my work?
-<a href="https://buymeacoffee.com/naturaldevcr" target="_blank"><img src="https://github.com/user-attachments/assets/98a65e1b-2843-4333-8955-0db7a20477bf" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
-
-### [Donate - Paypal](https://www.paypal.com/donate/?hosted_button_id=A8MKF5RNGQ77U).
+**Performance Notes:**
+- First parse of a format compiles and caches the regex
+- Subsequent parses with the same format are significantly faster
+- Cache automatically manages memory with LRU eviction
+- Month name parsing uses pre-compiled Maps for optimal performance
+- Validation functions are optimized for common date ranges

@@ -23,12 +23,24 @@ export class RegexCache {
         // Validación ISO UTC
         this._precompiledRegex.set('isoUtcRegex', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
         
-        // Formato personalizado
-        this._precompiledRegex.set('customFormatTokenRegex', /YYYY|MM|DD|HH|mm|ss|SSS|SS|YY|M|D|H|m|s|S/g);
+        // Formato personalizado - UPDATED to include bracket handling
+        this._precompiledRegex.set('customFormatTokenRegex', /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DDDD|DDD|DD|D|WWW|WW|W|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|A|a/g);
         this._precompiledRegex.set('escapeRegexChars', /[-/\\^$*+?.()|[\]{}]/g);
         
         // Formato avanzado
         this._precompiledRegex.set('advancedTokenRegex', /Qo|Do|zzzz|zzz/g);
+    }
+    
+    /**
+     * Gets the precompiled custom format token regex.
+     * @returns The custom format token regex for parsing format strings
+     */
+    static getCustomFormatTokenRegex(): RegExp {
+        const regex = this._precompiledRegex.get('customFormatTokenRegex');
+        if (!regex) {
+            throw new Error('Custom format token regex not found in precompiled cache');
+        }
+        return regex;
     }
     
     /**
