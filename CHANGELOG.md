@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/NaturalDevCR/atemporal/compare/v0.1.2...v0.1.3) (2025-08-06)
+
+
+### Features
+
+* comprehensive test coverage and performance optimizations ([ec78453](https://github.com/NaturalDevCR/atemporal/commit/ec784538e5353efb8850d7af038b4ccfd1205c72))
+
+
+### Bug Fixes
+
+* Ajustar thresholds de performance para entornos CI ([26c3935](https://github.com/NaturalDevCR/atemporal/commit/26c3935f9745c644e8c6bbf84229cc54b5f0a18f))
+
 ### [0.1.2](https://github.com/NaturalDevCR/atemporal/compare/v0.1.1...v0.1.2) (2025-07-22)
 
 ### [0.1.1](https://github.com/NaturalDevCR/atemporal/compare/v0.1.0...v0.1.1) (2025-07-21)
