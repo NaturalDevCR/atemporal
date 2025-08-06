@@ -173,10 +173,17 @@ export interface AtemporalFactory {
     getLoadedPlugins: () => string[];
 
     /**
-     * Creates a Temporal.Duration object from a duration-like object or an ISO 8601 string.
-     * @param durationLike - An object like `{ hours: 2, minutes: 30 }` or a string like `'PT2H30M'`.
-     * @returns A Temporal.Duration instance.
+     * Loads multiple plugins asynchronously.
+     * @param pluginNames Array of plugin names to load
+     * @param options Optional configuration object for each plugin
      */
+    lazyLoadMultiple: (pluginNames: string[], options?: Record<string, any>) => Promise<void>;
+    
+    /**
+     * Gets the list of all available plugins.
+     */
+    getAvailablePlugins: () => string[];
+
     duration(durationLike: Temporal.DurationLike | string): Temporal.Duration;
 }
 
