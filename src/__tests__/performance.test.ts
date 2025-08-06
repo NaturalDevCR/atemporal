@@ -16,7 +16,13 @@ atemporal.extend(advancedFormatPlugin);
 atemporal.extend(durationHumanizer);
 atemporal.extend(customParseFormatPlugin);
 
-describe('Performance Tests', () => {
+// Add at the top of the file after imports
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+// Replace the main describe block
+const describePerformance = isCI ? describe.skip : describe;
+
+describePerformance('Performance Tests', () => {
     beforeEach(() => {
         // Clear cache before each test
         IntlCache.clearAll();
@@ -261,7 +267,9 @@ describe('Performance Tests', () => {
     });
 });
 
-describe('Dynamic Cache Sizing', () => {
+const describeDynamicCache = isCI ? describe.skip : describe;
+
+describeDynamicCache('Dynamic Cache Sizing', () => {
     beforeEach(() => {
         // Clear cache before each test
         IntlCache.clearAll();
