@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.6](https://github.com/NaturalDevCR/atemporal/compare/v0.1.5...v0.1.6) (2025-08-09)
+
+
+### Features
+
+* comprehensive improvements to performance, testing, and caching ([fcc2936](https://github.com/NaturalDevCR/atemporal/commit/fcc29360c50b49c9f5198ff9519fe2ec52151ca4))
+
 ### [0.1.5](https://github.com/NaturalDevCR/atemporal/compare/v0.1.4...v0.1.5) (2025-08-06)
 
 
