@@ -6,6 +6,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from '../TemporalWrapper';
 import type { AtemporalFactory, Plugin } from '../types';
+import { LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
 
 // Extend the `atemporal` factory interface to add our new static method.
 declare module '../types' {
@@ -59,9 +60,9 @@ const tokenMap: { [key: string]: string } = {
     // dd: '(0[0-6])',               // Day of week 00-06
     // d: '([0-6])',                 // Day of week 0-6
     
-    // Month names
-    MMMM: '(January|February|March|April|May|June|July|August|September|October|November|December)',
-    MMM: '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',
+    // Month names (case-insensitive)
+    MMMM: '([Jj][Aa][Nn][Uu][Aa][Rr][Yy]|[Ff][Ee][Bb][Rr][Uu][Aa][Rr][Yy]|[Mm][Aa][Rr][Cc][Hh]|[Aa][Pp][Rr][Ii][Ll]|[Mm][Aa][Yy]|[Jj][Uu][Nn][Ee]|[Jj][Uu][Ll][Yy]|[Aa][Uu][Gg][Uu][Ss][Tt]|[Ss][Ee][Pp][Tt][Ee][Mm][Bb][Ee][Rr]|[Oo][Cc][Tt][Oo][Bb][Ee][Rr]|[Nn][Oo][Vv][Ee][Mm][Bb][Ee][Rr]|[Dd][Ee][Cc][Ee][Mm][Bb][Ee][Rr])',
+    MMM: '([Jj][Aa][Nn]|[Ff][Ee][Bb]|[Mm][Aa][Rr]|[Aa][Pp][Rr]|[Mm][Aa][Yy]|[Jj][Uu][Nn]|[Jj][Uu][Ll]|[Aa][Uu][Gg]|[Ss][Ee][Pp]|[Oo][Cc][Tt]|[Nn][Oo][Vv]|[Dd][Ee][Cc])',
 };
 
 // Order tokens by length (longer ones first) to avoid parsing conflicts
@@ -72,25 +73,13 @@ const tokenRegex = RegexCache.getPrecompiled('customFormatTokenRegex')!;
 
 // Cache para expresiones regulares y resultados de formato
 class FormatCache {
-    private static readonly MAX_SIZE = 100;
-    private static regexCache = new Map<string, { regex: RegExp, tokens: string[] }>();
+    private static cache = new LRUCache<string, { regex: RegExp, tokens: string[] }>(100);
     
     static getRegexForFormat(formatString: string): { regex: RegExp, tokens: string[] } | null {
         // Verificar si ya existe en el cache
-        if (this.regexCache.has(formatString)) {
-            // Mover al final para implementar LRU
-            const entry = this.regexCache.get(formatString)!;
-            this.regexCache.delete(formatString);
-            this.regexCache.set(formatString, entry);
-            return entry;
-        }
-        
-        // Si el cache está lleno, eliminar la entrada más antigua
-        if (this.regexCache.size >= this.MAX_SIZE) {
-            const oldestKey = this.regexCache.keys().next().value;
-            if (oldestKey !== undefined) {
-                this.regexCache.delete(oldestKey);
-            }
+        const cached = this.cache.get(formatString);
+        if (cached) {
+            return cached;
         }
         
         try {
@@ -99,9 +88,7 @@ class FormatCache {
             const escapeRegexChars = RegexCache.getPrecompiled('escapeRegexChars')!;
             const safeFormatString = formatString.replace(escapeRegexChars, '\\$&');
             
-            // Add debug logging
-            console.log('Debug - Format string:', formatString);
-            console.log('Debug - Safe format string:', safeFormatString);
+            // Process format string
             
             const tokenRegexPattern = RegexCache.getPrecompiled('customFormatTokenRegex')!;
             
@@ -109,30 +96,23 @@ class FormatCache {
             const regexString = safeFormatString.replace(tokenRegexPattern, (match, literal) => {
                 // If this is a bracketed literal, return the literal content without escaping
                 if (literal) {
-                    console.log('Debug - Literal found:', literal);
                     // Remove all backslashes used for escaping
                     return literal.replace(/\\/g, '');
                 }
                 
                 // Otherwise, it's a token - replace with regex pattern
                 formatTokens.push(match);
-                console.log('Debug - Token found:', match, '-> Regex:', tokenMap[match]);
                 return tokenMap[match];
             });
             
-            console.log('Debug - Regex string before flexible whitespace:', regexString);
-            console.log('Debug - Format tokens:', formatTokens);
-    
             // The regex is anchored to ensure the entire string must match the format.
             // Allow flexible whitespace matching by replacing spaces with \s+
             const flexibleRegexString = regexString.replace(/ /g, '\\s+');
-            console.log('Debug - Flexible regex string:', flexibleRegexString);
             
             const valueRegex = new RegExp(`^${flexibleRegexString}$`);
-            console.log('Debug - Final regex:', valueRegex);
             
             const entry = { regex: valueRegex, tokens: formatTokens };
-            this.regexCache.set(formatString, entry);
+            this.cache.set(formatString, entry);
             return entry;
         } catch (e) {
             console.log('Debug - Error in regex generation:', e);
@@ -141,11 +121,19 @@ class FormatCache {
     }
     
     static clearCache(): void {
-        this.regexCache.clear();
+        this.cache.clear();
     }
     
     static getCacheSize(): number {
-        return this.regexCache.size;
+        return this.cache.size;
+    }
+    
+    static getStats() {
+        return this.cache.getMetrics();
+    }
+    
+    static setMaxSize(newSize: number): void {
+        this.cache.setMaxSize(newSize);
     }
 }
 
@@ -294,20 +282,14 @@ export const resetCurrentDateFunction = () => {
 function parseToISO(dateString: string, formatString: string): string | null {
     const cachedFormat = FormatCache.getRegexForFormat(formatString);
     if (!cachedFormat) {
-        console.log('Failed to generate regex for format:', formatString);
         return null;
     }
 
     const { regex: valueRegex, tokens: formatTokens } = cachedFormat;
-    console.log('Generated regex:', valueRegex);
-    console.log('Format tokens:', formatTokens);
-    console.log('Testing string:', dateString);
     
     const values = dateString.match(valueRegex);
-    console.log('Match result:', values);
 
     if (!values) {
-        console.log('Regex match failed');
         return null;
     }
 
@@ -435,7 +417,7 @@ const customParseFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory)
         return TemporalWrapper.from(isoString, timeZone);
     };
     
-    // Exponer métodos para gestionar el cache (útil para pruebas)
+    // Expose cache management methods for testing and optimization
     (atemporal as any).clearFormatCache = function() {
         FormatCache.clearCache();
     };
@@ -443,6 +425,28 @@ const customParseFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory)
     (atemporal as any).getFormatCacheSize = function() {
         return FormatCache.getCacheSize();
     };
+    
+    (atemporal as any).getFormatCacheStats = function() {
+        return FormatCache.getStats();
+    };
+    
+    // Integrate with GlobalCacheCoordinator if not already added by other plugins
+    if (!(atemporal as any).clearAllCaches) {
+        (atemporal as any).clearAllCaches = function() {
+            GlobalCacheCoordinator.clearAll();
+            FormatCache.clearCache();
+        };
+        
+        (atemporal as any).getAllCacheStats = function() {
+            const globalStats = GlobalCacheCoordinator.getAllStats();
+            return {
+                ...globalStats,
+                customParseFormat: {
+                    format: FormatCache.getStats()
+                }
+            };
+        };
+    }
 };
 
 export default customParseFormatPlugin;
@@ -455,16 +459,17 @@ export default customParseFormatPlugin;
 function getMonthFromName(monthName: string): number | null {
     const monthMap: { [key: string]: number } = {
         // Full names
-        'January': 1, 'February': 2, 'March': 3, 'April': 4,
-        'May': 5, 'June': 6, 'July': 7, 'August': 8,
-        'September': 9, 'October': 10, 'November': 11, 'December': 12,
+        'january': 1, 'february': 2, 'march': 3, 'april': 4,
+        'may': 5, 'june': 6, 'july': 7, 'august': 8,
+        'september': 9, 'october': 10, 'november': 11, 'december': 12,
         // Abbreviated names
-        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 
-        'Jun': 6, 'Jul': 7, 'Aug': 8,
-        'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 
+        'jun': 6, 'jul': 7, 'aug': 8,
+        'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
     };
     
-    return monthMap[monthName] || null;
+    // Normalize to lowercase for case-insensitive matching
+    return monthMap[monthName.toLowerCase()] || null;
 }
 
 /**

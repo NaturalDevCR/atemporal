@@ -560,3 +560,313 @@ interface ParseErrorInfo {
 - Cache automatically manages memory with LRU eviction
 - Month name parsing uses pre-compiled Maps for optimal performance
 - Validation functions are optimized for common date ranges
+
+### advancedFormat
+
+Extends the `.format()` method to support advanced formatting tokens including ordinals and timezone names. Features high-performance caching, comprehensive locale support, and intelligent fallback mechanisms.
+
+```ts
+import advancedFormat from 'atemporal/plugins/advancedFormat';
+atemporal.extend(advancedFormat);
+
+// Ordinal formatting
+const date = atemporal('2024-01-15');
+console.log(date.format('Do MMMM YYYY')); // "15th January 2024"
+console.log(date.format('MMMM Do, YYYY')); // "January 15th, 2024"
+
+// Quarter ordinals
+const q1 = atemporal('2024-02-15');
+const q3 = atemporal('2024-08-15');
+console.log(q1.format('Qo [quarter]')); // "1st quarter"
+console.log(q3.format('Qo [quarter]')); // "3rd quarter"
+
+// Timezone names (requires timezone-aware dates)
+const nyTime = atemporal('2024-01-15T15:30:00', 'America/New_York');
+console.log(nyTime.format('YYYY-MM-DD HH:mm zzz'));  // "2024-01-15 15:30 EST"
+console.log(nyTime.format('YYYY-MM-DD HH:mm zzzz')); // "2024-01-15 15:30 Eastern Standard Time"
+
+// Multi-language ordinal support
+const spanishDate = atemporal('2024-01-15');
+console.log(spanishDate.format('Do [de] MMMM', 'es')); // "15º de enero"
+
+const frenchDate = atemporal('2024-01-01');
+console.log(frenchDate.format('Do MMMM', 'fr')); // "1er janvier"
+
+const chineseDate = atemporal('2024-01-15');
+console.log(chineseDate.format('Do', 'zh')); // "第15"
+
+// Combined formatting
+const complexFormat = atemporal('2024-07-04T16:30:00', 'America/New_York');
+console.log(complexFormat.format('Do MMMM YYYY, Qo [quarter], zzz'));
+// "4th July 2024, 3rd quarter, EDT"
+
+// Cache management for performance optimization
+console.log('Cache stats:', atemporal.getAdvancedFormatCacheStats());
+// { ordinal: { size: 15, maxSize: 200 }, timezone: { size: 8, maxSize: 100 } }
+
+atemporal.clearAdvancedFormatCache(); // Clear caches if needed
+```
+
+**Supported Advanced Tokens:**
+- `Do` - Day of month with ordinal suffix (e.g., "1st", "22nd", "3rd")
+- `Qo` - Quarter of year with ordinal suffix (e.g., "1st", "2nd", "3rd", "4th")
+- `zzz` - Short timezone name (e.g., "EST", "PDT", "GMT")
+- `zzzz` - Long timezone name (e.g., "Eastern Standard Time", "Pacific Daylight Time")
+
+**Multi-Language Ordinal Support:**
+- **English (en)**: 1st, 2nd, 3rd, 4th, 21st, 22nd, 23rd...
+- **Spanish (es)**: 1º, 2º, 3º, 4º...
+- **French (fr)**: 1er, 2e, 3e, 4e...
+- **German (de)**: 1., 2., 3., 4....
+- **Italian (it)**: 1º, 2º, 3º, 4º...
+- **Portuguese (pt)**: 1º, 2º, 3º, 4º...
+- **Russian (ru)**: 1-й, 2-й, 3-й, 4-й...
+- **Japanese (ja)**: 1番目, 2番目, 3番目, 4番目...
+- **Korean (ko)**: 1번째, 2번째, 3번째, 4번째...
+- **Chinese (zh)**: 第1, 第2, 第3, 第4... (prefix format)
+
+**Enhanced Features:**
+
+🚀 **High Performance**
+- Intelligent LRU caching for ordinal generation (up to 200 entries)
+- Timezone name caching with automatic invalidation (up to 100 entries)
+- Pre-compiled regex patterns for token matching
+- Optimized locale validation and normalization
+
+🛡️ **Robust Error Handling**
+- Graceful fallback for unsupported locales
+- Error logging for debugging timezone formatting issues
+- Automatic locale normalization (e.g., 'en_US' → 'en-US')
+- Safe handling of invalid timezone identifiers
+
+🌍 **Comprehensive Locale Support**
+- Automatic locale validation and normalization
+- Intelligent fallback to base language for unsupported locale variants
+- Support for both underscore and hyphen locale formats
+- Consistent behavior across different Intl.DateTimeFormat implementations
+
+⚡ **Performance Optimizations**
+- Ordinal generation results are cached per locale
+- Timezone formatting uses cached DateTimeFormat instances
+- LRU eviction prevents memory leaks in long-running applications
+- Minimal overhead for cache hits
+
+**API Methods:**
+
+```ts
+// Extended format method (automatically available after plugin loading)
+instance.format(formatString: string, locale?: string): string
+
+// Cache management methods
+atemporal.getAdvancedFormatCacheStats(): {
+  ordinal: { size: number; maxSize: number };
+  timezone: { size: number; maxSize: number };
+}
+
+atemporal.clearAdvancedFormatCache(): void
+```
+
+**Performance Notes:**
+- First ordinal generation for a number/locale combination is computed and cached
+- Subsequent requests for the same ordinal are served from cache
+- Timezone names are cached with timestamp-based invalidation
+- Cache automatically manages memory with LRU eviction
+- Locale validation is optimized for common locale formats
+
+### durationHumanizer
+
+Converts `Temporal.Duration` objects into human-readable, localized strings with intelligent caching and comprehensive multi-language support. Features high-performance LRU caching, enhanced error handling, and fallback mechanisms for robust internationalization.
+
+```ts
+import durationHumanizer from 'atemporal/plugins/durationHumanizer';
+atemporal.extend(durationHumanizer);
+
+// Basic duration humanization
+const duration1 = { hours: 2, minutes: 30 };
+console.log(atemporal.humanize(duration1)); // "2 hours and 30 minutes"
+
+const duration2 = { years: 1, months: 6, days: 15 };
+console.log(atemporal.humanize(duration2)); // "1 year, 6 months, and 15 days"
+
+// Single unit durations
+console.log(atemporal.humanize({ days: 1 })); // "1 day"
+console.log(atemporal.humanize({ hours: 5 })); // "5 hours"
+
+// Multi-language support
+const duration = { hours: 2, minutes: 30 };
+
+// Spanish
+console.log(atemporal.humanize(duration, { locale: 'es' })); // "2 horas y 30 minutos"
+
+// French
+console.log(atemporal.humanize(duration, { locale: 'fr' })); // "2 heures et 30 minutes"
+
+// German
+console.log(atemporal.humanize(duration, { locale: 'de' })); // "2 Stunden und 30 Minuten"
+
+// Italian
+console.log(atemporal.humanize(duration, { locale: 'it' })); // "2 ore e 30 minuti"
+
+// Portuguese
+console.log(atemporal.humanize(duration, { locale: 'pt' })); // "2 horas e 30 minutos"
+
+// Russian
+console.log(atemporal.humanize(duration, { locale: 'ru' })); // "2 часа и 30 минут"
+
+// Japanese
+console.log(atemporal.humanize(duration, { locale: 'ja' })); // "2時間30分"
+
+// Korean
+console.log(atemporal.humanize(duration, { locale: 'ko' })); // "2시간 30분"
+
+// Chinese
+console.log(atemporal.humanize(duration, { locale: 'zh' })); // "2小时30分钟"
+
+// Different unit display styles
+const complexDuration = { hours: 3, minutes: 45, seconds: 30 };
+
+// Long format (default)
+console.log(atemporal.humanize(complexDuration, { unitDisplay: 'long' }));
+// "3 hours, 45 minutes, and 30 seconds"
+
+// Short format
+console.log(atemporal.humanize(complexDuration, { unitDisplay: 'short' }));
+// "3 hr, 45 min, and 30 sec"
+
+// Narrow format
+console.log(atemporal.humanize(complexDuration, { unitDisplay: 'narrow' }));
+// "3h, 45m, and 30s"
+
+// Different list styles
+const listDuration = { hours: 1, minutes: 30, seconds: 15 };
+
+console.log(atemporal.humanize(listDuration, { listStyle: 'long' }));
+// "1 hour, 30 minutes, and 15 seconds"
+
+console.log(atemporal.humanize(listDuration, { listStyle: 'short' }));
+// "1 hour, 30 minutes, 15 seconds" (varies by locale)
+
+console.log(atemporal.humanize(listDuration, { listStyle: 'narrow' }));
+// "1 hour 30 minutes 15 seconds" (varies by locale)
+
+// Working with Temporal.Duration instances
+const temporalDuration = Temporal.Duration.from({ years: 2, months: 3, days: 10 });
+console.log(atemporal.humanize(temporalDuration)); // "2 years, 3 months, and 10 days"
+
+// Handling all duration units
+const fullDuration = {
+  years: 1,
+  months: 2,
+  weeks: 3,
+  days: 4,
+  hours: 5,
+  minutes: 6,
+  seconds: 7,
+  milliseconds: 8
+};
+console.log(atemporal.humanize(fullDuration));
+// "1 year, 2 months, 3 weeks, 4 days, 5 hours, 6 minutes, 7 seconds, and 8 milliseconds"
+
+// Zero and empty durations
+console.log(atemporal.humanize({ seconds: 0 })); // "0 seconds"
+console.log(atemporal.humanize({})); // "0 seconds"
+
+// Cache management for performance optimization
+console.log('Cache stats:', atemporal.getDurationHumanizerCacheStats());
+// { durationFormat: { size: 15, maxSize: 200 } }
+
+atemporal.clearDurationHumanizerCache(); // Clear cache if needed
+```
+
+**Supported Duration Units:**
+- `years` - Calendar years
+- `months` - Calendar months
+- `weeks` - Weeks (7 days)
+- `days` - Calendar days
+- `hours` - Hours (60 minutes)
+- `minutes` - Minutes (60 seconds)
+- `seconds` - Seconds
+- `milliseconds` - Milliseconds
+
+**Multi-Language Support:**
+- **English (en)**: Full support with proper pluralization
+- **Spanish (es)**: "año", "mes", "día", "hora", "minuto", "segundo"
+- **French (fr)**: "année", "mois", "jour", "heure", "minute", "seconde"
+- **German (de)**: "Jahr", "Monat", "Tag", "Stunde", "Minute", "Sekunde"
+- **Italian (it)**: "anno", "mese", "giorno", "ora", "minuto", "secondo"
+- **Portuguese (pt)**: "ano", "mês", "dia", "hora", "minuto", "segundo"
+- **Russian (ru)**: "год", "месяц", "день", "час", "минута", "секунда"
+- **Japanese (ja)**: "年", "月", "日", "時間", "分", "秒"
+- **Korean (ko)**: "년", "월", "일", "시간", "분", "초"
+- **Chinese (zh)**: "年", "月", "天", "小时", "分钟", "秒"
+
+**Enhanced Features:**
+
+🚀 **High Performance**
+- Intelligent LRU caching for duration formatting (up to 200 entries)
+- Pre-compiled unit mappings for all supported languages
+- Optimized locale validation and normalization
+- Fast path for cached results
+
+🛡️ **Robust Error Handling**
+- Graceful fallback for unsupported locales
+- Enhanced error logging for debugging
+- Automatic locale normalization (e.g., 'en_US' → 'en-US')
+- Safe handling of invalid duration inputs
+- Fallback to English for completely unsupported locales
+
+🌍 **Comprehensive Locale Support**
+- Automatic locale validation and normalization
+- Intelligent fallback to base language for unsupported variants
+- Support for both underscore and hyphen locale formats
+- Enhanced pluralization rules for multiple languages
+- Consistent behavior across different Intl implementations
+
+⚡ **Performance Optimizations**
+- Duration formatting results are cached per locale and unit display
+- LRU eviction prevents memory leaks in long-running applications
+- Minimal overhead for cache hits
+- Optimized number formatting with cached Intl instances
+- Smart handling of fractional values
+
+**API Methods:**
+
+```ts
+// Main humanization method
+atemporal.humanize(
+  durationLike: Temporal.Duration | Temporal.DurationLike,
+  options?: {
+    locale?: string;           // Locale for formatting (default: 'en')
+    listStyle?: 'long' | 'short' | 'narrow';  // List formatting style
+    unitDisplay?: 'long' | 'short' | 'narrow'; // Unit display style
+  }
+): string
+
+// Cache management methods
+atemporal.getDurationHumanizerCacheStats(): {
+  durationFormat: { size: number; maxSize: number };
+}
+
+atemporal.clearDurationHumanizerCache(): void
+```
+
+**Options Interface:**
+
+```ts
+interface HumanizeOptions {
+  /** The locale to use for formatting (e.g., 'en-US', 'es-CR'). Defaults to 'en'. */
+  locale?: string;
+  /** The style for formatting the list of duration parts, per Intl.ListFormat. */
+  listStyle?: 'long' | 'short' | 'narrow';
+  /** The display style for the units, per Intl.NumberFormat. */
+  unitDisplay?: 'long' | 'short' | 'narrow';
+}
+```
+
+**Performance Notes:**
+- First formatting of a duration with specific locale/options is computed and cached
+- Subsequent requests with identical parameters are served from cache
+- Cache automatically manages memory with LRU eviction (200 entry limit)
+- Locale validation is optimized for common locale formats
+- Enhanced fallback mechanisms ensure consistent behavior
+- Number formatting uses cached Intl.NumberFormat instances for optimal performance

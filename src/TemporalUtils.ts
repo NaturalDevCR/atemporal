@@ -697,8 +697,185 @@ class DiffCache {
     }
 }
 
-// Export the class for use in plugins and tests
-export { IntlCache, DiffCache };
+/**
+ * Centralized locale validation and normalization utility.
+ * Provides consistent locale handling across all plugins.
+ * @internal
+ */
+class LocaleUtils {
+    /**
+     * Validates and normalizes locale codes for consistent processing.
+     * @param locale - Input locale code
+     * @returns Normalized locale code
+     */
+    static validateAndNormalize(locale: any): string {
+        try {
+            // Basic validation: check if locale is a valid string
+            if (!locale || typeof locale !== 'string') {
+                return 'en'; // Default fallback
+            }
+            
+            // Normalize locale format (e.g., 'en_US' -> 'en-US')
+            const normalized = locale.replace(/_/g, '-');
+            
+            // Test if locale is supported by creating a test formatter
+            new Intl.NumberFormat(normalized);
+            
+            return normalized;
+        } catch {
+            // If locale is invalid, fallback to base language or default
+            if (typeof locale === 'string') {
+                const baseLang = locale.split(/[-_]/)[0];
+                try {
+                    new Intl.NumberFormat(baseLang);
+                    return baseLang;
+                } catch {
+                    return 'en'; // Ultimate fallback
+                }
+            }
+            return 'en'; // Ultimate fallback for non-string inputs
+        }
+    }
+
+    /**
+     * Checks if a locale is supported by the Intl API.
+     * @param locale - Locale code to check
+     * @returns True if locale is supported
+     */
+    static isSupported(locale: string): boolean {
+        try {
+            new Intl.NumberFormat(locale);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Gets the base language from a locale code.
+     * @param locale - Full locale code (e.g., 'en-US')
+     * @returns Base language code (e.g., 'en')
+     */
+    static getBaseLanguage(locale: string): string {
+        return locale.split(/[-_]/)[0];
+    }
+}
+
+/**
+ * Global cache coordinator for cross-plugin optimization.
+ * Provides unified cache management and statistics across all plugins.
+ * @internal
+ */
+class GlobalCacheCoordinator {
+    private static registeredCaches: Map<string, { clear: () => void; getStats: () => any }> = new Map();
+
+    /**
+     * Registers a cache with the global coordinator.
+     * @param name - Cache name identifier
+     * @param cache - Cache instance with clear and getStats methods
+     */
+    static registerCache(name: string, cache: { clear: () => void; getStats: () => any }): void {
+        this.registeredCaches.set(name, cache);
+    }
+
+    /**
+     * Clears all caches across the entire library.
+     * Useful for testing and memory management.
+     */
+    static clearAll(): void {
+        IntlCache.clearAll();
+        DiffCache.clear();
+        // Clear all registered plugin caches
+        for (const cache of this.registeredCaches.values()) {
+            cache.clear();
+        }
+    }
+
+    /**
+     * Gets comprehensive cache statistics from all cache systems.
+     * @returns Combined cache statistics
+     */
+    static getAllStats() {
+        const intlStats = IntlCache.getStats();
+        const intlDetailedStats = IntlCache.getDetailedStats();
+        const diffStats = DiffCache.getStats();
+        const diffDetailedStats = DiffCache.getDetailedStats();
+
+        // Get stats from all registered plugin caches
+        const pluginStats: Record<string, any> = {};
+        for (const [name, cache] of this.registeredCaches.entries()) {
+            try {
+                pluginStats[name] = cache.getStats();
+            } catch (error) {
+                pluginStats[name] = { error: 'Failed to get stats' };
+            }
+        }
+
+        return {
+            intl: {
+                summary: intlStats,
+                detailed: intlDetailedStats
+            },
+            diff: {
+                summary: diffStats,
+                detailed: diffDetailedStats
+            },
+            plugins: pluginStats,
+            total: {
+                cacheCount: intlStats.total + diffStats.diffCache,
+                maxSize: intlStats.maxSize + diffStats.maxSize
+            }
+        };
+    }
+
+    /**
+     * Optimizes all caches by triggering resize checks.
+     * Should be called periodically in long-running applications.
+     */
+    static optimizeAll(): void {
+        IntlCache.checkAndResizeCaches();
+        // DiffCache optimization is handled automatically in getDiffResult
+    }
+
+    /**
+     * Sets maximum cache sizes for all cache systems.
+     * @param sizes - Object containing size limits for different cache types
+     */
+    static setMaxCacheSizes(sizes: {
+        intl?: number;
+        diff?: number;
+    }): void {
+        if (sizes.intl !== undefined) {
+            IntlCache.setMaxCacheSize(sizes.intl);
+        }
+        if (sizes.diff !== undefined) {
+            DiffCache.setMaxCacheSize(sizes.diff);
+        }
+    }
+
+    /**
+     * Enables or disables dynamic sizing for all caches.
+     * @param enabled - Whether to enable dynamic sizing
+     */
+    static setDynamicSizing(enabled: boolean): void {
+        IntlCache.setDynamicSizing(enabled);
+        DiffCache.setDynamicSizing(enabled);
+    }
+
+    /**
+     * Gets the current dynamic sizing status.
+     * @returns Object indicating dynamic sizing status for each cache type
+     */
+    static getDynamicSizingStatus() {
+        return {
+            intl: IntlCache.isDynamicSizingEnabled(),
+            diff: DiffCache.isDynamicSizingEnabled()
+        };
+    }
+}
+
+// Export the classes for use in plugins and tests
+export { IntlCache, DiffCache, LocaleUtils, GlobalCacheCoordinator };
 
 /**
  * Optimizador de caché que ajusta dinámicamente el tamaño basado en patrones de uso.

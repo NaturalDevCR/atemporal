@@ -6,7 +6,13 @@ import atemporal from '../index';
 import { TemporalUtils } from '../TemporalUtils';
 import { Temporal } from '@js-temporal/polyfill';
 
-describe('From Method Performance Tests', () => {
+// Add CI detection to skip performance tests in CI environments
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+// Replace the main describe block to skip in CI
+const describePerformance = isCI ? describe.skip : describe;
+
+describePerformance('From Method Performance Tests', () => {
     const ITERATIONS = 10000;
     
     test('from method with ISO string input', () => {
