@@ -4,6 +4,9 @@
  * in the current environment and conditionally use it instead of the polyfill.
  */
 
+// Static import of the Temporal polyfill to avoid dynamic require() issues with bundlers
+import { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
+
 /**
  * Interface for the Temporal API that can be either native or polyfilled
  */
@@ -79,8 +82,7 @@ export function getTemporalAPI(): TemporalAPI {
       isNative: true
     };
   } else {
-    // Fall back to polyfill
-    const { Temporal: PolyfillTemporal } = require('@js-temporal/polyfill');
+    // Fall back to polyfill (using static import)
     return {
       Temporal: PolyfillTemporal,
       isNative: false
