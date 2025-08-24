@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.8](https://github.com/NaturalDevCR/atemporal/compare/v0.1.7...v0.1.8) (2025-08-24)
+
+
+### Bug Fixes
+
+* replace dynamic require with static import for bundler compatibility ([a7ca6b2](https://github.com/NaturalDevCR/atemporal/commit/a7ca6b2c138e6bbf7993ce912e32b9a20ea95d6e))
+
 ### [0.1.7](https://github.com/NaturalDevCR/atemporal/compare/v0.1.6...v0.1.7) (2025-08-24)
 
 
