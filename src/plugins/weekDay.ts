@@ -4,7 +4,8 @@
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
-import { TemporalUtils, LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
+import { TemporalUtils, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin } from '../types';
 
 /**
@@ -57,6 +58,14 @@ class WeekCache {
      */
     static setWeekBoundary(dateKey: string, result: string): void {
         this.weekBoundaryCache.set(dateKey, result);
+    }
+
+    /**
+     * Removes a specific week boundary cache entry.
+     * @param dateKey - Unique key for the date and operation to remove
+     */
+    static removeWeekBoundary(dateKey: string): void {
+        this.weekBoundaryCache.delete(dateKey);
     }
 
     /**
@@ -176,13 +185,35 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 // Check cache first for performance
                 const cachedResult = WeekCache.getWeekBoundary(dateKey);
                 if (cachedResult !== null) {
-                    return atemporal(cachedResult);
+                    const cachedInstance = atemporal(cachedResult);
+                    if (cachedInstance.isValid()) {
+                        return cachedInstance;
+                    } else {
+                        console.warn('WeekDay: Invalid cached result for startOf:', cachedResult, 'removing from cache');
+                        // Remove invalid cache entry
+                        WeekCache.removeWeekBoundary(dateKey);
+                    }
                 }
 
                 // Use our optimized .weekday() to find out how many days we are into the custom week.
                 const daysToSubtract = this.weekday();
+                
+                // Debug: Check if weekday() returned a valid number
+                if (isNaN(daysToSubtract) || daysToSubtract < 0 || daysToSubtract > 6) {
+                    console.warn('WeekDay: Invalid weekday value:', daysToSubtract, 'for date:', this.raw.toString());
+                    // Fallback to original calculation
+                    return originalStartOf.call(this, unit);
+                }
+                
                 // Subtract that many days and go to the start of that day.
-                const result = this.subtract(daysToSubtract, 'days').startOf('day');
+                const subtracted = this.subtract(daysToSubtract, 'days');
+                if (!subtracted.isValid()) {
+                    console.warn('WeekDay: Subtract operation failed for:', this.raw.toString(), 'days to subtract:', daysToSubtract);
+                    // Fallback to original calculation
+                    return originalStartOf.call(this, unit);
+                }
+                
+                const result = subtracted.startOf('day');
                 
                 // Cache the result
                 WeekCache.setWeekBoundary(dateKey, result.raw.toString());
@@ -215,12 +246,33 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 // Check cache first for performance
                 const cachedResult = WeekCache.getWeekBoundary(dateKey);
                 if (cachedResult !== null) {
-                    return atemporal(cachedResult);
+                    const cachedInstance = atemporal(cachedResult);
+                    if (cachedInstance.isValid()) {
+                        return cachedInstance;
+                    } else {
+                        console.warn('WeekDay: Invalid cached result for endOf:', cachedResult, 'removing from cache');
+                        // Remove invalid cache entry
+                        WeekCache.removeWeekBoundary(dateKey);
+                    }
                 }
 
                 // The logic is to find the start of the current week, add a week, and subtract a millisecond.
                 // This correctly uses our newly wrapped `startOf` method.
-                const result = this.startOf('week').add(1, 'week').subtract(1, 'millisecond');
+                const startOfWeek = this.startOf('week');
+                if (!startOfWeek.isValid()) {
+                    console.warn('WeekDay: startOf(week) failed for endOf calculation:', this.raw.toString());
+                    // Fallback to original calculation
+                    return originalEndOf.call(this, unit);
+                }
+                
+                const addedWeek = startOfWeek.add(1, 'week');
+                if (!addedWeek.isValid()) {
+                    console.warn('WeekDay: add(1, week) failed for endOf calculation:', this.raw.toString());
+                    // Fallback to original calculation
+                    return originalEndOf.call(this, unit);
+                }
+                
+                const result = addedWeek.subtract(1, 'millisecond');
                 
                 // Cache the result
                 WeekCache.setWeekBoundary(dateKey, result.raw.toString());

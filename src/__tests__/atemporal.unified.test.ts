@@ -36,6 +36,8 @@ describe('Atemporal: Unified Test Suite', () => {
             // Temporal.PlainDateTime input
             const pdt = new Temporal.PlainDateTime(2025, 7, 26, 10, 30);
             const fromTemporal = atemporal(pdt, 'America/New_York');
+            // PlainDateTime represents local time in the target timezone
+            // So 10:30 in America/New_York timezone remains 10:30 EDT
             expect(fromTemporal.format('YYYY-MM-DD HH:mm')).toBe('2025-07-26 10:30');
             expect(fromTemporal.raw.timeZoneId).toBe('America/New_York');
         });
@@ -457,7 +459,9 @@ describe('Atemporal: Unified Test Suite', () => {
             const utcDateWithMs = atemporal('2024-01-15T12:30:00.500Z', 'UTC');
             expect(utcDateWithMs.toString()).toBe('2024-01-15T12:30:00.500Z');
             
-            // Non-UTC date
+            // Non-UTC date - when parsing '2024-01-15T12:00:00' with America/New_York timezone
+            // the string is treated as local time in the target timezone (12:00 in NY)
+            // This is the correct behavior for timezone-aware parsing
             const nyDate = atemporal('2024-01-15T12:00:00', 'America/New_York');
             expect(nyDate.toString()).toBe('2024-01-15T12:00:00-05:00');
         });

@@ -6,7 +6,8 @@
  */
 
 import { Temporal } from '@js-temporal/polyfill';
-import { IntlCache, LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
+import { IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LocaleUtils } from '../core/locale';
 import type { Plugin, AtemporalFactory } from '../types';
 
 /**

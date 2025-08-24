@@ -122,6 +122,7 @@ describe('TemporalUtils Error Scenarios', () => {
         it('should handle valid Firebase-like timestamp objects', () => {
             const validTimestamp = { seconds: 1640995200, nanoseconds: 0 };
             const result = TemporalUtils.from(validTimestamp);
+            // 1640995200 seconds = January 1, 2022 00:00:00 UTC
             expect(result.year).toBe(2022);
         });
     });
@@ -152,20 +153,17 @@ describe('TemporalUtils Error Scenarios', () => {
 
     describe('Unsupported input types', () => {
         it('should throw for boolean input', () => {
-            // @ts-expect-error - Testing invalid input
-            expect(() => TemporalUtils.from(true))
+            expect(() => TemporalUtils.from(true as any))
                 .toThrow(InvalidDateError);
         });
 
         it('should throw for function input', () => {
-            // @ts-expect-error - Testing invalid input
-            expect(() => TemporalUtils.from(() => {}))
+            expect(() => TemporalUtils.from((() => {}) as any))
                 .toThrow(InvalidDateError);
         });
 
         it('should throw for symbol input', () => {
-            // @ts-expect-error - Testing invalid input
-            expect(() => TemporalUtils.from(Symbol('test')))
+            expect(() => TemporalUtils.from(Symbol('test') as any))
                 .toThrow(InvalidDateError);
         });
     });
@@ -224,11 +222,11 @@ describe('TemporalUtils Error Scenarios', () => {
             expect(result).toBeInstanceOf(Temporal.ZonedDateTime);
         });
 
-        it('should throw RangeError for invalid JavaScript Date objects', () => {
+        it('should throw InvalidDateError for invalid JavaScript Date objects', () => {
             const invalidDate = new Date('invalid-date');
-            // The actual behavior is that Temporal throws RangeError, not InvalidDateError
+            // The new parsing system wraps RangeError in InvalidDateError for consistency
             expect(() => TemporalUtils.from(invalidDate))
-                .toThrow(RangeError);
+                .toThrow(InvalidDateError);
         });
     });
 });

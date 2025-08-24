@@ -4,10 +4,17 @@
  * native Temporal.ZonedDateTime object to provide a more ergonomic API.
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { getCachedTemporalAPI } from './core/temporal-detection';
+// Import Temporal types for TypeScript compilation
+import type { Temporal } from '@js-temporal/polyfill';
+
+// Get the appropriate Temporal API (native or polyfilled)
+const { Temporal: TemporalAPI } = getCachedTemporalAPI();
 import { TemporalUtils } from './TemporalUtils';
-import type {DateInput, TimeUnit, SettableUnit, FormatTokenMap, StartOfUnit} from './types';
+import type {DateInput, TimeUnit, SettableUnit, StartOfUnit} from './types';
 import { InvalidAtemporalInstanceError } from './errors';
+import { FormattingEngine, legacyFormat } from './core/formatting';
+import type { FormattingOptions } from './core/formatting/formatting-types';
 
 /**
  * Maps a flexible TimeUnit to the strict unit required by startOf/endOf.
@@ -71,116 +78,6 @@ function getDurationUnit(unit: TimeUnit): string {
     }
 }
 
-// Reemplazar la línea 73
-// const tokenRegex = /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|z/g;
-
-import { RegexCache } from './RegexCache';
-
-// Usar la expresión regular precompilada
-const tokenRegex = RegexCache.getPrecompiled('tokenRegex')!;
-/**
- * Creates and caches a map of formatting tokens to their corresponding string values.
- * The cache is a two-level map: WeakMap<Instance, Map<Locale, Replacements>>
- * to ensure that replacements are correctly cached per instance AND per locale.
- * @internal
- */
-const formatReplacementsCache = new WeakMap<TemporalWrapper, Map<string, FormatTokenMap>>();
-
-function createTokenReplacements(instance: TemporalWrapper, locale?: string): FormatTokenMap {
-    const currentLocale = locale || TemporalUtils.getDefaultLocale();
-    const localeCache = formatReplacementsCache.get(instance);
-
-    // Return from cache if available for this instance and locale.
-    if (localeCache?.has(currentLocale)) {
-        return localeCache.get(currentLocale)!;
-    }
-
-    // --- Token Implementations ---
-    const h12 = instance.hour % 12 === 0 ? 12 : instance.hour % 12;
-
-    const replacements: FormatTokenMap = {
-        // --- Year ---
-        /** Four-digit year (e.g., 2024) */
-        YYYY: () => instance.year.toString(),
-        /** Two-digit year (e.g., 24) */
-        YY: () => instance.year.toString().slice(-2),
-
-        // --- Month ---
-        /** The full month name (e.g., "January") */
-        MMMM: () => instance.raw.toLocaleString(currentLocale, { month: 'long' }),
-        /** The abbreviated month name (e.g., "Jan") */
-        MMM: () => instance.raw.toLocaleString(currentLocale, { month: 'short' }),
-        /** The month, 2-digits (e.g., 01-12) */
-        MM: () => instance.month.toString().padStart(2, '0'),
-        /** The month, 1-12 */
-        M: () => instance.month.toString(),
-
-        // --- Day of Month ---
-        /** The day of the month, 2-digits (e.g., 01-31) */
-        DD: () => instance.day.toString().padStart(2, '0'),
-        /** The day of the month, 1-31 */
-        D: () => instance.day.toString(),
-
-        // --- Day of Week ---
-        /** The name of the day of the week (e.g., "Sunday") */
-        dddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'long' }),
-        /** The short name of the day of the week (e.g., "Sun") */
-        ddd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'short' }),
-        /** The min name of the day of the week (e.g., "Su") */
-        dd: () => instance.raw.toLocaleString(currentLocale, { weekday: 'narrow' }),
-        /** The day of the week, with Sunday as 0 (e.g., 0-6) */
-        d: () => (instance.raw.dayOfWeek % 7).toString(),
-
-        // --- Hour ---
-        /** The hour, 2-digits (00-23) */
-        HH: () => instance.hour.toString().padStart(2, '0'),
-        /** The hour (0-23) */
-        H: () => instance.hour.toString(),
-        /** The hour, 12-hour clock, 2-digits (01-12) */
-        hh: () => h12.toString().padStart(2, '0'),
-        /** The hour, 12-hour clock (1-12) */
-        h: () => h12.toString(),
-
-        // --- Minute ---
-        /** The minute, 2-digits (00-59) */
-        mm: () => instance.minute.toString().padStart(2, '0'),
-        /** The minute (0-59) */
-        m: () => instance.minute.toString(),
-
-        // --- Second ---
-        /** The second, 2-digits (00-59) */
-        ss: () => instance.second.toString().padStart(2, '0'),
-        /** The second (0-59) */
-        s: () => instance.second.toString(),
-
-        // --- Millisecond ---
-        /** The millisecond, 3-digits (000-999) */
-        SSS: () => instance.millisecond.toString().padStart(3, '0'),
-
-        // --- AM/PM ---
-        /** AM PM */
-        A: () => (instance.hour < 12 ? 'AM' : 'PM'),
-        /** am pm */
-        a: () => (instance.hour < 12 ? 'am' : 'pm'),
-
-        // --- Timezone ---
-        /** The offset from UTC, ±HH:mm (e.g., +05:00) */
-        Z: () => instance.raw.offset,
-        /** The offset from UTC, ±HHmm (e.g., +0500) */
-        ZZ: () => instance.raw.offset.replace(':', ''),
-        /** The IANA time zone name (e.g., "America/New_York") */
-        z: () => instance.raw.timeZoneId
-    };
-
-    if (!localeCache) {
-        formatReplacementsCache.set(instance, new Map([[currentLocale, replacements]]));
-    } else {
-        localeCache.set(currentLocale, replacements);
-    }
-
-    return replacements;
-}
-
 /**
  * The core class of the Atemporal library. It provides an immutable, chainable
  * API for date-time manipulation, wrapping a `Temporal.ZonedDateTime` object.
@@ -188,6 +85,7 @@ function createTokenReplacements(instance: TemporalWrapper, locale?: string): Fo
 export class TemporalWrapper {
     private readonly _datetime: Temporal.ZonedDateTime | null;
     private readonly _isValid: boolean;
+    readonly _isTemporalWrapper: true = true;
 
     /**
      * The constructor is private to ensure all instances are created through
@@ -221,8 +119,73 @@ export class TemporalWrapper {
      * @returns A new TemporalWrapper instance.
      */
     static unix(timestampInSeconds: number): TemporalWrapper {
-        const timestampInMs = timestampInSeconds * 1000;
-        return new TemporalWrapper(timestampInMs);
+        try {
+            // Convert seconds to milliseconds, handling floating point precision
+            const timestampInMs = Math.round(timestampInSeconds * 1000);
+            
+            // Create Instant directly to bypass number strategy's seconds/milliseconds detection
+            const instant = TemporalAPI.Instant.fromEpochMilliseconds(timestampInMs);
+            const timeZone = TemporalUtils.defaultTimeZone;
+            const zonedDateTime = instant.toZonedDateTimeISO(timeZone);
+            
+            // Create wrapper directly from ZonedDateTime
+            return TemporalWrapper._fromZonedDateTime(zonedDateTime);
+        } catch (e) {
+            // Fallback to regular parsing if direct creation fails
+            const timestampInMs = Math.round(timestampInSeconds * 1000);
+            return new TemporalWrapper(timestampInMs);
+        }
+    }
+
+    /**
+     * Gets formatting performance metrics from the FormattingEngine
+     * @returns Comprehensive formatting performance metrics
+     */
+    static getFormattingMetrics() {
+        return FormattingEngine.getMetrics();
+    }
+
+    /**
+     * Gets a detailed formatting performance report
+     * @returns Human-readable performance report
+     */
+    static getFormattingPerformanceReport(): string {
+        const metrics = FormattingEngine.getMetrics();
+        const avgFormatTime = metrics.totalFormats > 0 ? metrics.averageFormatTime : 0;
+        const cacheHitRatio = metrics.totalFormats > 0 ? 
+            ((metrics.cacheHits / metrics.totalFormats) * 100).toFixed(2) : '0.00';
+        const fastPathRatio = metrics.totalFormats > 0 ? 
+            ((metrics.fastPathHits / metrics.totalFormats) * 100).toFixed(2) : '0.00';
+        
+        return [
+            'Formatting Performance Report:',
+            `Total Formats: ${metrics.totalFormats}`,
+            `Average Format Time: ${avgFormatTime.toFixed(3)}ms`,
+            `Cache Hit Ratio: ${cacheHitRatio}%`,
+            `Fast Path Hit Ratio: ${fastPathRatio}%`,
+            `Token Pool Stats:`,
+            `  - Total Tokens: ${metrics.tokenPoolStats.totalTokens}`,
+            `  - Active Tokens: ${metrics.tokenPoolStats.activeTokens}`,
+            `  - Pool Hit Ratio: ${(metrics.tokenPoolStats.hitRatio * 100).toFixed(2)}%`,
+            `Compilation Stats:`,
+            `  - Total Compilations: ${metrics.compilationStats.totalCompilations}`,
+            `  - Compilation Cache Hit Ratio: ${(metrics.compilationStats.cacheHitRatio * 100).toFixed(2)}%`,
+            `  - Average Compile Time: ${metrics.compilationStats.averageCompileTime.toFixed(3)}ms`
+        ].join('\n');
+    }
+
+    /**
+     * Clears all formatting caches and resets metrics
+     */
+    static resetFormattingSystem(): void {
+        FormattingEngine.reset();
+    }
+
+    /**
+     * Pre-warms the formatting system with common patterns
+     */
+    static prewarmFormattingSystem(): void {
+        FormattingEngine.initialize();
     }
 
     /**
@@ -233,6 +196,7 @@ export class TemporalWrapper {
         const wrapper = Object.create(TemporalWrapper.prototype);
         wrapper._datetime = dateTime;
         wrapper._isValid = true;
+        wrapper._isTemporalWrapper = true;
         return wrapper;
     }
 
@@ -271,7 +235,7 @@ export class TemporalWrapper {
      */
     timeZone(tz: string): TemporalWrapper {
         if (!this.isValid()) return this;
-        return new TemporalWrapper(this.datetime.withTimeZone(tz));
+        return this._cloneWith(this.datetime.withTimeZone(tz));
     }
 
     /**
@@ -461,6 +425,11 @@ export class TemporalWrapper {
         if (!this.isValid()) return 'Invalid TimeZone';
         return this.datetime.timeZoneId;
     }
+    /** The IANA time zone identifier (e.g., "America/New_York"). */
+    get timeZoneId(): string {
+        if (!this.isValid()) return 'Invalid TimeZone';
+        return this.datetime.timeZoneId;
+    }
     /** The hour of the day (0-23). */
     get hour(): number { return this.isValid() ? this.datetime.hour : NaN; }
     /** The minute of the hour (0-59). */
@@ -469,8 +438,6 @@ export class TemporalWrapper {
     get second(): number { return this.isValid() ? this.datetime.second : NaN; }
     /** The millisecond of the second (0-999). */
     get millisecond(): number { return this.isValid() ? this.datetime.millisecond : NaN; }
-    // /** The quarter of the year (1-4). */
-    // get quarter(): number { return this.isValid() ? Math.ceil(this.datetime.month / 3) : NaN; }
     /** The ISO week number of the year (1-53). */
     get weekOfYear(): number { return this.isValid() ? this.datetime.weekOfYear! : NaN; }
     get daysInMonth(): number {
@@ -580,13 +547,21 @@ export class TemporalWrapper {
         // --- Path for string-based formatting ---
         if (typeof templateOrOptions === 'string') {
             const formatString = templateOrOptions;
-            const replacements = createTokenReplacements(this, localeCode);
-
-            return formatString.replace(tokenRegex, (match, literal) => {
-                if (literal) return literal;
-                if (match in replacements) return (replacements)[match]();
-                return match;
-            });
+            
+            // Use the new high-performance FormattingEngine
+            const formattingOptions: FormattingOptions = {
+                locale: localeCode || TemporalUtils.getDefaultLocale(),
+                timeZone: this.datetime.timeZoneId,
+                useCache: true,
+                poolTokens: true
+            };
+            
+            try {
+                return FormattingEngine.format(this.datetime, formatString, formattingOptions);
+            } catch (error) {
+                // Fallback to legacy formatting for backward compatibility
+                return this._legacyFormat(formatString, localeCode);
+            }
         }
 
         // --- Path for Intl.DateTimeFormatOptions ---
@@ -760,17 +735,25 @@ export class TemporalWrapper {
 
             // Determine comparison logic based on inclusivity
             const afterStart = inclusivity.startsWith('[')
-                ? Temporal.ZonedDateTime.compare(this.datetime, startDateTime) >= 0
-                : Temporal.ZonedDateTime.compare(this.datetime, startDateTime) > 0;
+                ? TemporalAPI.ZonedDateTime.compare(this.datetime, startDateTime) >= 0
+                : TemporalAPI.ZonedDateTime.compare(this.datetime, startDateTime) > 0;
 
             const beforeEnd = inclusivity.endsWith(']')
-                ? Temporal.ZonedDateTime.compare(this.datetime, endDateTime) <= 0
-                : Temporal.ZonedDateTime.compare(this.datetime, endDateTime) < 0;
+                ? TemporalAPI.ZonedDateTime.compare(this.datetime, endDateTime) <= 0
+                : TemporalAPI.ZonedDateTime.compare(this.datetime, endDateTime) < 0;
 
             return afterStart && beforeEnd;
         } catch (e) {
             return false;
         }
+    }
+
+    /**
+     * Legacy formatting method for backward compatibility
+     * @private
+     */
+    private _legacyFormat(formatString: string, localeCode?: string): string {
+        return legacyFormat(this, formatString, localeCode);
     }
 
     /**
@@ -801,7 +784,7 @@ export class TemporalWrapper {
     /**
      * A convenience method to check if the current instance is on the same day as another date.
      * @param other - The date to compare against.
-     * @returns `true` if they are on the same calendar day.
+     * @returns `true` if they are on the same calendar day in their respective timezones.
      */
     isSameDay(other: DateInput): boolean {
         if (!this.isValid()) return false;

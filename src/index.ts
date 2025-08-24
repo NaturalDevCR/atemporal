@@ -4,10 +4,13 @@
  * and handles the plugin system, making it the central hub for all functionality.
  */
 
-// Import the Temporal polyfill to ensure the API is available in all environments.
-import '@js-temporal/polyfill';
+// Import the temporal detection system to use native Temporal when available
+import { getCachedTemporalAPI, getTemporalInfo } from './core/temporal-detection';
+// Import Temporal types for TypeScript compilation
+import type { Temporal } from '@js-temporal/polyfill';
 
-import { Temporal } from '@js-temporal/polyfill';
+// Get the appropriate Temporal API (native or polyfilled)
+const { Temporal: TemporalAPI } = getCachedTemporalAPI();
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
 import {
@@ -49,7 +52,7 @@ const atemporalFn: AtemporalFunction = (input?: DateInput, timeZone?: string) =>
 
     if (input === undefined) {
         // When no input is provided, create an instance for the current moment.
-        const nowTemporal = Temporal.Now.zonedDateTimeISO(timeZone || TemporalUtils.defaultTimeZone);
+        const nowTemporal = TemporalAPI.Now.zonedDateTimeISO(timeZone || TemporalUtils.defaultTimeZone);
         return TemporalWrapper.from(nowTemporal);
     }
 
@@ -63,7 +66,7 @@ const atemporal = atemporalFn as AtemporalFactory;
 // --- Attach all static methods from TemporalWrapper and TemporalUtils ---
 
 atemporal.duration = (durationLike: Temporal.DurationLike | string): Temporal.Duration => {
-    return Temporal.Duration.from(durationLike);
+    return TemporalAPI.Duration.from(durationLike);
 };
 
 /**
@@ -135,6 +138,11 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
 const appliedPlugins = new Set<Plugin>();
 
 atemporal.extend = (plugin: Plugin, options) => {
+    // Validate plugin parameter
+    if (!plugin || typeof plugin !== 'function') {
+        throw new Error('Plugin must be a function');
+    }
+    
     if (appliedPlugins.has(plugin)) {
         // Plugin already applied, skip to avoid duplicates
         return;
@@ -264,6 +272,12 @@ atemporal.getLoadedPlugins = (): string[] => {
 atemporal.getAvailablePlugins = (): string[] => {
     return [...AVAILABLE_PLUGINS];
 };
+
+/**
+ * Gets information about the current Temporal implementation being used
+ * @returns Object containing information about whether native or polyfilled Temporal is being used
+ */
+atemporal.getTemporalInfo = getTemporalInfo;
 
 // Export the final, augmented factory function as the default export of the library.
 export default atemporal;

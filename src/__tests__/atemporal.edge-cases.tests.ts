@@ -51,6 +51,10 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
         it('should correctly parse a Temporal.PlainDateTime object', () => {
             const pdt = new Temporal.PlainDateTime(2025, 7, 26, 10, 30);
             const date = atemporal(pdt, 'America/New_York');
+            // PlainDateTime represents local time in the specified timezone
+            // July 26, 2025 10:30 - PlainDateTime is treated as local time in the target timezone
+            // So 10:30 in America/New_York timezone remains 10:30 EDT
+            // This is the correct behavior for timezone-aware parsing
             expect(date.format('YYYY-MM-DD HH:mm')).toBe('2025-07-26 10:30');
             expect(date.raw.timeZoneId).toBe('America/New_York');
         });
@@ -158,6 +162,8 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
 
         it('should cover toString() for non-UTC date without milliseconds', () => {
             // This covers the branch in toString() for non-UTC dates where fractionalSecondDigits is 0.
+            // When parsing '2024-01-15T12:00:00' without timezone info, it's interpreted as local time in the target timezone
+            // So 12:00 in America/New_York timezone remains 12:00 EST
             const date = atemporal('2024-01-15T12:00:00', 'America/New_York');
             expect(date.toString()).toBe('2024-01-15T12:00:00-05:00');
         });

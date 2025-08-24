@@ -8,7 +8,8 @@
     "outDir": "./dist",
     "rootDir": "./",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "downlevelIteration": true
   },
   "include": ["src/**/*", "jest.config.ts"],
   "exclude": ["dist", "node_modules"]

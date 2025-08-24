@@ -3,7 +3,7 @@
  * Mejora el rendimiento al precompilar y reutilizar expresiones regulares comunes.
  * @internal
  */
-import { LRUCache } from './TemporalUtils';
+import { LRUCache } from './core/caching/lru-cache';
 
 export class RegexCache {
     // Tamaño máximo configurable para el caché
@@ -17,8 +17,8 @@ export class RegexCache {
     
     // Inicialización de expresiones regulares precompiladas
     static {
-        // Formato de fecha/hora
-        this._precompiledRegex.set('tokenRegex', /\[([^\]]+)]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|SSS|ZZ|Z|A|a|z/g);
+        // Formato de fecha/hora - ordered by length to prevent single char matches
+        this._precompiledRegex.set('tokenRegex', /\[([^\]]+)]|YYYY|MMMM|dddd|MMM|ddd|YY|MM|DD|HH|hh|mm|ss|SSS|ZZ|dd|(?<!\w)[MDAHhmsZaz](?!\w)/g);
         
         // Validación ISO UTC
         this._precompiledRegex.set('isoUtcRegex', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);

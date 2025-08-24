@@ -1,7 +1,12 @@
 
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
-import { Temporal } from '@js-temporal/polyfill';
+// Import Temporal types for TypeScript compilation
+import type { Temporal } from '@js-temporal/polyfill';
+import { getCachedTemporalAPI } from './core/temporal-detection';
+
+// Get the appropriate Temporal API (native or polyfilled)
+const { Temporal: TemporalAPI } = getCachedTemporalAPI();
 /**
  * Checks if a given input is an instance of TemporalWrapper.
  * This acts as a TypeScript type guard.
@@ -29,7 +34,7 @@ export function isValid(input: any): boolean {
  * Checks if a given input is an instance of Temporal.Duration.
  */
 export function isDuration(input: any): input is Temporal.Duration {
-    return input instanceof Temporal.Duration;
+    return input instanceof TemporalAPI.Duration;
 }
 
 /**

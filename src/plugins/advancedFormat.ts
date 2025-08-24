@@ -5,7 +5,8 @@
 
 import { TemporalWrapper } from '../TemporalWrapper';
 import { RegexCache } from '../RegexCache';
-import { TemporalUtils, IntlCache, LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
+import { TemporalUtils, IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin } from '../types';
 import { Temporal } from '@js-temporal/polyfill';
 

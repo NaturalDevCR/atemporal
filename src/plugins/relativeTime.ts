@@ -5,7 +5,8 @@
  */
 
 import { TemporalWrapper } from '../TemporalWrapper';
-import { IntlCache, LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
+import { IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin, TimeUnit } from '../types';
 
 /**

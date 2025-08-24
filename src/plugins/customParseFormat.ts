@@ -6,7 +6,8 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { TemporalWrapper } from '../TemporalWrapper';
 import type { AtemporalFactory, Plugin } from '../types';
-import { LRUCache, LocaleUtils, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
+import { LocaleUtils } from '../core/locale';
 
 // Extend the `atemporal` factory interface to add our new static method.
 declare module '../types' {
@@ -239,10 +240,12 @@ function validateDateParts(
         if (millisecond < 0 || millisecond > 999) return false;
         
         // Use Temporal API for accurate date validation
-        Temporal.PlainDate.from({ year, month, day });
+        // This will throw an error for invalid dates like February 30th
+        Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
         
         return true;
-    } catch {
+    } catch (error) {
+        // Invalid date detected by Temporal API
         return false;
     }
 }

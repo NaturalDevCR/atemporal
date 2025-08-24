@@ -24,13 +24,11 @@ describe('TemporalUtils Low-Level Tests', () => {
     // Cubre la línea 178-179 (throw para tipos no soportados)
     describe('Unsupported Input Types', () => {
         it('should throw for a boolean input', () => {
-            // @ts-expect-error - Testing invalid input
-            expect(() => TemporalUtils.from(true)).toThrow(InvalidDateError);
+            expect(() => TemporalUtils.from(true as any)).toThrow(InvalidDateError);
         });
 
         it('should throw for a function input', () => {
-            // @ts-expect-error - Testing invalid input
-            expect(() => TemporalUtils.from(() => {})).toThrow(InvalidDateError);
+            expect(() => TemporalUtils.from((() => {}) as any)).toThrow(InvalidDateError);
         });
     });
 

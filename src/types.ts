@@ -1,5 +1,6 @@
+import { TemporalWrapper } from './TemporalWrapper';
+// Import Temporal types for TypeScript compilation
 import type { Temporal } from '@js-temporal/polyfill';
-import type { TemporalWrapper } from './TemporalWrapper';
 
 /**
  * Represents a plain object that can be used to construct a date-time.
@@ -183,6 +184,16 @@ export interface AtemporalFactory {
      * Gets the list of all available plugins.
      */
     getAvailablePlugins: () => string[];
+
+    /**
+     * Gets information about the current Temporal implementation being used.
+     * @returns Object containing information about whether native or polyfilled Temporal is being used
+     */
+    getTemporalInfo: () => {
+        isNative: boolean;
+        environment: 'browser' | 'node' | 'unknown';
+        version: 'native' | 'polyfill';
+    };
 
     duration(durationLike: Temporal.DurationLike | string): Temporal.Duration;
 }
