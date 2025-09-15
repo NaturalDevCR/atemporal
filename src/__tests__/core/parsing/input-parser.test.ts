@@ -179,15 +179,38 @@ describe('InputParser', () => {
     });
 
     it('should handle performance timing', () => {
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockReturnValueOnce(100)
-        .mockReturnValueOnce(150);
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      let callCount = 0;
       
-      const input = '2023-12-25T10:30:00Z';
-      const result = InputParser.parse(input, defaultOptions);
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
+          callCount++;
+          if (callCount === 1) {
+            return 100; // First call
+          } else {
+            return 150; // Second call
+          }
+        },
+        writable: true,
+        configurable: true
+      });
       
-      expect(result).toBeInstanceOf(Temporal.ZonedDateTime);
-      expect(performanceSpy).toHaveBeenCalled();
+      try {
+        const input = '2023-12-25T10:30:00Z';
+        const result = InputParser.parse(input, defaultOptions);
+        
+        expect(result).toBeInstanceOf(Temporal.ZonedDateTime);
+        expect(callCount).toBeGreaterThan(0); // Verify performance.now was called
+      } finally {
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
+      }
     });
   });
 

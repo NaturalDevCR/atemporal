@@ -650,10 +650,17 @@ describe('NumberParseStrategy', () => {
     it('should handle performance timing errors gracefully', () => {
       const input = 1703505000000;
       
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockImplementation(() => {
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
           throw new Error('Performance API error');
-        });
+        },
+        writable: true,
+        configurable: true
+      });
       
       try {
         // Test that context creation and parsing both handle performance errors
@@ -663,7 +670,12 @@ describe('NumberParseStrategy', () => {
         // Should still succeed despite timing error
         expect(result.success).toBe(true);
       } finally {
-        performanceSpy.mockRestore();
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
       }
     });
 

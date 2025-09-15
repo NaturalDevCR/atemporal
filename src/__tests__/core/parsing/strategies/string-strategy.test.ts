@@ -646,8 +646,17 @@ describe('StringParseStrategy', () => {
     });
 
     it('should handle performance timing errors gracefully', () => {
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockImplementation(() => { throw new Error('Performance API error'); });
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
+          throw new Error('Performance API error');
+        },
+        writable: true,
+        configurable: true
+      });
       
       try {
         const input = '2023-12-25T10:30:00Z';
@@ -658,7 +667,12 @@ describe('StringParseStrategy', () => {
           strategy.parse(input, testContext);
         }).not.toThrow();
       } finally {
-        performanceSpy.mockRestore();
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
       }
     });
 

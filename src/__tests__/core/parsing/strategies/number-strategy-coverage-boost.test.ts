@@ -86,10 +86,23 @@ describe('NumberParseStrategy - Coverage Boost', () => {
       const input = Number.MAX_VALUE; // This should cause parsing to fail
       const testContext = createTestContext(input);
       
-      // Mock performance.now to throw an error
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockImplementationOnce(() => 100) // First call succeeds
-        .mockImplementationOnce(() => { throw new Error('Performance error'); }); // Second call fails
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      let callCount = 0;
+      
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
+          callCount++;
+          if (callCount === 1) {
+            return 100; // First call succeeds
+          } else {
+            throw new Error('Performance error'); // Second call fails
+          }
+        },
+        writable: true,
+        configurable: true
+      });
       
       try {
         const result = strategy.parse(input, testContext);
@@ -98,7 +111,12 @@ describe('NumberParseStrategy - Coverage Boost', () => {
         expect(result).toBeDefined();
         expect(typeof result.executionTime).toBe('number');
       } finally {
-        performanceSpy.mockRestore();
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
       }
     });
 
@@ -361,16 +379,34 @@ describe('NumberParseStrategy - Coverage Boost', () => {
       const input = Number.MAX_VALUE; // This will cause parsing to fail
       const testContext = createTestContext(input);
       
-      // Mock performance.now to fail on second call
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockImplementationOnce(() => 100)
-        .mockImplementationOnce(() => { throw new Error('Performance error'); });
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      let callCount = 0;
+      
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
+          callCount++;
+          if (callCount === 1) {
+            return 100; // First call succeeds
+          } else {
+            throw new Error('Performance error'); // Second call fails
+          }
+        },
+        writable: true,
+        configurable: true
+      });
       
       try {
         const result = strategy.parse(input, testContext);
         expect(result).toBeDefined();
       } finally {
-        performanceSpy.mockRestore();
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
       }
     });
 
@@ -516,17 +552,35 @@ describe('NumberParseStrategy - Coverage Boost', () => {
       expect(result.success).toBe(true);
       expect(typeof result.executionTime).toBe('number');
       
-      // Test with performance.now throwing on first call
-      const performanceSpy = jest.spyOn(performance, 'now')
-        .mockImplementationOnce(() => { throw new Error('Performance error'); })
-        .mockImplementationOnce(() => Date.now() + 10);
+      // Store original performance.now function
+      const originalPerformanceNow = performance.now;
+      let callCount = 0;
+      
+      // Mock performance.now using Object.defineProperty (Node.js 18.x compatible)
+      Object.defineProperty(performance, 'now', {
+        value: () => {
+          callCount++;
+          if (callCount === 1) {
+            throw new Error('Performance error'); // First call fails
+          } else {
+            return Date.now() + 10; // Second call succeeds
+          }
+        },
+        writable: true,
+        configurable: true
+      });
       
       try {
         result = strategy.parse(input, testContext);
         expect(result.success).toBe(true);
         expect(typeof result.executionTime).toBe('number');
       } finally {
-        performanceSpy.mockRestore();
+        // Restore original performance.now function
+        Object.defineProperty(performance, 'now', {
+          value: originalPerformanceNow,
+          writable: true,
+          configurable: true
+        });
       }
     });
   });
