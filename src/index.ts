@@ -31,12 +31,15 @@ import {
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
-export type { DateInput, TimeUnit, SettableUnit, Plugin } from './types';
+export type { DateInput, TimeUnit, SettableUnit, Plugin, DateRange, OverlapResult, OverlapOptions } from './types';
 export {
     InvalidAtemporalInstanceError,
     InvalidDateError,
     InvalidTimeZoneError
 };
+
+// Export the dateRangeOverlap plugin and related utilities
+export { default as dateRangeOverlapPlugin, checkDateRangeOverlap, InvalidDateRangeError, OverlapDetectionError } from './plugins/dateRangeOverlap';
 
 /**
  * The core factory function for creating atemporal instances.
@@ -171,7 +174,8 @@ const AVAILABLE_PLUGINS = [
     'customParseFormat',
     'advancedFormat',
     'durationHumanizer',
-    'weekDay'
+    'weekDay',
+    'dateRangeOverlap'
 ];
 
 /**

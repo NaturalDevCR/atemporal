@@ -73,6 +73,41 @@ export type TimeUnit =
 export type SettableUnit = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'quarter';
 
 /**
+ * Represents a date range with start and end dates.
+ * Used by the dateRangeOverlap plugin for overlap detection.
+ */
+export interface DateRange {
+    /** The start date of the range */
+    start: DateInput;
+    /** The end date of the range */
+    end: DateInput;
+}
+
+/**
+ * Result of a date range overlap detection operation.
+ * Contains both the overlap status and the overlapping period if any.
+ */
+export interface OverlapResult {
+    /** Whether the two date ranges overlap */
+    overlaps: boolean;
+    /** The overlapping date range, or null if no overlap exists */
+    overlapRange: DateRange | null;
+}
+
+/**
+ * Configuration options for date range overlap detection.
+ * Allows customization of overlap behavior and validation.
+ */
+export interface OverlapOptions {
+    /** Whether touching ranges (sharing a boundary) count as overlap. Defaults to true. */
+    includeBoundaries?: boolean;
+    /** Timezone for date interpretation. Uses default timezone if not specified. */
+    timezone?: string;
+    /** Whether to perform strict input validation. Defaults to true. */
+    strictValidation?: boolean;
+}
+
+/**
  * A map of format tokens to their string replacement functions. Used by the `.format()` method.
  */
 export type FormatTokenMap = {
@@ -194,6 +229,16 @@ export interface AtemporalFactory {
         environment: 'browser' | 'node' | 'unknown';
         version: 'native' | 'polyfill';
     };
+
+    /**
+     * Checks if two date ranges overlap and returns the overlapping period.
+     * This method is added by the dateRangeOverlap plugin.
+     * @param range1 - First date range for comparison
+     * @param range2 - Second date range for comparison
+     * @param options - Optional configuration for overlap detection
+     * @returns Object containing overlap status and overlapping range if any
+     */
+    checkDateRangeOverlap?: (range1: DateRange, range2: DateRange, options?: OverlapOptions) => OverlapResult;
 
     duration(durationLike: Temporal.DurationLike | string): Temporal.Duration;
 }
