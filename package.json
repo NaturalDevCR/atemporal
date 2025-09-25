@@ -75,6 +75,8 @@
   "scripts": {
     "build": "tsup",
     "test": "jest --coverage",
+    "test:performance": "jest --testPathPatterns=performance --coverage=false",
+    "test:ci": "jest --coverage --testPathIgnorePatterns=performance",
     "prepublishOnly": "npm run build",
     "release": "standard-version"
   },

@@ -870,3 +870,202 @@ interface HumanizeOptions {
 - Locale validation is optimized for common locale formats
 - Enhanced fallback mechanisms ensure consistent behavior
 - Number formatting uses cached Intl.NumberFormat instances for optimal performance
+
+### dateRangeOverlap
+
+Provides date range overlap detection capabilities, allowing you to check if two date ranges intersect and retrieve the overlapping period. Features high-performance caching, comprehensive input validation, and flexible configuration options.
+
+```ts
+import dateRangeOverlapPlugin from 'atemporal/plugins/dateRangeOverlap';
+atemporal.extend(dateRangeOverlapPlugin);
+
+// Basic overlap detection
+const range1 = { start: '2024-01-01', end: '2024-01-15' };
+const range2 = { start: '2024-01-10', end: '2024-01-20' };
+
+const result = atemporal.checkDateRangeOverlap(range1, range2);
+console.log(result.overlaps); // true
+console.log(result.overlapRange); // { start: Date('2024-01-10'), end: Date('2024-01-15') }
+
+// Non-overlapping ranges
+const range3 = { start: '2024-01-01', end: '2024-01-10' };
+const range4 = { start: '2024-01-15', end: '2024-01-20' };
+
+const noOverlap = atemporal.checkDateRangeOverlap(range3, range4);
+console.log(noOverlap.overlaps); // false
+console.log(noOverlap.overlapRange); // null
+
+// Instance method for single date vs range
+const date = atemporal('2024-01-15');
+const range = { start: '2024-01-10', end: '2024-01-20' };
+
+const instanceResult = date.rangeOverlapsWith(range);
+console.log(instanceResult.overlaps); // true
+console.log(instanceResult.overlapRange); // { start: Date('2024-01-15'), end: Date('2024-01-15') }
+
+// Create date ranges using the 'to' method
+const startDate = atemporal('2024-01-01');
+const dateRange = startDate.to('2024-01-15');
+console.log(dateRange); // { start: Date('2024-01-01'), end: '2024-01-15' }
+
+// Configuration options
+const options = {
+  includeBoundaries: false, // Don't count touching ranges as overlapping
+  timezone: 'America/New_York',
+  strictValidation: true
+};
+
+// Touching ranges with boundaries excluded
+const touching1 = { start: '2024-01-01', end: '2024-01-15' };
+const touching2 = { start: '2024-01-15', end: '2024-01-30' };
+
+const touchingResult = atemporal.checkDateRangeOverlap(touching1, touching2, options);
+console.log(touchingResult.overlaps); // false (boundaries excluded)
+
+// With boundaries included (default)
+const touchingDefault = atemporal.checkDateRangeOverlap(touching1, touching2);
+console.log(touchingDefault.overlaps); // true (boundaries included)
+
+// Different input types
+const mixedRange1 = {
+  start: new Date('2024-01-01'),
+  end: atemporal('2024-01-15')
+};
+const mixedRange2 = {
+  start: 1704844800000, // Unix timestamp
+  end: '2024-01-20'
+};
+
+const mixedResult = atemporal.checkDateRangeOverlap(mixedRange1, mixedRange2);
+console.log(mixedResult.overlaps); // true
+
+// Zero-duration ranges (single points in time)
+const point1 = { start: '2024-01-15', end: '2024-01-15' };
+const range5 = { start: '2024-01-10', end: '2024-01-20' };
+
+const pointResult = atemporal.checkDateRangeOverlap(point1, range5);
+console.log(pointResult.overlaps); // true
+console.log(pointResult.overlapRange); // { start: Date('2024-01-15'), end: Date('2024-01-15') }
+
+// Error handling
+try {
+  const invalidRange = { start: 'invalid-date', end: '2024-01-15' };
+  const validRange = { start: '2024-01-01', end: '2024-01-15' };
+  atemporal.checkDateRangeOverlap(invalidRange, validRange);
+} catch (error) {
+  if (error instanceof InvalidDateRangeError) {
+    console.log('Invalid date range:', error.message);
+  }
+}
+
+// Performance with caching
+const perfRange1 = { start: '2024-01-01', end: '2024-01-15' };
+const perfRange2 = { start: '2024-01-10', end: '2024-01-20' };
+
+// First call calculates and caches
+const result1 = atemporal.checkDateRangeOverlap(perfRange1, perfRange2);
+
+// Second call uses cache for better performance
+const result2 = atemporal.checkDateRangeOverlap(perfRange1, perfRange2);
+
+console.log(result1.overlaps === result2.overlaps); // true
+```
+
+**Supported Input Types:**
+- **String**: ISO 8601 date strings (e.g., '2024-01-15', '2024-01-15T10:30:00')
+- **Date**: JavaScript Date objects
+- **Number**: Unix timestamps (milliseconds since epoch)
+- **TemporalWrapper**: Atemporal instances
+- **Mixed**: Any combination of the above types
+
+**Configuration Options:**
+
+```ts
+interface OverlapOptions {
+  /** Whether touching ranges (sharing a boundary) count as overlap. Defaults to true. */
+  includeBoundaries?: boolean;
+  /** Timezone for date interpretation. Uses default timezone if not specified. */
+  timezone?: string;
+  /** Whether to perform strict input validation. Defaults to true. */
+  strictValidation?: boolean;
+}
+```
+
+**Return Type:**
+
+```ts
+interface OverlapResult {
+  /** Whether the two date ranges overlap */
+  overlaps: boolean;
+  /** The overlapping date range, or null if no overlap exists */
+  overlapRange: DateRange | null;
+}
+
+interface DateRange {
+  /** The start date of the range */
+  start: DateInput;
+  /** The end date of the range */
+  end: DateInput;
+}
+```
+
+**Enhanced Features:**
+
+🚀 **High Performance**
+- Intelligent LRU caching for overlap results (up to 200 entries)
+- O(1) time complexity for overlap calculation
+- Optimized validation and date parsing
+- Fast path for cached results
+
+🛡️ **Robust Error Handling**
+- Custom error types: `InvalidDateRangeError`, `OverlapDetectionError`
+- Comprehensive input validation with descriptive error messages
+- Graceful handling of edge cases (null inputs, invalid dates)
+- Optional strict validation mode
+
+📅 **Flexible Input Support**
+- Support for multiple date input formats
+- Mixed input types within the same operation
+- Timezone-aware date parsing and comparison
+- Automatic date normalization
+
+⚡ **Performance Optimizations**
+- Results are cached per range combination and options
+- LRU eviction prevents memory leaks
+- Minimal object creation during calculations
+- Efficient boundary condition handling
+
+**API Methods:**
+
+```ts
+// Static method on atemporal factory
+atemporal.checkDateRangeOverlap(
+  range1: DateRange,
+  range2: DateRange,
+  options?: OverlapOptions
+): OverlapResult
+
+// Instance method for single date vs range comparison
+instance.rangeOverlapsWith(
+  range: DateRange,
+  options?: OverlapOptions
+): OverlapResult
+
+// Helper method to create date ranges
+instance.to(endDate: DateInput): DateRange
+```
+
+**Edge Cases Handled:**
+- **Touching ranges**: Configurable behavior for ranges that share a boundary point
+- **Zero-duration ranges**: Ranges where start equals end (single points in time)
+- **Invalid dates**: Proper error handling for malformed date inputs
+- **Reversed ranges**: Optional validation for ranges where start > end
+- **Timezone differences**: Consistent handling of dates in different timezones
+- **Null/undefined inputs**: Graceful error handling with descriptive messages
+
+**Performance Notes:**
+- First overlap check for a range combination is calculated and cached
+- Subsequent checks with identical ranges and options use cached results
+- Cache automatically manages memory with LRU eviction (200 entry limit)
+- Validation is optimized for common date input formats
+- Boundary condition checks are highly optimized for performance

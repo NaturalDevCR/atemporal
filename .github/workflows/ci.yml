@@ -28,12 +28,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage (excluding performance tests)
         run: |
           echo "Node version: $(node --version)"
           echo "NPM version: $(npm --version)"
           echo "Timezone: $(date)"
-          npm run test -- --verbose
+          npm run test:ci -- --verbose
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           TZ: 'UTC'
+          CI: 'true'

@@ -25,6 +25,14 @@ const config: Config = {
         '<rootDir>/dist/'
     ],
     
+    // Exclude performance tests in CI environments
+    testPathIgnorePatterns: [
+        '<rootDir>/dist/',
+        ...(process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true' 
+            ? ['<rootDir>/src/__tests__/performance.test.ts', '<rootDir>/src/__tests__/from-performance.test.ts']
+            : [])
+    ],
+    
     // Add timeout for CI environments
     testTimeout: 10000,
 };
