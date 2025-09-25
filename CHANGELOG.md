@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.9](https://github.com/NaturalDevCR/atemporal/compare/v0.1.8...v0.1.9) (2025-09-25)
+
+
+### Features
+
+* add date range overlap detection plugin ([816a21e](https://github.com/NaturalDevCR/atemporal/commit/816a21e8915e579d4d89c15107ab5fc21b04086e))
+
 ### [0.1.8](https://github.com/NaturalDevCR/atemporal/compare/v0.1.7...v0.1.8) (2025-08-24)
 
 
