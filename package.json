@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -70,6 +70,16 @@
         "types": "./dist/plugins/weekDay.d.ts",
         "default": "./dist/plugins/weekDay.js"
       }
+    },
+    "./plugins/dateRangeOverlap": {
+      "import": {
+        "types": "./dist/plugins/dateRangeOverlap.d.ts",
+        "default": "./dist/plugins/dateRangeOverlap.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/dateRangeOverlap.d.ts",
+        "default": "./dist/plugins/dateRangeOverlap.js"
+      }
     }
   },
   "scripts": {
@@ -87,7 +97,8 @@
       "src/plugins/advancedFormat.ts",
       "src/plugins/customParseFormat.ts",
       "src/plugins/durationHumanizer.ts",
-      "src/plugins/weekDay.ts"
+      "src/plugins/weekDay.ts",
+      "src/plugins/dateRangeOverlap.ts"
     ],
     "format": [
       "cjs",
