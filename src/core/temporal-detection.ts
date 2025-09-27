@@ -98,11 +98,12 @@ export function getTemporalAPI(): TemporalAPI {
 export function initializeTemporal(): TemporalAPI {
   const temporalAPI = getTemporalAPI();
   
-  // Log which Temporal implementation is being used (only in development)
-  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
+  // Log which Temporal implementation is being used (only once per application)
+  if (!hasLoggedTemporalMessage) {
     console.info(
       `Atemporal: Using ${temporalAPI.isNative ? 'native' : 'polyfilled'} Temporal API`
     );
+    hasLoggedTemporalMessage = true;
   }
   
   return temporalAPI;
@@ -112,6 +113,12 @@ export function initializeTemporal(): TemporalAPI {
  * Cached Temporal API instance to avoid repeated detection
  */
 let cachedTemporalAPI: TemporalAPI | null = null;
+
+/**
+ * Global flag to track if the Temporal API message has already been logged
+ * This prevents duplicate console messages when multiple modules initialize the API
+ */
+let hasLoggedTemporalMessage = false;
 
 /**
  * Gets the cached Temporal API or initializes it if not already cached
@@ -130,6 +137,7 @@ export function getCachedTemporalAPI(): TemporalAPI {
  */
 export function resetTemporalAPICache(): void {
   cachedTemporalAPI = null;
+  hasLoggedTemporalMessage = false;
 }
 
 /**
