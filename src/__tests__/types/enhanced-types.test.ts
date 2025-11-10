@@ -12,6 +12,7 @@ import {
   isTemporalWrapper,
   isTemporalError,
   isFirebaseTimestamp,
+  isFirebaseTimestampLike,
   isTemporalLike,
   isArrayLike,
   type TemporalInput,
@@ -284,6 +285,16 @@ describe('enhanced-types', () => {
         expect(isFirebaseTimestamp(timestamp)).toBe(true);
       });
 
+      it('should return true for valid Firebase timestamp with underscore format', () => {
+        const underscoreTimestamp = {
+          _seconds: 1647345000,
+          _nanoseconds: 123456789,
+          toDate: () => new Date()
+        };
+        
+        expect(isFirebaseTimestamp(underscoreTimestamp)).toBe(true);
+      });
+
       it('should return false for invalid objects', () => {
         expect(isFirebaseTimestamp(null)).toBe(false);
         expect(isFirebaseTimestamp(undefined)).toBe(false);
@@ -301,6 +312,16 @@ describe('enhanced-types', () => {
           nanoseconds: 456,
           toDate: 'not a function'
         })).toBe(false);
+        expect(isFirebaseTimestamp({
+          _seconds: 123,
+          _nanoseconds: 456
+          // missing toDate
+        })).toBe(false);
+        expect(isFirebaseTimestamp({
+          _seconds: 123,
+          _nanoseconds: 456,
+          toDate: 'not a function'
+        })).toBe(false);
       });
 
       it('should return false for primitive values', () => {
@@ -308,6 +329,49 @@ describe('enhanced-types', () => {
         expect(isFirebaseTimestamp(123)).toBe(false);
         expect(isFirebaseTimestamp(true)).toBe(false);
         expect(isFirebaseTimestamp([])).toBe(false);
+      });
+    });
+
+    describe('isFirebaseTimestampLike', () => {
+      it('should return true for valid Firebase timestamp-like objects', () => {
+        const timestampLike = {
+          seconds: 1647345000,
+          nanoseconds: 123456789
+        };
+        
+        expect(isFirebaseTimestampLike(timestampLike)).toBe(true);
+      });
+
+      it('should return true for valid Firebase timestamp-like objects with underscore format', () => {
+        const underscoreTimestampLike = {
+          _seconds: 1647345000,
+          _nanoseconds: 123456789
+        };
+        
+        expect(isFirebaseTimestampLike(underscoreTimestampLike)).toBe(true);
+      });
+
+      it('should return false for objects with invalid property types', () => {
+        expect(isFirebaseTimestampLike({ seconds: '123', nanoseconds: 456 })).toBe(false);
+        expect(isFirebaseTimestampLike({ seconds: 123, nanoseconds: '456' })).toBe(false);
+        expect(isFirebaseTimestampLike({ _seconds: '123', _nanoseconds: 456 })).toBe(false);
+        expect(isFirebaseTimestampLike({ _seconds: 123, _nanoseconds: '456' })).toBe(false);
+      });
+
+      it('should return false for objects with missing properties', () => {
+        expect(isFirebaseTimestampLike({ seconds: 123 })).toBe(false);
+        expect(isFirebaseTimestampLike({ nanoseconds: 123 })).toBe(false);
+        expect(isFirebaseTimestampLike({ _seconds: 123 })).toBe(false);
+        expect(isFirebaseTimestampLike({ _nanoseconds: 123 })).toBe(false);
+      });
+
+      it('should return false for non-objects', () => {
+        expect(isFirebaseTimestampLike(null)).toBe(false);
+        expect(isFirebaseTimestampLike(undefined)).toBe(false);
+        expect(isFirebaseTimestampLike('string')).toBe(false);
+        expect(isFirebaseTimestampLike(123)).toBe(false);
+        expect(isFirebaseTimestampLike(true)).toBe(false);
+        expect(isFirebaseTimestampLike([])).toBe(false);
       });
     });
 

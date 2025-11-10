@@ -21,6 +21,7 @@ This is a work in progress and is in a very alpha state. Please don't use it in 
 - [Quick Start](#-quick-start)
 - [Usage and API](#-usage-and-api)
   - [Creating Instances](#creating-instances)
+  - [Firebase/Firestore Timestamps](#firebasefirestore-timestamps)
   - [Manipulation](#manipulation)
   - [Getters](#getters)
   - [Formatting (`.format()`)](#formatting-format)
@@ -135,12 +136,100 @@ const date = atemporal(firestoreTs);
 console.log(date.toString());
 // => "2023-01-01T00:00:00.500Z"
 
+// From Firebase/Firestore Timestamp with underscore format (v0.3.0+)
+const underscoreTs = { _seconds: 1672531200, _nanoseconds: 500000000 };
+const date2 = atemporal(underscoreTs);
+console.log(date2.toString());
+// => "2023-01-01T00:00:00.500Z"
+
 // Clone an existing instance
 const original = atemporal();
 const clone = atemporal(original);
 
 // Specify a time zone on creation
 atemporal('2025-01-01T12:00:00', 'America/New_York');
+```
+
+### Firebase/Firestore Timestamps
+
+Atemporal provides first-class support for Firebase/Firestore timestamp objects, supporting both standard and underscore formats:
+
+#### Supported Formats
+
+**Standard Format** (most common):
+```ts
+const standardTimestamp = { 
+  seconds: 1672531200, 
+  nanoseconds: 500000000 
+};
+const date = atemporal(standardTimestamp);
+console.log(date.toString()); // => "2023-01-01T00:00:00.500Z"
+```
+
+**Underscore Format** (v0.3.0+):
+```ts
+const underscoreTimestamp = { 
+  _seconds: 1672531200, 
+  _nanoseconds: 500000000 
+};
+const date = atemporal(underscoreTimestamp);
+console.log(date.toString()); // => "2023-01-01T00:00:00.500Z"
+```
+
+#### Working with Firestore Data
+
+When working with Firestore documents, timestamps are automatically handled:
+
+```ts
+// Assuming you have a Firestore document with a timestamp field
+const doc = await getDoc(docRef);
+const data = doc.data();
+
+// The timestamp field can be parsed directly
+const createdAt = atemporal(data.createdAt);
+console.log(createdAt.format('YYYY-MM-DD HH:mm:ss'));
+
+// Works with both formats seamlessly
+const updatedAt = atemporal(data.updatedAt); // Could be either format
+console.log(updatedAt.fromNow());
+```
+
+#### Type Safety
+
+Atemporal provides TypeScript type guards for Firebase timestamps:
+
+```ts
+import { isFirebaseTimestamp, isFirebaseTimestampLike } from 'atemporal';
+
+const unknownValue: unknown = { seconds: 1672531200, nanoseconds: 0 };
+
+if (isFirebaseTimestamp(unknownValue)) {
+  // TypeScript now knows this is a valid Firebase timestamp
+  const date = atemporal(unknownValue);
+}
+
+// Check for timestamp-like objects (more lenient)
+if (isFirebaseTimestampLike(unknownValue)) {
+  const date = atemporal(unknownValue);
+}
+```
+
+#### Conversion Back to Firebase Format
+
+You can easily convert atemporal instances back to Firebase timestamp format:
+
+```ts
+const date = atemporal('2023-01-01T00:00:00.500Z');
+
+// Convert to standard Firebase timestamp format
+const firebaseTimestamp = {
+  seconds: Math.floor(date.valueOf() / 1000),
+  nanoseconds: (date.valueOf() % 1000) * 1_000_000
+};
+
+// Or use the built-in conversion
+const timestamp = date.toDate();
+// Returns a Date object that can be used with Firebase
 ```
 
 ### Manipulation

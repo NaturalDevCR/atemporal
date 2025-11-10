@@ -18,10 +18,13 @@ export interface PlainDateTimeObject {
 
 /**
  * Represents the structure of a Firebase Timestamp object.
+ * Supports both standard format (seconds/nanoseconds) and underscore format (_seconds/_nanoseconds)
  */
 export interface FirebaseTimestampLike {
-    seconds: number;
-    nanoseconds: number;
+    seconds?: number;
+    nanoseconds?: number;
+    _seconds?: number;
+    _nanoseconds?: number;
 }
 
 /**

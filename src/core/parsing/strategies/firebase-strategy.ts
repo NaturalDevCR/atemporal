@@ -10,7 +10,7 @@ import type {
 } from '../../../types/index';
 import { TemporalParseError } from '../../../types/enhanced-types';
 
-import { isFirebaseTimestampLike, hasFirebaseTimestampStructure } from '../../../types/index';
+import { isFirebaseTimestampLike, hasFirebaseTimestampStructure, extractFirebaseTimestampValues } from '../../../types/index';
 
 import type {
   ParseStrategy,
@@ -52,16 +52,19 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
       return 0;
     }
 
-    const timestamp = input as FirebaseTimestamp;
+    const timestampValues = extractFirebaseTimestampValues(input);
+    if (!timestampValues) {
+      return 0.1; // Very low confidence for invalid timestamps
+    }
     
     // Check if the timestamp has valid data types
-    if (typeof timestamp.seconds !== 'number' || 
-        typeof timestamp.nanoseconds !== 'number') {
+    if (typeof timestampValues.seconds !== 'number' || 
+        typeof timestampValues.nanoseconds !== 'number') {
       return 0.1; // Very low confidence for invalid timestamps
     }
     
     // Check for reasonable values
-    if (timestamp.seconds < 0 || timestamp.nanoseconds < 0 || timestamp.nanoseconds >= 1e9) {
+    if (timestampValues.seconds < 0 || timestampValues.nanoseconds < 0 || timestampValues.nanoseconds >= 1e9) {
       return 0.3; // Low confidence for unreasonable values
     }
     
@@ -89,37 +92,26 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
       };
     }
     
-    const timestamp = input as any;
+    const timestampValues = extractFirebaseTimestampValues(input);
     
-    // Check if the timestamp has required properties with correct types
-    if (!('seconds' in timestamp)) {
-      errors.push('Firebase Timestamp missing or invalid seconds property');
-    } else if (typeof timestamp.seconds !== 'number') {
-      errors.push('Firebase Timestamp missing or invalid seconds property');
-    }
-    
-    if (!('nanoseconds' in timestamp)) {
-      errors.push('Firebase Timestamp missing or invalid nanoseconds property');
-    } else if (typeof timestamp.nanoseconds !== 'number') {
-      errors.push('Firebase Timestamp missing or invalid nanoseconds property');
-    }
-    
-    // Validate ranges
-    if (typeof timestamp.seconds === 'number') {
-      if (timestamp.seconds < -62135596800) { // Year 1
+    if (!timestampValues) {
+      errors.push('Firebase Timestamp missing required properties (seconds/nanoseconds or _seconds/_nanoseconds)');
+    } else {
+      // Validate ranges using extracted values
+      if (timestampValues.seconds < -62135596800) { // Year 1
         warnings.push('Firebase Timestamp represents a date before year 1');
-      } else if (timestamp.seconds > 253402300799) { // Year 9999
+      } else if (timestampValues.seconds > 253402300799) { // Year 9999
         warnings.push('Firebase Timestamp represents a date after year 9999');
       }
-    }
-    
-    if (typeof timestamp.nanoseconds === 'number') {
-      if (timestamp.nanoseconds < 0) {
+      
+      if (timestampValues.nanoseconds < 0) {
         errors.push('Firebase Timestamp nanoseconds cannot be negative');
-      } else if (timestamp.nanoseconds >= 1e9) {
+      } else if (timestampValues.nanoseconds >= 1e9) {
         errors.push('Firebase Timestamp nanoseconds must be less than 1 billion');
       }
     }
+    
+    const timestamp = input as any;
     
     // Check for methods if it's a full Firebase Timestamp object
     if (typeof timestamp.toDate === 'function') {
@@ -151,19 +143,29 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
    * Normalize input for parsing
    */
   normalize(input: TemporalInput, context: ParseContext): ParseNormalizationResult {
+    const timestampValues = extractFirebaseTimestampValues(input);
+    if (!timestampValues) {
+      throw new TemporalParseError(
+        'Invalid Firebase Timestamp: missing required properties',
+        input,
+        'FIREBASE_TIMESTAMP_VALIDATION_ERROR',
+        `Strategy: ${this.type}`
+      );
+    }
+    
     const timestamp = input as FirebaseTimestamp;
     const appliedTransforms: string[] = [];
     const metadata: Record<string, unknown> = {
-      originalSeconds: timestamp.seconds,
-      originalNanoseconds: timestamp.nanoseconds,
+      originalSeconds: timestampValues.seconds,
+      originalNanoseconds: timestampValues.nanoseconds,
       hasToDateMethod: typeof timestamp.toDate === 'function',
       hasToMillisMethod: typeof (timestamp as any).toMillis === 'function'
     };
     
     // For Firebase Timestamp objects, normalization is minimal since they're already structured
     // We just ensure we have clean values
-    let normalizedSeconds = timestamp.seconds;
-    let normalizedNanoseconds = timestamp.nanoseconds;
+    let normalizedSeconds = timestampValues.seconds;
+    let normalizedNanoseconds = timestampValues.nanoseconds;
     
     // Ensure integers
     if (!Number.isInteger(normalizedSeconds)) {
@@ -224,10 +226,14 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
     try {
       const timestamp = input as FirebaseTimestamp;
       
-      // Check for methods if it's a full Firebase Timestamp object
-      if (typeof timestamp.toDate === 'function') {
+      // Normalize the timestamp first to handle both formats
+      const normalizationResult = this.normalize(input, context);
+      const normalized = normalizationResult.normalizedInput as FirebaseTimestamp;
+      
+      // Check for methods if it's a full Firebase Timestamp object (using normalized version)
+      if (typeof normalized.toDate === 'function') {
         try {
-          const date = timestamp.toDate();
+          const date = normalized.toDate();
           const instant = Temporal.Instant.fromEpochMilliseconds(date.getTime());
           const timeZone = context.options.timeZone || 'UTC';
           const result = instant.toZonedDateTimeISO(timeZone);
@@ -255,10 +261,6 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
           );
         }
       }
-      
-      // Normalize the timestamp first
-      const normalizationResult = this.normalize(input, context);
-      const normalized = normalizationResult.normalizedInput as FirebaseTimestamp;
       
       // Create Instant from Firebase Timestamp
       // Firebase timestamps are in seconds + nanoseconds

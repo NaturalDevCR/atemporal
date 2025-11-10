@@ -26,12 +26,56 @@ export type TemporalInput =
   | Record<string, unknown>;
 
 /**
- * Firebase Timestamp interface
+ * Firebase Timestamp interface - supports both standard and underscore formats
  */
 export interface FirebaseTimestamp {
+  seconds?: number;
+  nanoseconds?: number;
+  _seconds?: number;
+  _nanoseconds?: number;
+  toDate(): Date;
+}
+
+/**
+ * Helper type to extract timestamp values from either format
+ */
+export type FirebaseTimestampValues = {
   seconds: number;
   nanoseconds: number;
-  toDate(): Date;
+};
+
+/**
+ * Helper function to extract timestamp values from either format
+ * Supports both standard format (seconds/nanoseconds) and underscore format (_seconds/_nanoseconds)
+ */
+export function extractFirebaseTimestampValues(value: unknown): FirebaseTimestampValues | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  
+  const obj = value as Record<string, unknown>;
+  
+  // Check for standard format (seconds/nanoseconds)
+  if ('seconds' in obj && 'nanoseconds' in obj &&
+      typeof obj.seconds === 'number' && 
+      typeof obj.nanoseconds === 'number') {
+    return {
+      seconds: obj.seconds,
+      nanoseconds: obj.nanoseconds
+    };
+  }
+  
+  // Check for underscore format (_seconds/_nanoseconds)
+  if ('_seconds' in obj && '_nanoseconds' in obj &&
+      typeof obj._seconds === 'number' && 
+      typeof obj._nanoseconds === 'number') {
+    return {
+      seconds: obj._seconds,
+      nanoseconds: obj._nanoseconds
+    };
+  }
+  
+  return null;
 }
 
 /**
@@ -389,30 +433,50 @@ export function isTemporalError(error: unknown): error is TemporalError {
 export function isFirebaseTimestamp(value: unknown): value is FirebaseTimestamp {
   return typeof value === 'object' &&
          value !== null &&
-         'seconds' in value &&
-         'nanoseconds' in value &&
-         'toDate' in value &&
-         typeof (value as any).toDate === 'function';
+         ('toDate' in value && typeof (value as any).toDate === 'function') &&
+         (('seconds' in value && 'nanoseconds' in value) || 
+          ('_seconds' in value && '_nanoseconds' in value));
 }
 
 export function isFirebaseTimestampLike(value: unknown): value is FirebaseTimestampLike {
-  return typeof value === 'object' &&
-         value !== null &&
-         'seconds' in value &&
-         'nanoseconds' in value &&
-         typeof (value as any).seconds === 'number' &&
-         typeof (value as any).nanoseconds === 'number';
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const obj = value as Record<string, unknown>;
+  
+  // Check for standard format (seconds/nanoseconds)
+  const hasStandardFormat = 'seconds' in obj && 'nanoseconds' in obj &&
+                           typeof obj.seconds === 'number' && 
+                           typeof obj.nanoseconds === 'number';
+  
+  // Check for underscore format (_seconds/_nanoseconds)
+  const hasUnderscoreFormat = '_seconds' in obj && '_nanoseconds' in obj &&
+                             typeof obj._seconds === 'number' && 
+                             typeof obj._nanoseconds === 'number';
+  
+  return hasStandardFormat || hasUnderscoreFormat;
 }
 
 /**
  * Checks if an object has Firebase Timestamp structure (for confidence evaluation)
  * More lenient than isFirebaseTimestampLike - only checks for property presence
+ * Supports both standard format (seconds/nanoseconds) and underscore format (_seconds/_nanoseconds)
  */
 export function hasFirebaseTimestampStructure(value: unknown): boolean {
-  return typeof value === 'object' &&
-         value !== null &&
-         'seconds' in value &&
-         'nanoseconds' in value;
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  
+  const obj = value as Record<string, unknown>;
+  
+  // Check for standard format (seconds/nanoseconds)
+  const hasStandardFormat = 'seconds' in obj && 'nanoseconds' in obj;
+  
+  // Check for underscore format (_seconds/_nanoseconds)
+  const hasUnderscoreFormat = '_seconds' in obj && '_nanoseconds' in obj;
+  
+  return hasStandardFormat || hasUnderscoreFormat;
 }
 
 export function isTemporalLike(value: unknown): value is TemporalLike {

@@ -76,6 +76,7 @@ export {
   isFirebaseTimestamp,
   isFirebaseTimestampLike,
   hasFirebaseTimestampStructure,
+  extractFirebaseTimestampValues,
   isTemporalLike,
   isArrayLike
 } from './enhanced-types';

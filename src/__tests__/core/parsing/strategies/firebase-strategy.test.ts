@@ -71,6 +71,26 @@ describe('FirebaseTimestampStrategy', () => {
             expect(strategy.canHandle(firebaseTimestamp as any, context)).toBe(true);
         });
 
+        it('should handle Firebase Timestamp objects with underscore format', () => {
+            const firebaseTimestampWithUnderscore = {
+                _seconds: 1640995200,
+                _nanoseconds: 123456789
+            };
+            
+            expect(strategy.canHandle(firebaseTimestampWithUnderscore as any, context)).toBe(true);
+        });
+
+        it('should handle Firebase Timestamp objects with underscore format and methods', () => {
+            const firebaseTimestampWithUnderscore = {
+                _seconds: 1640995200,
+                _nanoseconds: 123456789,
+                toDate: () => new Date(1640995200000),
+                toMillis: () => 1640995200000
+            };
+            
+            expect(strategy.canHandle(firebaseTimestampWithUnderscore as any, context)).toBe(true);
+        });
+
         it('should not handle non-Firebase Timestamp objects', () => {
             expect(strategy.canHandle('2023-01-01', context)).toBe(false);
             expect(strategy.canHandle(1640995200000, context)).toBe(false);
@@ -154,6 +174,20 @@ describe('FirebaseTimestampStrategy', () => {
             expect(result.confidence).toBe(0.95);
         });
 
+        it('should validate valid Firebase timestamps with underscore format', () => {
+            const validUnderscoreTimestamp = {
+                _seconds: 1640995200,
+                _nanoseconds: 123456789
+            };
+            
+            const result = strategy.validate(validUnderscoreTimestamp as any, context);
+            
+            expect(result.isValid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+            expect(result.suggestedStrategy).toBe('firebase-timestamp');
+            expect(result.confidence).toBe(0.95);
+        });
+
         it('should reject non-Firebase Timestamp objects', () => {
             const result = strategy.validate('2023-01-01', context);
             
@@ -171,7 +205,7 @@ describe('FirebaseTimestampStrategy', () => {
             const result = strategy.validate(invalidTimestamp as any, context);
             
             expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Firebase Timestamp missing or invalid seconds property');
+            expect(result.errors).toContain('Firebase Timestamp missing required properties (seconds/nanoseconds or _seconds/_nanoseconds)');
         });
 
         it('should reject objects with missing nanoseconds property', () => {
@@ -182,20 +216,35 @@ describe('FirebaseTimestampStrategy', () => {
             const result = strategy.validate(invalidTimestamp as any, context);
             
             expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Firebase Timestamp missing or invalid nanoseconds property');
+            expect(result.errors).toContain('Firebase Timestamp missing required properties (seconds/nanoseconds or _seconds/_nanoseconds)');
         });
 
         it('should reject objects with invalid property types', () => {
-            const invalidTimestamp = {
-                seconds: '1640995200',
-                nanoseconds: '123456789'
+            const invalidTimestamps = [
+                { seconds: '1640995200', nanoseconds: 123456789 },
+                { seconds: 1640995200, nanoseconds: '123456789' },
+                { seconds: null, nanoseconds: 123456789 },
+                { seconds: 1640995200, nanoseconds: null }
+            ];
+            
+            invalidTimestamps.forEach(timestamp => {
+                const result = strategy.validate(timestamp as any, context);
+                
+                expect(result.isValid).toBe(false);
+                expect(result.errors).toContain('Firebase Timestamp missing required properties (seconds/nanoseconds or _seconds/_nanoseconds)');
+            });
+        });
+
+        it('should reject underscore format objects with invalid property types', () => {
+            const invalidUnderscoreTimestamp = {
+                _seconds: '1640995200',
+                _nanoseconds: '123456789'
             };
             
-            const result = strategy.validate(invalidTimestamp as any, context);
+            const result = strategy.validate(invalidUnderscoreTimestamp as any, context);
             
             expect(result.isValid).toBe(false);
-            expect(result.errors).toContain('Firebase Timestamp missing or invalid seconds property');
-            expect(result.errors).toContain('Firebase Timestamp missing or invalid nanoseconds property');
+            expect(result.errors).toContain('Firebase Timestamp missing required properties (seconds/nanoseconds or _seconds/_nanoseconds)');
         });
 
         it('should reject negative nanoseconds', () => {
@@ -305,6 +354,25 @@ describe('FirebaseTimestampStrategy', () => {
             expect(result.metadata.hasToMillisMethod).toBe(false);
         });
 
+        it('should normalize valid Firebase timestamps with underscore format', () => {
+            const underscoreTimestamp = {
+                _seconds: 1640995200,
+                _nanoseconds: 123456789
+            };
+            
+            const result = strategy.normalize(underscoreTimestamp as any, context);
+            
+            expect(result.normalizedInput).toEqual({
+                seconds: 1640995200,
+                nanoseconds: 123456789
+            });
+            expect(result.appliedTransforms).toHaveLength(0);
+            expect(result.metadata.originalSeconds).toBe(1640995200);
+            expect(result.metadata.originalNanoseconds).toBe(123456789);
+            expect(result.metadata.hasToDateMethod).toBe(false);
+            expect(result.metadata.hasToMillisMethod).toBe(false);
+        });
+
         it('should preserve methods when present', () => {
             const toDateFn = () => new Date(1640995200000);
             const toMillisFn = () => 1640995200000;
@@ -396,6 +464,29 @@ describe('FirebaseTimestampStrategy', () => {
             };
             
             const result = strategy.parse(timestamp as any, context);
+            
+            expect(result.success).toBe(true);
+            if (result.success && result.data) {
+                expect(result.data).toBeInstanceOf(Temporal.ZonedDateTime);
+                expect(result.data.year).toBe(2022);
+                expect(result.data.month).toBe(1);
+                expect(result.data.day).toBe(1);
+                expect(result.data.hour).toBe(0);
+                expect(result.data.minute).toBe(0);
+                expect(result.data.second).toBe(0);
+                expect(result.data.millisecond).toBe(123);
+                expect(result.strategy).toBe('firebase-timestamp');
+                expect(result.confidence).toBe(0.95);
+            }
+        });
+
+        it('should parse valid Firebase timestamps with underscore format', () => {
+            const underscoreTimestamp = {
+                _seconds: 1640995200, // 2022-01-01 00:00:00 UTC
+                _nanoseconds: 123456789
+            };
+            
+            const result = strategy.parse(underscoreTimestamp as any, context);
             
             expect(result.success).toBe(true);
             if (result.success && result.data) {
