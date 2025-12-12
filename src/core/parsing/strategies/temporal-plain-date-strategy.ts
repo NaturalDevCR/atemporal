@@ -2,11 +2,11 @@
  * @file Temporal PlainDate parsing strategy for handling Temporal.PlainDate inputs
  */
 
-import { Temporal } from '@js-temporal/polyfill';
-import type { TemporalInput } from '../../../types/enhanced-types';
-import { TemporalParseError } from '../../../types/enhanced-types';
-import { DEFAULT_TEMPORAL_CONFIG } from '../../../types/index';
-import { TemporalWrapper } from '../../../TemporalWrapper';
+import { Temporal } from "@js-temporal/polyfill";
+import type { TemporalInput } from "../../../types/enhanced-types";
+import { TemporalParseError } from "../../../types/enhanced-types";
+import { DEFAULT_TEMPORAL_CONFIG } from "../../../types/index";
+import { TemporalWrapper } from "../../../TemporalWrapper";
 import type {
   ParseStrategy,
   ParseStrategyType,
@@ -16,20 +16,17 @@ import type {
   ParseConversionResult,
   ParseContext,
   ParseOptimizationHints,
-  FastPathResult
-} from '../parsing-types';
-import {
-  createParseResult,
-  createParseError
-} from '../parsing-types';
+  FastPathResult,
+} from "../parsing-types";
+import { createParseResult, createParseError } from "../parsing-types";
 
 /**
  * Strategy for parsing Temporal.PlainDate inputs
  */
 export class TemporalPlainDateStrategy implements ParseStrategy {
-  readonly type: ParseStrategyType = 'temporal-plain-date';
+  readonly type: ParseStrategyType = "temporal-plain-date";
   readonly priority = 80;
-  readonly description = 'Parse Temporal.PlainDate instances';
+  readonly description = "Parse Temporal.PlainDate instances";
 
   /**
    * Check if this strategy can handle the input
@@ -56,28 +53,28 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
       return {
         canUseFastPath: false,
         strategy: this.type,
-        confidence: 0
+        confidence: 0,
       };
     }
 
     const plainDate = input as Temporal.PlainDate;
-    const timeZone = context.options.timeZone || 'UTC';
-    
+    const timeZone = context.options.timeZone || "UTC";
+
     // Fast path for PlainDate conversion to ZonedDateTime
     try {
-      const plainDateTime = plainDate.toPlainDateTime('00:00:00');
+      const plainDateTime = plainDate.toPlainDateTime("00:00:00");
       const result = plainDateTime.toZonedDateTime(timeZone);
       return {
         canUseFastPath: true,
         data: result,
         strategy: this.type,
-        confidence: 0.85
+        confidence: 0.85,
       };
     } catch {
       return {
         canUseFastPath: false,
         strategy: this.type,
-        confidence: 0
+        confidence: 0,
       };
     }
   }
@@ -90,29 +87,31 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
     const warnings: string[] = [];
 
     if (!this.canHandle(input, context)) {
-      errors.push('Input is not a Temporal.PlainDate');
+      errors.push("Input is not a Temporal.PlainDate");
       return {
         isValid: false,
         normalizedInput: input,
-        suggestedStrategy: 'fallback',
+        suggestedStrategy: "fallback",
         confidence: 0,
         errors,
-        warnings
+        warnings,
       };
     }
 
     const plainDate = input as Temporal.PlainDate;
-    
+
     // Check if the PlainDate is valid
     try {
       plainDate.toString();
     } catch (error) {
-      errors.push('Invalid Temporal.PlainDate');
+      errors.push("Invalid Temporal.PlainDate");
     }
 
     // Warn if no timezone context is provided
     if (!context.options.timeZone) {
-      warnings.push('No timezone specified, will use default timezone and start of day');
+      warnings.push(
+        "No timezone specified, will use default timezone and start of day"
+      );
     }
 
     return {
@@ -121,20 +120,23 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
       suggestedStrategy: this.type,
       confidence: this.getConfidence(input, context),
       errors,
-      warnings
+      warnings,
     };
   }
 
   /**
    * Normalize input for parsing
    */
-  normalize(input: TemporalInput, context: ParseContext): ParseNormalizationResult {
+  normalize(
+    input: TemporalInput,
+    context: ParseContext
+  ): ParseNormalizationResult {
     return {
       normalizedInput: input,
       appliedTransforms: [],
       metadata: {
-        originalType: 'Temporal.PlainDate'
-      }
+        originalType: "Temporal.PlainDate",
+      },
     };
   }
 
@@ -143,20 +145,22 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
    */
   convert(input: TemporalInput, context: ParseContext): ParseConversionResult {
     const plainDate = input as Temporal.PlainDate;
-    const timeZone = context.options.timeZone || (DEFAULT_TEMPORAL_CONFIG as any).timeZone;
-    const plainDateTime = plainDate.toPlainDateTime('00:00:00');
+    const timeZone =
+      context.options.timeZone ||
+      (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
+    const plainDateTime = plainDate.toPlainDateTime("00:00:00");
     const zonedDateTime = plainDateTime.toZonedDateTime(timeZone);
-    
+
     return {
       result: zonedDateTime,
-      intermediateSteps: ['temporal-plain-date'],
+      intermediateSteps: ["temporal-plain-date"],
       appliedOptions: context.options,
       metadata: {
         year: plainDate.year,
         month: plainDate.month,
         day: plainDate.day,
-        timeZone: timeZone
-      }
+        timeZone: timeZone,
+      },
     };
   }
 
@@ -170,22 +174,24 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
     } catch {
       startTime = Date.now();
     }
-    
+
     try {
       const plainDate = input as Temporal.PlainDate;
-      const timeZone = context.options.timeZone || (DEFAULT_TEMPORAL_CONFIG as any).timeZone;
-      
+      const timeZone =
+        context.options.timeZone ||
+        (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
+
       // Convert PlainDate to ZonedDateTime at start of day
-      const plainDateTime = plainDate.toPlainDateTime('00:00:00');
+      const plainDateTime = plainDate.toPlainDateTime("00:00:00");
       const result = plainDateTime.toZonedDateTime(timeZone);
-      
+
       let executionTime: number;
       try {
         executionTime = performance.now() - startTime;
       } catch {
         executionTime = Date.now() - startTime;
       }
-      
+
       return createParseResult(
         result,
         this.type,
@@ -200,11 +206,20 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
       } catch {
         executionTime = Date.now() - startTime;
       }
-      
-      const parseError = error instanceof Error ?
-        new TemporalParseError(error.message, input, 'TEMPORAL_PLAIN_DATE_PARSE_ERROR') :
-        new TemporalParseError('Unknown error parsing Temporal.PlainDate', input, 'UNKNOWN_ERROR');
-      
+
+      const parseError =
+        error instanceof Error
+          ? new TemporalParseError(
+              error.message,
+              input,
+              "TEMPORAL_PLAIN_DATE_PARSE_ERROR"
+            )
+          : new TemporalParseError(
+              "Unknown error parsing Temporal.PlainDate",
+              input,
+              "UNKNOWN_ERROR"
+            );
+
       return createParseError(parseError, this.type, executionTime);
     }
   }
@@ -212,16 +227,23 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
   /**
    * Get optimization hints for this strategy
    */
-  getOptimizationHints(input: TemporalInput, context: ParseContext): ParseOptimizationHints {
+  getOptimizationHints(
+    input: TemporalInput,
+    context: ParseContext
+  ): ParseOptimizationHints {
     return {
       preferredStrategy: this.type,
       shouldCache: false, // Temporal.PlainDate parsing is very fast
       canUseFastPath: true,
-      estimatedComplexity: 'low',
+      estimatedComplexity: "low",
       suggestedOptions: {
-        timeZone: context.options.timeZone || (DEFAULT_TEMPORAL_CONFIG as any).timeZone
+        timeZone:
+          context.options.timeZone ||
+          (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone,
       },
-      warnings: context.options.timeZone ? [] : ['Consider specifying a timezone for more predictable results']
+      warnings: context.options.timeZone
+        ? []
+        : ["Consider specifying a timezone for more predictable results"],
     };
   }
 }

@@ -2,11 +2,11 @@
  * @file Temporal Instant parsing strategy for handling Temporal.Instant inputs
  */
 
-import { Temporal } from '@js-temporal/polyfill';
-import type { TemporalInput } from '../../../types/enhanced-types';
-import { TemporalParseError } from '../../../types/enhanced-types';
-import { DEFAULT_TEMPORAL_CONFIG } from '../../../types/index';
-import { TemporalWrapper } from '../../../TemporalWrapper';
+import { Temporal } from "@js-temporal/polyfill";
+import type { TemporalInput } from "../../../types/enhanced-types";
+import { TemporalParseError } from "../../../types/enhanced-types";
+import { DEFAULT_TEMPORAL_CONFIG } from "../../../types/index";
+import { TemporalWrapper } from "../../../TemporalWrapper";
 import type {
   ParseStrategy,
   ParseStrategyType,
@@ -16,20 +16,17 @@ import type {
   ParseConversionResult,
   ParseContext,
   ParseOptimizationHints,
-  FastPathResult
-} from '../parsing-types';
-import {
-  createParseResult,
-  createParseError
-} from '../parsing-types';
+  FastPathResult,
+} from "../parsing-types";
+import { createParseResult, createParseError } from "../parsing-types";
 
 /**
  * Strategy for parsing Temporal.Instant inputs
  */
 export class TemporalInstantStrategy implements ParseStrategy {
-  readonly type: ParseStrategyType = 'temporal-instant';
+  readonly type: ParseStrategyType = "temporal-instant";
   readonly priority = 90;
-  readonly description = 'Parse Temporal.Instant instances';
+  readonly description = "Parse Temporal.Instant instances";
 
   /**
    * Check if this strategy can handle the input
@@ -56,13 +53,13 @@ export class TemporalInstantStrategy implements ParseStrategy {
       return {
         canUseFastPath: false,
         strategy: this.type,
-        confidence: 0
+        confidence: 0,
       };
     }
 
     const instant = input as Temporal.Instant;
-    const timeZone = context.options.timeZone || 'UTC';
-    
+    const timeZone = context.options.timeZone || "UTC";
+
     // Fast path for Instant conversion to ZonedDateTime
     try {
       const result = instant.toZonedDateTimeISO(timeZone);
@@ -70,13 +67,13 @@ export class TemporalInstantStrategy implements ParseStrategy {
         canUseFastPath: true,
         data: result,
         strategy: this.type,
-        confidence: 0.95
+        confidence: 0.95,
       };
     } catch {
       return {
         canUseFastPath: false,
         strategy: this.type,
-        confidence: 0
+        confidence: 0,
       };
     }
   }
@@ -89,24 +86,24 @@ export class TemporalInstantStrategy implements ParseStrategy {
     const warnings: string[] = [];
 
     if (!this.canHandle(input, context)) {
-      errors.push('Input is not a Temporal.Instant');
+      errors.push("Input is not a Temporal.Instant");
       return {
         isValid: false,
         normalizedInput: input,
-        suggestedStrategy: 'fallback',
+        suggestedStrategy: "fallback",
         confidence: 0,
         errors,
-        warnings
+        warnings,
       };
     }
 
     const instant = input as Temporal.Instant;
-    
+
     // Check if the instant is valid
     try {
       instant.toString();
     } catch (error) {
-      errors.push('Invalid Temporal.Instant');
+      errors.push("Invalid Temporal.Instant");
     }
 
     return {
@@ -115,20 +112,23 @@ export class TemporalInstantStrategy implements ParseStrategy {
       suggestedStrategy: this.type,
       confidence: this.getConfidence(input, context),
       errors,
-      warnings
+      warnings,
     };
   }
 
   /**
    * Normalize input for parsing
    */
-  normalize(input: TemporalInput, context: ParseContext): ParseNormalizationResult {
+  normalize(
+    input: TemporalInput,
+    context: ParseContext
+  ): ParseNormalizationResult {
     return {
       normalizedInput: input,
       appliedTransforms: [],
       metadata: {
-        originalType: 'Temporal.Instant'
-      }
+        originalType: "Temporal.Instant",
+      },
     };
   }
 
@@ -137,17 +137,19 @@ export class TemporalInstantStrategy implements ParseStrategy {
    */
   convert(input: TemporalInput, context: ParseContext): ParseConversionResult {
     const instant = input as Temporal.Instant;
-    const timeZone = context.options.timeZone || (DEFAULT_TEMPORAL_CONFIG as any).timeZone;
+    const timeZone =
+      context.options.timeZone ||
+      (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
     const zonedDateTime = instant.toZonedDateTimeISO(timeZone);
-    
+
     return {
       result: zonedDateTime,
-      intermediateSteps: ['temporal-instant'],
+      intermediateSteps: ["temporal-instant"],
       appliedOptions: context.options,
       metadata: {
         epochNanoseconds: instant.epochNanoseconds.toString(),
-        timeZone: timeZone
-      }
+        timeZone: timeZone,
+      },
     };
   }
 
@@ -161,21 +163,23 @@ export class TemporalInstantStrategy implements ParseStrategy {
     } catch {
       startTime = Date.now();
     }
-    
+
     try {
       const instant = input as Temporal.Instant;
-      const timeZone = context.options.timeZone || (DEFAULT_TEMPORAL_CONFIG as any).timeZone;
-      
+      const timeZone =
+        context.options.timeZone ||
+        (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
+
       // Convert Instant to ZonedDateTime
       const result = instant.toZonedDateTimeISO(timeZone);
-      
+
       let executionTime: number;
       try {
         executionTime = performance.now() - startTime;
       } catch {
         executionTime = Date.now() - startTime;
       }
-      
+
       return createParseResult(
         result,
         this.type,
@@ -190,11 +194,20 @@ export class TemporalInstantStrategy implements ParseStrategy {
       } catch {
         executionTime = Date.now() - startTime;
       }
-      
-      const parseError = error instanceof Error ?
-        new TemporalParseError(error.message, input, 'TEMPORAL_INSTANT_PARSE_ERROR') :
-        new TemporalParseError('Unknown error parsing Temporal.Instant', input, 'UNKNOWN_ERROR');
-      
+
+      const parseError =
+        error instanceof Error
+          ? new TemporalParseError(
+              error.message,
+              input,
+              "TEMPORAL_INSTANT_PARSE_ERROR"
+            )
+          : new TemporalParseError(
+              "Unknown error parsing Temporal.Instant",
+              input,
+              "UNKNOWN_ERROR"
+            );
+
       return createParseError(parseError, this.type, executionTime);
     }
   }
@@ -202,14 +215,17 @@ export class TemporalInstantStrategy implements ParseStrategy {
   /**
    * Get optimization hints for this strategy
    */
-  getOptimizationHints(input: TemporalInput, context: ParseContext): ParseOptimizationHints {
+  getOptimizationHints(
+    input: TemporalInput,
+    context: ParseContext
+  ): ParseOptimizationHints {
     return {
       preferredStrategy: this.type,
       shouldCache: false, // Temporal.Instant parsing is very fast
       canUseFastPath: true,
-      estimatedComplexity: 'low',
+      estimatedComplexity: "low",
       suggestedOptions: {},
-      warnings: []
+      warnings: [],
     };
   }
 }

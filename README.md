@@ -383,6 +383,19 @@ end.diff(start, "hour"); // 27
 end.diff(start, "day", true); // 1.125
 ```
 
+### Min/Max Utilities
+
+Find the earliest or latest date from a list of inputs.
+
+```typescript
+const d1 = atemporal("2023-01-01");
+const d2 = atemporal("2023-06-01");
+const d3 = atemporal("2023-03-01");
+
+const min = atemporal.min(d1, d2, d3); // 2023-01-01
+const max = atemporal.max([d1, d2, d3]); // 2023-06-01
+```
+
 ### Durations
 
 Create and manipulate `Temporal.Duration` objects.
@@ -799,6 +812,33 @@ atemporal.clearAdvancedFormatCache(): void
 - Timezone names are cached with timestamp-based invalidation
 - Cache automatically manages memory with LRU eviction
 - Locale validation is optimized for common locale formats
+
+### weekDay
+
+Adds functionality to work with weekdays, including setting the day of the week, finding the start/end of the week, and localized weekday names.
+
+```ts
+import weekDay from "atemporal/plugins/weekDay";
+atemporal.extend(weekDay);
+
+const date = atemporal("2024-05-15"); // Wednesday
+
+// Get weekday details
+console.log(date.weekday().name); // "Wednesday"
+console.log(date.weekday().number); // 3
+console.log(date.weekday().isWeekend); // false
+
+// Set weekday
+const nextFriday = date.weekday(5);
+console.log(nextFriday.format("YYYY-MM-DD")); // "2024-05-17"
+
+// Start/End of week
+console.log(date.startOf("week").format("YYYY-MM-DD")); // "2024-05-13" (Monday)
+console.log(date.endOf("week").format("YYYY-MM-DD")); // "2024-05-19T23:59:59.999"
+
+// Locale aware
+console.log(atemporal().weekday(1, { locale: "es-CR" }).weekday().name); // "lunes"
+```
 
 ### durationHumanizer
 
@@ -1218,3 +1258,81 @@ instance.to(endDate: DateInput): DateRange
 - Cache automatically manages memory with LRU eviction (200 entry limit)
 - Validation is optimized for common date input formats
 - Boundary condition checks are highly optimized for performance
+
+### businessDays
+
+Adds calculations for working days, allowing you to skip weekends and holidays.
+
+```ts
+import businessDays from "atemporal/plugins/businessDays";
+atemporal.extend(businessDays);
+
+// Configure holidays and weekends (optional)
+atemporal.setBusinessDaysConfig({
+  holidays: ["2023-12-25", "2024-01-01"], // ISO strings or Date objects
+  weekendDays: [6, 7], // Saturday, Sunday (default)
+});
+
+const friday = atemporal("2023-01-06"); // Friday
+const monday = friday.addBusinessDays(1); // Monday (skips Sat/Sun)
+console.log(monday.format("YYYY-MM-DD")); // "2023-01-09"
+
+// Check days
+console.log(friday.isBusinessDay()); // true
+console.log(atemporal("2023-01-07").isBusinessDay()); // false (Weekend)
+console.log(atemporal("2023-12-25").isBusinessDay()); // false (Holiday)
+
+// Get next business day
+const next = friday.nextBusinessDay(); // Monday
+```
+
+**API Methods:**
+
+```ts
+// Configuration
+atemporal.setBusinessDaysConfig(options: BusinessDaysOptions)
+
+// Instance Methods
+instance.addBusinessDays(days: number): TemporalWrapper
+instance.subtractBusinessDays(days: number): TemporalWrapper
+instance.isBusinessDay(): boolean
+instance.isHoliday(): boolean
+instance.isWeekend(): boolean
+instance.nextBusinessDay(): TemporalWrapper
+```
+
+### timeSlots
+
+Find available free time slots in a schedule, avoiding busy periods. Perfect for booking systems.
+
+```ts
+import timeSlots from "atemporal/plugins/timeSlots";
+atemporal.extend(timeSlots);
+
+const slots = atemporal.findAvailableSlots({
+  range: { start: "2023-01-01T09:00:00", end: "2023-01-01T17:00:00" }, // 9 to 5
+  duration: { minutes: 30 },
+  interval: { minutes: 30 }, // Start a new slot every 30 mins
+  busySlots: [
+    { start: "2023-01-01T12:00:00", end: "2023-01-01T13:00:00" }, // Lunch break
+  ],
+});
+
+// Returns array of TemporalWrappers
+slots.forEach((slot) => {
+  console.log(slot.format("HH:mm")); // "09:00", "09:30", ..., "13:00", ...
+});
+```
+
+**API Methods:**
+
+```ts
+atemporal.findAvailableSlots(options: AvailabilityOptions): TemporalWrapper[]
+
+interface AvailabilityOptions {
+    range: { start: DateInput, end: DateInput };
+    duration: { hours?: number, minutes?: number, ... }; // Temporal.DurationLike
+    interval?: { hours?: number, minutes?: number, ... }; // Defaults to duration
+    busySlots: { start: DateInput, end: DateInput }[];
+}
+```

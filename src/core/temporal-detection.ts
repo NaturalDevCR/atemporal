@@ -5,15 +5,27 @@
  */
 
 // Static import of the Temporal polyfill to avoid dynamic require() issues with bundlers
-import { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
+import { Temporal as PolyfillTemporal } from "@js-temporal/polyfill";
 
 /**
  * Interface for the Temporal API that can be either native or polyfilled
  */
 export interface TemporalAPI {
-  Temporal: typeof import('@js-temporal/polyfill').Temporal;
+  Temporal: typeof import("@js-temporal/polyfill").Temporal;
   isNative: boolean;
 }
+
+/**
+ * Checks if the native Temporal API is available in the current environment
+ * @returns {boolean} True if native Temporal is available, false otherwise
+ */
+const getGlobalObject = (): any => {
+  if (typeof globalThis !== "undefined") return globalThis;
+  if (typeof window !== "undefined") return window;
+  if (typeof global !== "undefined") return global;
+  if (typeof self !== "undefined") return self;
+  throw new Error("Unable to locate global object");
+};
 
 /**
  * Checks if the native Temporal API is available in the current environment
@@ -22,33 +34,27 @@ export interface TemporalAPI {
 export function isNativeTemporalAvailable(): boolean {
   try {
     // Get the global object in a cross-platform way
-    const globalObj = (function() {
-      if (typeof globalThis !== 'undefined') return globalThis;
-      if (typeof window !== 'undefined') return window;
-      if (typeof global !== 'undefined') return global;
-      if (typeof self !== 'undefined') return self;
-      throw new Error('Unable to locate global object');
-    })();
-    
+    const globalObj = getGlobalObject();
+
     // Check if Temporal exists in the global scope
-    if ('Temporal' in globalObj) {
+    if ("Temporal" in globalObj) {
       const temporal = (globalObj as any).Temporal;
-      
+
       // Verify that it has the expected structure and key methods
       return (
         temporal &&
-        typeof temporal === 'object' &&
-        typeof temporal.Now === 'object' &&
-        typeof temporal.PlainDate === 'function' &&
-        typeof temporal.PlainDateTime === 'function' &&
-        typeof temporal.ZonedDateTime === 'function' &&
-        typeof temporal.Instant === 'function' &&
-        typeof temporal.Duration === 'function' &&
-        typeof temporal.PlainTime === 'function' &&
-        typeof temporal.PlainYearMonth === 'function' &&
-        typeof temporal.PlainMonthDay === 'function' &&
-        typeof temporal.TimeZone === 'function' &&
-        typeof temporal.Calendar === 'function'
+        typeof temporal === "object" &&
+        typeof temporal.Now === "object" &&
+        typeof temporal.PlainDate === "function" &&
+        typeof temporal.PlainDateTime === "function" &&
+        typeof temporal.ZonedDateTime === "function" &&
+        typeof temporal.Instant === "function" &&
+        typeof temporal.Duration === "function" &&
+        typeof temporal.PlainTime === "function" &&
+        typeof temporal.PlainYearMonth === "function" &&
+        typeof temporal.PlainMonthDay === "function" &&
+        typeof temporal.TimeZone === "function" &&
+        typeof temporal.Calendar === "function"
       );
     }
     return false;
@@ -64,28 +70,22 @@ export function isNativeTemporalAvailable(): boolean {
  */
 export function getTemporalAPI(): TemporalAPI {
   const isNative = isNativeTemporalAvailable();
-  
+
   if (isNative) {
     // Get the global object in a cross-platform way
-    const globalObj = (function() {
-      if (typeof globalThis !== 'undefined') return globalThis;
-      if (typeof window !== 'undefined') return window;
-      if (typeof global !== 'undefined') return global;
-      if (typeof self !== 'undefined') return self;
-      throw new Error('Unable to locate global object');
-    })();
-    
+    const globalObj = getGlobalObject();
+
     // Use native Temporal API
     const nativeTemporal = (globalObj as any).Temporal;
     return {
       Temporal: nativeTemporal,
-      isNative: true
+      isNative: true,
     };
   } else {
     // Fall back to polyfill (using static import)
     return {
       Temporal: PolyfillTemporal,
-      isNative: false
+      isNative: false,
     };
   }
 }
@@ -97,15 +97,17 @@ export function getTemporalAPI(): TemporalAPI {
  */
 export function initializeTemporal(): TemporalAPI {
   const temporalAPI = getTemporalAPI();
-  
+
   // Log which Temporal implementation is being used (only once per application)
   if (!hasLoggedTemporalMessage) {
     console.info(
-      `Atemporal: Using ${temporalAPI.isNative ? 'native' : 'polyfilled'} Temporal API`
+      `Atemporal: Using ${
+        temporalAPI.isNative ? "native" : "polyfilled"
+      } Temporal API`
     );
     hasLoggedTemporalMessage = true;
   }
-  
+
   return temporalAPI;
 }
 
@@ -146,9 +148,9 @@ export function resetTemporalAPICache(): void {
  */
 export function isBrowserEnvironment(): boolean {
   return (
-    typeof window !== 'undefined' &&
-    typeof document !== 'undefined' &&
-    typeof navigator !== 'undefined'
+    typeof window !== "undefined" &&
+    typeof document !== "undefined" &&
+    typeof navigator !== "undefined"
   );
 }
 
@@ -159,10 +161,10 @@ export function isBrowserEnvironment(): boolean {
 export function isNodeEnvironment(): boolean {
   try {
     return (
-      typeof process !== 'undefined' &&
+      typeof process !== "undefined" &&
       process.versions !== null &&
       process.versions !== undefined &&
-      typeof process.versions.node === 'string'
+      typeof process.versions.node === "string"
     );
   } catch (error) {
     // If any error occurs during detection, assume we're not in Node.js
@@ -176,13 +178,17 @@ export function isNodeEnvironment(): boolean {
  */
 export function getTemporalInfo(): {
   isNative: boolean;
-  environment: 'unknown' | 'browser' | 'node';
-  version: 'native' | 'polyfill';
+  environment: "unknown" | "browser" | "node";
+  version: "native" | "polyfill";
 } {
   const api = getCachedTemporalAPI();
   return {
     isNative: api.isNative,
-    environment: isBrowserEnvironment() ? 'browser' : isNodeEnvironment() ? 'node' : 'unknown',
-    version: api.isNative ? 'native' : 'polyfill'
+    environment: isBrowserEnvironment()
+      ? "browser"
+      : isNodeEnvironment()
+      ? "node"
+      : "unknown",
+    version: api.isNative ? "native" : "polyfill",
   };
 }

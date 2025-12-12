@@ -71,6 +71,26 @@
         "default": "./dist/plugins/weekDay.js"
       }
     },
+    "./plugins/businessDays": {
+      "import": {
+        "types": "./dist/plugins/businessDays.d.ts",
+        "default": "./dist/plugins/businessDays.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/businessDays.d.ts",
+        "default": "./dist/plugins/businessDays.js"
+      }
+    },
+    "./plugins/timeSlots": {
+      "import": {
+        "types": "./dist/plugins/timeSlots.d.ts",
+        "default": "./dist/plugins/timeSlots.mjs"
+      },
+      "require": {
+        "types": "./dist/plugins/timeSlots.d.ts",
+        "default": "./dist/plugins/timeSlots.js"
+      }
+    },
     "./plugins/dateRangeOverlap": {
       "import": {
         "types": "./dist/plugins/dateRangeOverlap.d.ts",
@@ -98,7 +118,9 @@
       "src/plugins/customParseFormat.ts",
       "src/plugins/durationHumanizer.ts",
       "src/plugins/weekDay.ts",
-      "src/plugins/dateRangeOverlap.ts"
+      "src/plugins/dateRangeOverlap.ts",
+      "src/plugins/businessDays.ts",
+      "src/plugins/timeSlots.ts"
     ],
     "format": [
       "cjs",

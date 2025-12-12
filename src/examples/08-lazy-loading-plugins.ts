@@ -7,50 +7,56 @@
  * To run: node -r ts-node/register examples/08-lazy-loading-plugins.ts
  */
 
-import atemporal from '../index';
+import atemporal from "../index";
 
-// Función asíncrona para demostrar la carga perezosa
+// Async function to demonstrate lazy loading
 async function demoLazyLoading() {
-    console.log('--- 8. Lazy Loading Plugins Example ---');
+  console.log("--- 8. Lazy Loading Plugins Example ---");
 
-    // Inicialmente no hay plugins cargados
-    console.log('\nInitially loaded plugins:', atemporal.getLoadedPlugins());
-    console.log('Available plugins:', atemporal.getAvailablePlugins());
+  // Initially no plugins are loaded
+  console.log("\nInitially loaded plugins:", atemporal.getLoadedPlugins());
+  console.log("Available plugins:", atemporal.getAvailablePlugins());
 
-    // Cargar el plugin relativeTime bajo demanda
-    console.log('\nLoading relativeTime plugin...');
-    await atemporal.lazyLoad('relativeTime');
-    
-    // Ahora podemos usar la funcionalidad del plugin
-    const twoHoursAgo = atemporal().subtract(2, 'hour');
-    // Usamos una aserción de tipo para ayudar a TypeScript
-    console.log(`Two hours ago: "${(twoHoursAgo as any).fromNow()}"`); // "2 hours ago"
+  // Load relativeTime plugin on demand
+  console.log("\nLoading relativeTime plugin...");
+  await atemporal.lazyLoad("relativeTime");
 
-    // Verificar que el plugin está cargado
-    console.log('\nIs relativeTime loaded?', atemporal.isPluginLoaded('relativeTime'));
-    console.log('Currently loaded plugins:', atemporal.getLoadedPlugins());
+  // Now we can use the plugin functionality
+  const twoHoursAgo = atemporal().subtract(2, "hour");
+  // We use a type assertion to help TypeScript
+  console.log(`Two hours ago: "${(twoHoursAgo as any).fromNow()}"`); // "2 hours ago"
 
-    // Cargar otro plugin bajo demanda
-    console.log('\nLoading durationHumanizer plugin...');
-    await atemporal.lazyLoad('durationHumanizer');
-    
-    // Usar la funcionalidad del segundo plugin
-    const myDuration = atemporal.duration({ years: 1, months: 6, days: 15 });
-    // Usamos una aserción de tipo para ayudar a TypeScript
-    console.log(`Humanized duration: "${(atemporal as any).humanize(myDuration)}"`); 
+  // Verify that the plugin is loaded
+  console.log(
+    "\nIs relativeTime loaded?",
+    atemporal.isPluginLoaded("relativeTime")
+  );
+  console.log("Currently loaded plugins:", atemporal.getLoadedPlugins());
 
-    // Probar la carga múltiple
-    console.log('\nLoading multiple plugins at once...');
-    await atemporal.lazyLoadMultiple(['advancedFormat', 'weekDay']);
-    console.log('All loaded plugins:', atemporal.getLoadedPlugins());
+  // Load another plugin on demand
+  console.log("\nLoading durationHumanizer plugin...");
+  await atemporal.lazyLoad("durationHumanizer");
 
-    // Intentar cargar un plugin ya cargado (no debería hacer nada)
-    console.log('\nTrying to load relativeTime again...');
-    await atemporal.lazyLoad('relativeTime');
-    console.log('Loaded plugins remain the same:', atemporal.getLoadedPlugins());
+  // Use the second plugin functionality
+  const myDuration = atemporal.duration({ years: 1, months: 6, days: 15 });
+  // We use a type assertion to help TypeScript
+  console.log(
+    `Humanized duration: "${(atemporal as any).humanize(myDuration)}"`
+  );
+
+  // Test multiple loading
+  console.log("\nLoading multiple plugins at once...");
+  await atemporal.lazyLoadMultiple(["advancedFormat", "weekDay"]);
+  console.log("All loaded plugins:", atemporal.getLoadedPlugins());
+
+  // Try to load an already loaded plugin (should not do anything)
+  console.log("\nTrying to load relativeTime again...");
+  await atemporal.lazyLoad("relativeTime");
+  console.log("Loaded plugins remain the same:", atemporal.getLoadedPlugins());
 }
 
-// Ejecutar la demostración
-demoLazyLoading().catch(error => {
-    console.error('Error in lazy loading demo:', error);
+// Run the demo
+
+demoLazyLoading().catch((error) => {
+  console.error("Error in lazy loading demo:", error);
 });
