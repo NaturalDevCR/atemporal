@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -108,7 +108,9 @@
     "test:performance": "jest --testPathPatterns=performance --coverage=false",
     "test:ci": "jest --coverage --testPathIgnorePatterns=performance",
     "prepublishOnly": "npm run build",
-    "release": "standard-version"
+    "release": "standard-version",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "tsup": {
     "entry": [
@@ -152,7 +154,9 @@
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.1.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.28"
   },
   "engines": {
     "node": ">=18"
