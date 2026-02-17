@@ -94,7 +94,7 @@ describe("TemporalZonedStrategy", () => {
       // Context is UTC
       const result = strategy.checkFastPath(zdt, context);
       expect(result.canUseFastPath).toBe(true);
-      expect(result.data.timeZoneId).toBe("UTC");
+      expect((result.data as Temporal.ZonedDateTime).timeZoneId).toBe("UTC");
     });
 
     it("should fail fast path for invalid input", () => {
@@ -141,7 +141,7 @@ describe("TemporalZonedStrategy", () => {
       const result = strategy.parse(zdt, context);
       expect(result.success).toBe(true);
       if (result.success && result.data) {
-        expect(result.data.timeZoneId).toBe("UTC");
+        expect((result.data as Temporal.ZonedDateTime).timeZoneId).toBe("UTC");
       }
     });
 
@@ -168,9 +168,15 @@ describe("TemporalZonedStrategy", () => {
       expect(result.error).toBeDefined();
     });
 
-    it("should handle execution time calculation error", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+    it("should handle execution time calculation (lines 191-196 & 209-213)", () => {
+      // Coverage for performance.now vs Date.now fallback
+      const originalPerformance = global.performance;
+
+      Object.defineProperty(global, "performance", {
+        get: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       try {
@@ -178,13 +184,21 @@ describe("TemporalZonedStrategy", () => {
         const result = strategy.parse(zdt, context);
         expect(result.success).toBe(true);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(global, "performance", {
+          value: originalPerformance,
+          configurable: true,
+        });
       }
     });
 
-    it("should handle execution time error during parse error", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+    it("should handle execution time error during parse error (lines 223-228)", () => {
+      const originalPerformance = global.performance;
+
+      Object.defineProperty(global, "performance", {
+        get: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       const mockZDT = Object.create(Temporal.ZonedDateTime.prototype);
@@ -199,7 +213,10 @@ describe("TemporalZonedStrategy", () => {
         const result = strategy.parse(mockZDT, context);
         expect(result.success).toBe(false);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(global, "performance", {
+          value: originalPerformance,
+          configurable: true,
+        });
       }
     });
 
