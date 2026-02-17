@@ -161,7 +161,9 @@
   "overrides": {
     "esbuild": "^0.25.0",
     "js-yaml": "^3.14.2",
-    "glob": "^10.5.0"
+    "glob": "^10.5.0",
+    "lodash": "^4.17.23",
+    "diff": "^8.0.3"
   },
   "engines": {
     "node": ">=18"
