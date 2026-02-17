@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Atemporal",
   description: "A modern and ergonomic date-time library, powered by the Temporal API.",
+  base: '/atemporal/',
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
