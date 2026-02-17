@@ -368,21 +368,32 @@ describe("TemporalLikeStrategy", () => {
     });
 
     it("should handle execution time calculation error in parse (success path)", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
       try {
         const input = { year: 2023, month: 5, day: 15, hour: 10 };
         const result = strategy.parse(input, context);
         expect(result.success).toBe(true);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
 
     it("should handle execution time calculation error in parse (error path)", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
       jest.spyOn(strategy, "validate").mockReturnValue({
         isValid: false,
@@ -397,7 +408,10 @@ describe("TemporalLikeStrategy", () => {
         const result = strategy.parse({ year: 2023 }, context);
         expect(result.success).toBe(false);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
   });

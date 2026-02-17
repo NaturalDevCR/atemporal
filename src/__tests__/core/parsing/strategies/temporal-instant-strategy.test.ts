@@ -135,8 +135,12 @@ describe("TemporalInstantStrategy", () => {
     });
 
     it("should handle execution time calculation error using performance", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       try {
@@ -144,13 +148,20 @@ describe("TemporalInstantStrategy", () => {
         const result = strategy.parse(instant, context);
         expect(result.success).toBe(true);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
 
     it("should handle execution time error during parse error", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       const mockInstant = Object.create(Temporal.Instant.prototype);
@@ -162,7 +173,10 @@ describe("TemporalInstantStrategy", () => {
         const result = strategy.parse(mockInstant, context);
         expect(result.success).toBe(false);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
 

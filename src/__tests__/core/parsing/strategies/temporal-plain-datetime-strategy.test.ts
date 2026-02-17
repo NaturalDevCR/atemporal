@@ -145,8 +145,12 @@ describe("TemporalPlainDateTimeStrategy", () => {
     });
 
     it("should handle execution time calculation error", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       try {
@@ -154,13 +158,20 @@ describe("TemporalPlainDateTimeStrategy", () => {
         const result = strategy.parse(dateTime, context);
         expect(result.success).toBe(true);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
 
     it("should handle execution time calculation error during parse error", () => {
-      const nowSpy = jest.spyOn(performance, "now").mockImplementation(() => {
-        throw new Error("No performance");
+      const originalNow = performance.now;
+      Object.defineProperty(performance, "now", {
+        value: () => {
+          throw new Error("No performance");
+        },
+        configurable: true,
       });
 
       const mockDateTime = Object.create(Temporal.PlainDateTime.prototype);
@@ -172,7 +183,10 @@ describe("TemporalPlainDateTimeStrategy", () => {
         const result = strategy.parse(mockDateTime, context);
         expect(result.success).toBe(false);
       } finally {
-        nowSpy.mockRestore();
+        Object.defineProperty(performance, "now", {
+          value: originalNow,
+          configurable: true,
+        });
       }
     });
 
