@@ -130,7 +130,8 @@ class FormatCache {
       this.cache.set(formatString, entry);
       return entry;
     } catch (e) {
-      console.log("Debug - Error in regex generation:", e);
+      // Error in regex generation
+
       return null;
     }
   }

@@ -399,13 +399,6 @@ export class TemporalUtils {
     }
 }
 
-
-
-
-
-
-
-
 // Export the classes for use in plugins and tests
 export { DiffCache };
 
