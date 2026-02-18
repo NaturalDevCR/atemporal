@@ -18,16 +18,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          registry-url: "https://registry.npmjs.org"
       - run: npm ci
       - run: npm run build
-
-      - name: Debug NPM Auth
-        run: |
-          npm config list
-          npm whoami || echo "Not logged in"
-
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Fallback if OIDC fails
+      - run: npm publish --provenance --access public
