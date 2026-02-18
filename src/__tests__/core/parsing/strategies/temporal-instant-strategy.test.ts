@@ -68,14 +68,14 @@ describe("TemporalInstantStrategy", () => {
       const instant = Temporal.Now.instant();
       const result = strategy.checkFastPath(instant, context);
       expect(result.canUseFastPath).toBe(true);
-      expect(result.data.timeZoneId).toBe("UTC");
+      expect(result.data?.timeZoneId).toBe("UTC");
     });
 
     it("should use fast path with default timezone", () => {
       const instant = Temporal.Now.instant();
       const result = strategy.checkFastPath(instant, { options: {} } as any);
       expect(result.canUseFastPath).toBe(true);
-      expect(result.data.timeZoneId).toBe("UTC");
+      expect(result.data?.timeZoneId).toBe("UTC");
     });
 
     it("should fail fast path if conversion throws", () => {

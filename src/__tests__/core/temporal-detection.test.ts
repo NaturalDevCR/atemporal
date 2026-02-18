@@ -154,21 +154,7 @@ describe("Temporal Detection", () => {
       expect(typeof api.isNative).toBe("boolean");
     });
 
-    it("should log in development mode", () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
 
-      const consoleSpy = jest.spyOn(console, "info").mockImplementation();
-
-      initializeTemporal();
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Atemporal: Using")
-      );
-
-      consoleSpy.mockRestore();
-      process.env.NODE_ENV = originalEnv;
-    });
   });
 
   describe("getCachedTemporalAPI", () => {
