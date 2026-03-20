@@ -73,4 +73,4 @@ If you find this project useful and would like to support its development, you c
 
 ## ⚖️ License
 
-MIT © [Josue Orozco A.](https://github.com/NaturalDevCR)
+MIT © [NaturalDevCR](https://github.com/NaturalDevCR)
