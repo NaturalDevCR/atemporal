@@ -2,7 +2,7 @@
  * @file Optimized diff cache with structured keys and enhanced performance
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../temporal-api';
 import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';
@@ -60,18 +60,10 @@ export class DiffCache {
     const normalizedUnit = unit.replace(/s$/, '') as TotalUnit;
 
     try {
-      // Ensure both dates are polyfill instances before calling since().
-      // When the environment has native Temporal (Chrome 144+, Firefox 139+),
-      // getCachedTemporalAPI() returns native objects which are not
-      // instanceof polyfill.ZonedDateTime, causing since() to throw
-      // "Must specify time zone" during coercion.
-      const d1safe = d1 instanceof Temporal.ZonedDateTime
-        ? d1
-        : Temporal.ZonedDateTime.from(d1.toString());
-      const d2safe = d2 instanceof Temporal.ZonedDateTime
-        ? d2
-        : Temporal.ZonedDateTime.from(d2.toString());
-      return d1safe.since(d2safe).total({ unit: normalizedUnit, relativeTo: d1safe });
+      // Both d1 and d2 are guaranteed to come from the same Temporal implementation
+      // (native or polyfill) because every module now uses ../temporal-api which
+      // re-exports getCachedTemporalAPI(). No cross-implementation conversion needed.
+      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
     } catch (error) {
       // Fallback for unsupported units or edge cases
       console.warn(`Failed to calculate diff for unit ${unit}:`, error);

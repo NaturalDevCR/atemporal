@@ -3,7 +3,7 @@
  * considering a list of busy periods.
  */
 
-import { Temporal } from "@js-temporal/polyfill"; // Use polyfill types for internal logic
+import { Temporal } from "../core/temporal-api"; // Use polyfill types for internal logic
 import { TemporalWrapper } from "../TemporalWrapper";
 import type { Plugin, AtemporalFactory, DateInput } from "../types";
 

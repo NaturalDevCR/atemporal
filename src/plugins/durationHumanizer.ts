@@ -5,7 +5,7 @@
  * Optimized with intelligent caching systems and enhanced error handling for better performance.
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../core/temporal-api";
 import { IntlCache, LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";
 import { LocaleUtils } from "../core/locale";
 import type { Plugin, AtemporalFactory } from "../types";

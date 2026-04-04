@@ -2,7 +2,7 @@
  * @file Firebase Timestamp parsing strategy for handling Firebase Timestamp objects
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   TemporalInput,
   FirebaseTimestamp,

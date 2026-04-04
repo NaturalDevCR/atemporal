@@ -2,7 +2,7 @@
  * @file String parsing strategy for handling string-based temporal inputs
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../../temporal-api";
 import type { TemporalInput, StrictParsingOptions } from "../../../types/index";
 import { TemporalParseError } from "../../../types/enhanced-types";
 

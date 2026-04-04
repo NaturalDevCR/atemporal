@@ -2,7 +2,7 @@
  * @file Array-like parsing strategy for handling array-like temporal inputs
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   TemporalInput,
   StrictParsingOptions

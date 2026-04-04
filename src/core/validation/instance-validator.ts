@@ -3,7 +3,7 @@
  * Provides consistent validation patterns across the library.
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '@js-temporal/polyfill';
 
 /**
  * Centralized validation utility for temporal instances and inputs.

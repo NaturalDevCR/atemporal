@@ -8,7 +8,7 @@ import { RegexCache } from '../RegexCache';
 import { TemporalUtils, IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
 import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin } from '../types';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../core/temporal-api';
 
 // Augment the JSDoc to reflect only the tokens this plugin provides.
 declare module '../TemporalWrapper' {

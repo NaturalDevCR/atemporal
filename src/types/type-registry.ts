@@ -29,7 +29,7 @@ import type {
   PerformanceMetrics
 } from './enhanced-types';
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../core/temporal-api';
 
 /**
  * Type validation result

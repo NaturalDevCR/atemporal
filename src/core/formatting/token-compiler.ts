@@ -10,7 +10,7 @@ import type {
   FormattingContext,
   TokenReplacer
 } from './formatting-types';
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '@js-temporal/polyfill';
 import { TOKEN_PATTERNS, ESCAPE_PATTERNS } from './formatting-types';
 import { CacheKeys } from '../caching/cache-keys';
 import { ResizableLRUCache } from '../caching/lru-cache';

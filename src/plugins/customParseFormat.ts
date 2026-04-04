@@ -3,7 +3,7 @@
  * that follows a specific format, similar to `customParseFormat` from Day.js.
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../core/temporal-api";
 import { TemporalWrapper } from "../TemporalWrapper";
 import type { AtemporalFactory, Plugin } from "../types";
 import { LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";

@@ -2,7 +2,7 @@
  * @file Temporal Instant parsing strategy for handling Temporal.Instant inputs
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../../temporal-api";
 import type { TemporalInput } from "../../../types/enhanced-types";
 import { TemporalParseError } from "../../../types/enhanced-types";
 import { DEFAULT_TEMPORAL_CONFIG } from "../../../types/index";
