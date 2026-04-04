@@ -5,7 +5,8 @@
  * Optimized with intelligent caching systems and enhanced error handling for better performance.
  */
 
-import { Temporal } from "../core/temporal-api";
+import type { Temporal } from "@js-temporal/polyfill";
+import { Temporal as TemporalRuntime } from "../core/temporal-api";
 import { IntlCache, LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";
 import { LocaleUtils } from "../core/locale";
 import type { Plugin, AtemporalFactory } from "../types";
@@ -355,7 +356,7 @@ function humanize(
   // Enhanced validation: check for null, undefined, or invalid inputs
   if (
     !durationLike ||
-    (!(durationLike instanceof Temporal.Duration) &&
+    (!(durationLike instanceof TemporalRuntime.Duration) &&
       typeof durationLike === "object" &&
       Object.keys(durationLike).length === 0)
   ) {
@@ -376,7 +377,7 @@ function humanize(
   }
 
   try {
-    const duration = Temporal.Duration.from(durationLike);
+    const duration = TemporalRuntime.Duration.from(durationLike);
     const { locale = "en", listStyle = "long", unitDisplay = "long" } = options;
     const normalizedLocale = LocaleUtils.validateAndNormalize(locale);
 

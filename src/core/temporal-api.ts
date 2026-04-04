@@ -15,5 +15,10 @@
  */
 
 import { getCachedTemporalAPI } from './temporal-detection';
+import { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
 
-export const { Temporal } = getCachedTemporalAPI();
+// Export the runtime Temporal (native when available, polyfill otherwise).
+// Cast to `typeof PolyfillTemporal` so TypeScript can use `Temporal.ZonedDateTime`
+// as a type namespace in function signatures and declaration files — the
+// native and polyfill APIs are structurally compatible.
+export const Temporal = getCachedTemporalAPI().Temporal as typeof PolyfillTemporal;
