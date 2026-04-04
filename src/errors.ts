@@ -29,12 +29,16 @@ export class InvalidDateError extends AtemporalError {}
 
 /**
  * Thrown when a format string contains invalid or unsupported tokens.
+ * The `public` modifier on constructor params means TypeScript auto-assigns
+ * them — no manual `this.x = x` needed.
  */
 export class InvalidFormatError extends AtemporalError {
-    constructor(message: string, public formatString: string, public invalidTokens?: string[]) {
+    constructor(
+        message: string,
+        public readonly formatString: string,
+        public readonly invalidTokens?: string[]
+    ) {
         super(message);
-        this.formatString = formatString;
-        this.invalidTokens = invalidTokens;
     }
 }
 
@@ -43,15 +47,12 @@ export class InvalidFormatError extends AtemporalError {
  */
 export class FormatMismatchError extends AtemporalError {
     constructor(
-        message: string, 
-        public dateString: string, 
-        public formatString: string,
-        public expectedPattern?: string
+        message: string,
+        public readonly dateString: string,
+        public readonly formatString: string,
+        public readonly expectedPattern?: string
     ) {
         super(message);
-        this.dateString = dateString;
-        this.formatString = formatString;
-        this.expectedPattern = expectedPattern;
     }
 }
 
@@ -61,12 +62,10 @@ export class FormatMismatchError extends AtemporalError {
 export class InvalidDateComponentsError extends AtemporalError {
     constructor(
         message: string,
-        public components: { [key: string]: any },
-        public reason?: string
+        public readonly components: { [key: string]: any },
+        public readonly reason?: string
     ) {
         super(message);
-        this.components = components;
-        this.reason = reason;
     }
 }
 
@@ -76,11 +75,9 @@ export class InvalidDateComponentsError extends AtemporalError {
 export class InvalidAmPmError extends AtemporalError {
     constructor(
         message: string,
-        public hour12: number,
-        public ampm: string
+        public readonly hour12: number,
+        public readonly ampm: string
     ) {
         super(message);
-        this.hour12 = hour12;
-        this.ampm = ampm;
     }
 }

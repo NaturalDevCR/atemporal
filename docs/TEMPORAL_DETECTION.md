@@ -14,7 +14,7 @@ The library automatically detects whether the native Temporal API is available i
 You can check which Temporal implementation is being used:
 
 ```javascript
-import atemporal from 'atemporal';
+import atemporal from "atemporal";
 
 // Get information about the current Temporal implementation
 const info = atemporal.getTemporalInfo();
@@ -30,15 +30,19 @@ console.log(info);
 ## Benefits
 
 ### 🚀 **Future-Ready**
+
 Automatically uses native Temporal when browsers support it, without requiring code changes.
 
 ### ⚡ **Performance**
+
 Native implementations are typically faster than polyfills.
 
 ### 🔄 **Seamless Transition**
+
 No breaking changes - your existing code continues to work exactly the same.
 
 ### 📦 **Bundle Size**
+
 When native Temporal is available, the polyfill overhead is eliminated.
 
 ## Browser Support Timeline
@@ -48,16 +52,6 @@ The Temporal API is currently in Stage 3 of the TC39 process. Browser support is
 - **Current Status**: Polyfill required in all environments
 - **Future**: Native support in modern browsers
 - **Transition**: Automatic detection ensures smooth migration
-
-## Development vs Production
-
-In development mode, the library logs which Temporal implementation is being used:
-
-```
-Atemporal: Using polyfilled Temporal API
-```
-
-This logging is automatically disabled in production builds.
 
 ## Technical Details
 
@@ -95,8 +89,8 @@ The detection result is cached for performance:
 
 ```javascript
 // This code works exactly the same as before
-const date = atemporal('2023-12-25');
-const formatted = date.format('YYYY-MM-DD');
+const date = atemporal("2023-12-25");
+const formatted = date.format("YYYY-MM-DD");
 ```
 
 ### For New Projects
@@ -104,11 +98,11 @@ const formatted = date.format('YYYY-MM-DD');
 Simply use atemporal as normal - the detection happens automatically:
 
 ```javascript
-import atemporal from 'atemporal';
+import atemporal from "atemporal";
 
 // The library automatically uses the best available Temporal implementation
 const now = atemporal();
-const christmas = atemporal('2023-12-25');
+const christmas = atemporal("2023-12-25");
 ```
 
 ## Testing
@@ -130,22 +124,24 @@ npm test -- --testPathPatterns=temporal-detection-integration
 Returns information about the current Temporal implementation.
 
 **Returns:**
+
 ```typescript
 {
-  isNative: boolean;        // true if using native Temporal
-  environment: string;      // 'browser', 'node', or 'unknown'
-  version: string;          // 'native' or 'polyfill'
+  isNative: boolean; // true if using native Temporal
+  environment: string; // 'browser', 'node', or 'unknown'
+  version: string; // 'native' or 'polyfill'
 }
 ```
 
 **Example:**
+
 ```javascript
 const info = atemporal.getTemporalInfo();
 
 if (info.isNative) {
-  console.log('Using native Temporal API!');
+  console.log("Using native Temporal API!");
 } else {
-  console.log('Using Temporal polyfill');
+  console.log("Using Temporal polyfill");
 }
 ```
 
@@ -190,4 +186,4 @@ A: You can mock the global Temporal object in your tests to simulate native supp
 
 ---
 
-*This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility.*
+_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._

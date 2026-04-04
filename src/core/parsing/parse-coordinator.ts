@@ -63,6 +63,15 @@ export class ParseCoordinator {
   private operationCount = 0;
   private lastOptimization = 0;
 
+  /**
+   * Returns the internal ParseEngine instance.
+   * Intended for trusted internal consumers to avoid `as any` casts.
+   * @internal
+   */
+  getParseEngine(): ParseEngine {
+    return this.parseEngine;
+  }
+
   constructor(config: ParseCoordinatorConfig = {}) {
     this.config = {
       maxStrategyAttempts: 3,

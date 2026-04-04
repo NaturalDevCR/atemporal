@@ -23,6 +23,8 @@ import {
   isValidTimeZone,
   isValidLocale,
   isPlugin,
+  markAsPlugin,
+  PLUGIN_SENTINEL,
 } from "./typeGuards";
 import type {
   DateInput,
@@ -53,6 +55,9 @@ export {
   InvalidDateError,
   InvalidTimeZoneError,
 };
+
+// Export plugin authoring utilities
+export { markAsPlugin, PLUGIN_SENTINEL };
 
 // Export the dateRangeOverlap plugin and related utilities
 export {

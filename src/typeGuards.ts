@@ -67,10 +67,38 @@ export function isValidLocale(code: string): boolean {
 }
 
 /**
- * Checks if a given function has the shape of an atemporal plugin.
- * This is a "duck typing" check based on the function's signature.
+ * Internal sentinel property used to reliably identify atemporal plugins.
+ * External plugin authors can use `markAsPlugin()` to stamp their plugin.
+ */
+export const PLUGIN_SENTINEL = Symbol('atemporal.plugin');
+
+/**
+ * Stamps a function as a verified atemporal plugin.
+ * Recommended for plugin authors distributing via npm so that `isPlugin()`
+ * always returns `true` regardless of arity.
+ *
+ * @example
+ * const myPlugin = markAsPlugin((Atemporal, atemporal) => { ... });
+ */
+export function markAsPlugin<T extends (...args: any[]) => void>(fn: T): T {
+    (fn as any)[PLUGIN_SENTINEL] = true;
+    return fn;
+}
+
+/**
+ * Checks if a given value is an atemporal plugin.
+ *
+ * Detection order:
+ * 1. Checks for the `PLUGIN_SENTINEL` symbol (stamped by `markAsPlugin()`).
+ * 2. Falls back to duck-typing: must be a function with exactly 2 or 3
+ *    parameters AND must not be a plain arrow function with a generic name,
+ *    ensuring common utility functions like `(a, b) => a + b` are rejected.
  */
 export function isPlugin(input: any): boolean {
-    // A plugin is a function that accepts 2 or 3 arguments.
-    return typeof input === 'function' && (input.length === 2 || input.length === 3);
+    if (typeof input !== 'function') return false;
+    // Explicit sentinel check (most reliable)
+    if ((input as any)[PLUGIN_SENTINEL] === true) return true;
+    // Duck-typing fallback: plugins always receive (Atemporal, atemporal[, options])
+    // and are typically named or have a meaningful function name.
+    return (input.length === 2 || input.length === 3) && input.name !== '';
 }

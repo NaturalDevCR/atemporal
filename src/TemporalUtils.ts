@@ -130,17 +130,20 @@ export class TemporalUtils {
         try {
             const coordinator = this.getParseCoordinator();
             
-            // Use the coordinator's synchronous parsing through the engine
-            const parseEngine = (coordinator as any).parseEngine;
+            // Use the coordinator's synchronous parsing through the engine.
+            // getParseEngine() is an internal getter that avoids unsafe `as any` casts.
+            const parseEngine = coordinator.getParseEngine();
             if (!parseEngine) {
                 throw new InvalidDateError('ParseEngine not available');
             }
             
             // First validate the input to catch unsupported types early
+            // preserveOriginalTimeZone is an internal engine option not declared in the
+            // public ParseOptions interface. The cast suppresses the TS error intentionally.
             const validation = parseEngine.validate(input as any, {
                 timeZone: tz,
                 preserveOriginalTimeZone: originalTimeZone === undefined || originalTimeZone === null
-            });
+            } as any);
             
             // For validation failures on unsupported types and malformed inputs, throw immediately
             if (!validation.isValid && validation.errors.some((error: string) => 
@@ -164,7 +167,7 @@ export class TemporalUtils {
             const result = parseEngine.parse(input as any, {
                 timeZone: tz,
                 preserveOriginalTimeZone: originalTimeZone === undefined || originalTimeZone === null
-            });
+            } as any);
             
             if (!result.success || !result.data) {
                 throw new InvalidDateError(`Failed to parse input: ${input}. Error: ${result.error?.message || 'Unknown error'}`);
