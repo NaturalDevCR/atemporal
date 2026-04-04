@@ -60,7 +60,18 @@ export class DiffCache {
     const normalizedUnit = unit.replace(/s$/, '') as TotalUnit;
 
     try {
-      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
+      // Ensure both dates are polyfill instances before calling since().
+      // When the environment has native Temporal (Chrome 144+, Firefox 139+),
+      // getCachedTemporalAPI() returns native objects which are not
+      // instanceof polyfill.ZonedDateTime, causing since() to throw
+      // "Must specify time zone" during coercion.
+      const d1safe = d1 instanceof Temporal.ZonedDateTime
+        ? d1
+        : Temporal.ZonedDateTime.from(d1.toString());
+      const d2safe = d2 instanceof Temporal.ZonedDateTime
+        ? d2
+        : Temporal.ZonedDateTime.from(d2.toString());
+      return d1safe.since(d2safe).total({ unit: normalizedUnit, relativeTo: d1safe });
     } catch (error) {
       // Fallback for unsupported units or edge cases
       console.warn(`Failed to calculate diff for unit ${unit}:`, error);
