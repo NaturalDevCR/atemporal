@@ -7,6 +7,7 @@ import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';
 import type { TimeUnit } from '../../types';
+import { normalizeTimeUnit } from '../../types';
 
 /**
  * Enhanced diff cache with structured keys and dynamic sizing
@@ -56,9 +57,10 @@ export class DiffCache {
    */
   private static calculateDiff(d1: Temporal.ZonedDateTime, d2: Temporal.ZonedDateTime, unit: TimeUnit): number {
     type TotalUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
-    
+
     try {
-      return d1.since(d2).total({ unit: unit as TotalUnit, relativeTo: d1 });
+      const normalizedUnit = normalizeTimeUnit(unit) as TotalUnit;
+      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
     } catch (error) {
       // Fallback for unsupported units or edge cases
       console.warn(`Failed to calculate diff for unit ${unit}:`, error);
