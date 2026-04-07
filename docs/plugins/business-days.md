@@ -26,4 +26,5 @@ const monday = friday.addBusinessDays(1); // Skips Sat/Sun
 - `.isHoliday()`
 - `.isWeekend()`
 - `.addBusinessDays(n)`
+- `.subtractBusinessDays(n)`
 - `.nextBusinessDay()`

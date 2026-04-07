@@ -646,6 +646,27 @@ Throws an exception if the format doesn't match or components are invalid.
 atemporal.fromFormatStrict("2024-13-45", "YYYY-MM-DD"); // Throws Error
 ```
 
+## Advanced Controls
+
+`customParseFormat` caches parsed formats and allows overriding the relative "current date".
+
+```ts
+import {
+  setCurrentDateFunction,
+  resetCurrentDateFunction,
+} from "atemporal/plugins/customParseFormat";
+
+// Override the date used as a reference point for YY year conversions
+setCurrentDateFunction(() => new Date(2050, 0, 1));
+atemporal.fromFormat("01-01-50", "DD-MM-YY"); // Will parse differently based on threshold
+
+resetCurrentDateFunction(); // Restore default Date.now reference
+
+// Exposes cache management on the factory
+atemporal.clearParseCache();
+console.log(atemporal.getParseCacheStats());
+```
+
 
 --- FILE: plugins/advanced-format.md ---
 
@@ -697,17 +718,25 @@ atemporal.extend(weekDay);
 
 const date = atemporal("2024-05-15"); // Wednesday
 
-// Get weekday details
-console.log(date.weekday().name); // "Wednesday"
-console.log(date.weekday().number); // 3
-console.log(date.weekday().isWeekend); // false
+// Get weekday number (0 for Sunday, 1 for Monday, etc. or based on start of week)
+console.log(date.weekday()); 
 
-// Set weekday
-const nextFriday = date.weekday(5);
+// Configure start of week globally
+atemporal.setWeekStartsOn(1); // 1 = Monday (0 = Sunday)
 
 // Start/End of week
-date.startOf("week"); // Monday
-date.endOf("week"); // Sunday 23:59:59.999
+date.startOf("week"); // Start of the week, respects `setWeekStartsOn` setting
+date.endOf("week"); // End of the week, respects `setWeekStartsOn` setting
+```
+
+## Performance & Caching
+
+The plugin utilizes intelligent caching for high-performance weekday calculation. 
+You can clear or inspect these caches via the factory:
+
+```ts
+atemporal.clearWeekDayCache();
+console.log(atemporal.getWeekDayCacheStats());
 ```
 
 
@@ -778,6 +807,16 @@ const range = { start: "2024-01-10", end: "2024-01-20" };
 date.rangeOverlapsWith(range); // overlaps: true
 ```
 
+### `.to(endDate: DateInput)`
+
+Returns a `DateRange` object bridging the instance instance to the given end date.
+
+```ts
+const start = atemporal("2024-01-01");
+const rangeObj = start.to("2024-01-15");
+// returns { start: Date("2024-01-01"), end: Date("2024-01-15") }
+```
+
 ## Configuration
 
 - `includeBoundaries`: Whether touching ranges count as overlap (default: `true`).
@@ -815,6 +854,7 @@ const monday = friday.addBusinessDays(1); // Skips Sat/Sun
 - `.isHoliday()`
 - `.isWeekend()`
 - `.addBusinessDays(n)`
+- `.subtractBusinessDays(n)`
 - `.nextBusinessDay()`
 
 

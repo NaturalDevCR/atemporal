@@ -59,3 +59,24 @@ Throws an exception if the format doesn't match or components are invalid.
 ```ts
 atemporal.fromFormatStrict("2024-13-45", "YYYY-MM-DD"); // Throws Error
 ```
+
+## Advanced Controls
+
+`customParseFormat` caches parsed formats and allows overriding the relative "current date".
+
+```ts
+import {
+  setCurrentDateFunction,
+  resetCurrentDateFunction,
+} from "atemporal/plugins/customParseFormat";
+
+// Override the date used as a reference point for YY year conversions
+setCurrentDateFunction(() => new Date(2050, 0, 1));
+atemporal.fromFormat("01-01-50", "DD-MM-YY"); // Will parse differently based on threshold
+
+resetCurrentDateFunction(); // Restore default Date.now reference
+
+// Exposes cache management on the factory
+atemporal.clearParseCache();
+console.log(atemporal.getParseCacheStats());
+```

@@ -27,6 +27,16 @@ const range = { start: "2024-01-10", end: "2024-01-20" };
 date.rangeOverlapsWith(range); // overlaps: true
 ```
 
+### `.to(endDate: DateInput)`
+
+Returns a `DateRange` object bridging the instance instance to the given end date.
+
+```ts
+const start = atemporal("2024-01-01");
+const rangeObj = start.to("2024-01-15");
+// returns { start: Date("2024-01-01"), end: Date("2024-01-15") }
+```
+
 ## Configuration
 
 - `includeBoundaries`: Whether touching ranges count as overlap (default: `true`).
