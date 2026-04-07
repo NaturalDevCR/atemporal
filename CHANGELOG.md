@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.6](https://github.com/NaturalDevCR/atemporal/compare/v1.3.5...v1.3.6) (2026-04-07)
+
 ### [1.3.5](https://github.com/NaturalDevCR/atemporal/compare/v1.3.0...v1.3.5) (2026-04-07)
 
 
