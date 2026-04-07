@@ -40,6 +40,20 @@ date.dayOfWeek(); // Getter: returns 3 (for a Wednesday)
 date.dayOfWeek(1); // Setter: moves the date to the Monday of that week
 ```
 
+## Time Zone
+
+```ts
+// Change the time zone of an instance, returning a new instance
+const dateWithNewTz = date.timeZone("America/New_York");
+```
+
+## Clone
+
+```ts
+// Create a copy of the instance
+const copy = date.clone();
+```
+
 # Getters
 
 Access parts of the date using properties and methods.
@@ -56,11 +70,14 @@ date.second; // 45
 date.millisecond; // 123
 date.daysInMonth; // 31
 date.weekOfYear; // 33 (ISO week number)
+date.timeZoneName; // "UTC" (or another IANA time zone)
+date.timeZoneId; // "UTC" (alias for timeZoneName)
 
 // Methods
 date.get("month"); // 8
 date.quarter(); // 3 (third quarter)
 date.isLeapYear(); // true (2024 is a leap year)
+date.isValid(); // true
 date.toDate(); // Convert to a JS `Date` object
 date.toString(); // '2024-08-14T10:30:45.123Z'
 date.raw; // Access the underlying `Temporal.ZonedDateTime` object

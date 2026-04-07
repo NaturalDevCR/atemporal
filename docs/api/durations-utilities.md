@@ -37,3 +37,23 @@ if (isFirebaseTimestampLike(unknownValue)) {
   const date = atemporal(unknownValue);
 }
 ```
+
+## Formatting Performance Utilities
+
+Atemporal includes a high-performance engine for string formats. If you need to monitor, pre-warm or reset this engine, you can use these static utilities:
+
+```ts
+// Pre-warms the formatting system with common patterns (useful during app startup)
+atemporal.prewarmFormattingSystem();
+
+// Get the raw formatting metrics object
+const metrics = atemporal.getFormattingMetrics();
+console.log(metrics.totalFormats);
+
+// Get a human readable formatting performance report
+console.log(atemporal.getFormattingPerformanceReport());
+
+// Clear all formatting caches and resets metrics
+atemporal.resetFormattingSystem();
+```
+
