@@ -59,6 +59,9 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/NaturalDevCR/atemporal' }
-    ]
+    ],
+    search: {
+      provider: 'local'
+    }
   }
 })

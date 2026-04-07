@@ -1,0 +1,815 @@
+# Atemporal Documentation
+
+Atemporal is a modern and ergonomic date-time library for JavaScript and TypeScript, powered by the standardized Temporal API.
+
+This file provides comprehensive documentation formatted for AI assistants.
+
+
+
+--- FILE: guide/getting-started.md ---
+
+# Getting Started
+
+Atemporal is a modern, immutable, and ergonomic date-time library built on top of the new Temporal API — with support for formatting, localization, plugins, and time zones.
+
+> ⚡️ Powered by the Temporal API and polyfilled automatically via `@js-temporal/polyfill` — no extra setup required.
+
+## Installation
+
+To install `atemporal`, run:
+
+```bash
+npm install atemporal
+```
+
+> 🔧 You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
+
+## Quick Start
+
+```ts
+import atemporal from "atemporal";
+import relativeTime from "atemporal/plugins/relativeTime";
+
+// Extend atemporal with the plugins you need
+atemporal.extend(relativeTime);
+
+// Create an instance with the current date and time
+const now = atemporal();
+console.log(now.format("YYYY-MM-DD HH:mm:ss"));
+// => "2024-08-14 10:30:00" (example)
+
+// Manipulate dates immutably
+const future = now.add(3, "days").startOf("day");
+console.log(future.toString());
+// => "2024-08-17T00:00:00Z" (example)
+
+// Compare dates
+if (future.isAfter(now)) {
+  console.log("The future is coming.");
+}
+
+// Use plugins for extended functionality
+const past = now.subtract(5, "minutes");
+console.log(past.fromNow());
+// => "5 minutes ago"
+```
+
+
+--- FILE: guide/core-concepts.md ---
+
+# Core Concepts
+
+## Why Atemporal?
+
+- ✅ **Immutable and Chainable API**: A fluid and predictable coding style, inspired by Day.js.
+- 🧩 **Extensible Plugin System**: Add only the functionality you need, keeping the core lightweight.
+- 🌐 **Localization-Ready**: Native integration with `Intl` for localized formats and names.
+- 🌍 **Time Zone-Aware**: First-class support for IANA time zones (e.g., `America/New_York`).
+- 🔒 **Type-Safe**: Built in TypeScript for an excellent developer experience and autocompletion.
+- 🎯 **Temporal-Powered**: Uses the future standard JavaScript API for date handling, with a polyfill included.
+
+## Immutability
+
+All manipulation methods in Atemporal are immutable. This means that instead of modifying the existing instance, they return a new instance with the changes applied.
+
+```ts
+const original = atemporal();
+const future = original.add(1, "day");
+
+console.log(original.isSame(future)); // false
+```
+
+## Temporal API
+
+Atemporal is built directly on top of the [Temporal API](https://tc39.es/proposal-temporal/docs/), which is the new standard for date and time in JavaScript. It solves many of the problems with the legacy `Date` object, such as:
+
+- Mutability
+- Difficulties with time zones
+- Lack of support for non-Gregorian calendars
+- Missing common functionality like date-only types
+
+Atemporal provides a more ergonomic wrapper around this powerful API.
+
+
+--- FILE: api/index.md ---
+
+# API Reference
+
+Atemporal provides a comprehensive and type-safe API for date-time manipulation, built on top of the modern Temporal API.
+
+## Core API
+
+- [**Creating Instances**](./creating-instances): How to initialize Atemporal from strings, dates, timestamps, and Firestore objects.
+- [**Manipulation**](./manipulation): Immutably adding, subtracting, and setting date components.
+- [**Formatting**](./formatting): Versatile string formatting using tokens or `Intl` options.
+- [**Comparison & Difference**](./comparison-difference): Comparing dates and calculating time differences.
+- [**Durations & Utilities**](./durations-utilities): Working with Temporal Durations and TypeScript type guards.
+- [**Generating Ranges**](./ranges): Creating arrays of dates or formatted strings within a period.
+
+## Plugins
+
+For extended functionality like relative time (`.fromNow()`), business day calculations, or appointment slots, check out the [Plugins](/plugins/) section.
+
+
+--- FILE: api/creating-instances.md ---
+
+# Creating Instances
+
+You can create an `atemporal` instance from various input types:
+
+```ts
+import atemporal from "atemporal";
+
+// Current date and time in the default time zone (UTC)
+atemporal();
+
+// From an ISO 8601 string (with or without 'Z')
+atemporal("2025-07-09T15:30:00");
+atemporal("2025-07-09T15:30:00Z");
+
+// From a JavaScript Date object
+atemporal(new Date());
+
+// From a Unix timestamp (in seconds)
+atemporal.unix(1752096000); // => 2025-07-09T00:00:00Z
+
+// From a Unix timestamp (in milliseconds)
+atemporal(1752096000000);
+
+// From an array: [year, month, day, hour, min, sec, ms]
+atemporal([2025, 7, 9, 15, 30]);
+
+// From an object
+atemporal({ year: 2025, month: 7, day: 9 });
+
+// Clone an existing instance
+const original = atemporal();
+const clone = atemporal(original);
+
+// Specify a time zone on creation
+atemporal("2025-01-01T12:00:00", "America/New_York");
+```
+
+## Firebase/Firestore Timestamps
+
+Atemporal provides first-class support for Firebase/Firestore timestamp objects, supporting both standard and underscore formats:
+
+### Supported Formats
+
+**Standard Format** (most common):
+
+```ts
+const standardTimestamp = {
+  seconds: 1672531200,
+  nanoseconds: 500000000,
+};
+const date = atemporal(standardTimestamp);
+console.log(date.toString()); // => "2023-01-01T00:00:00.500Z"
+```
+
+**Underscore Format** (v0.3.0+):
+
+```ts
+const underscoreTimestamp = {
+  _seconds: 1672531200,
+  _nanoseconds: 500000000,
+};
+const date2 = atemporal(underscoreTimestamp);
+console.log(date2.toString()); // => "2023-01-01T00:00:00.500Z"
+```
+
+### Working with Firestore Data
+
+When working with Firestore documents, timestamps are automatically handled:
+
+```ts
+// Assuming you have a Firestore document with a timestamp field
+const doc = await getDoc(docRef);
+const data = doc.data();
+
+// The timestamp field can be parsed directly
+const createdAt = atemporal(data.createdAt);
+console.log(createdAt.format("YYYY-MM-DD HH:mm:ss"));
+
+// Works with both formats seamlessly
+const updatedAt = atemporal(data.updatedAt); // Could be either format
+console.log(updatedAt.fromNow());
+```
+
+
+--- FILE: api/manipulation.md ---
+
+# Manipulation
+
+All manipulation methods are immutable and return a new `atemporal` instance.
+
+## Add & Subtract
+
+```ts
+const date = atemporal("2024-08-14T10:00:00Z");
+
+// Add time
+date.add(5, "days"); // Add 5 days
+date.add(2, "h"); // Add 2 hours (alias)
+date.add({ months: 1, days: 10 }); // Add 1 month and 10 days
+
+// Subtract time
+date.subtract(2, "weeks"); // Subtract 2 weeks
+date.subtract(30, "m"); // Subtract 30 minutes (alias)
+```
+
+## Setters
+
+```ts
+date.set("year", 2025); // Set the year to 2025
+date.set("hour", 9); // Set the hour to 9
+date.set("quarter", 1); // Set the date to the start of the 1st quarter
+```
+
+## Start of & End of
+
+```ts
+date.startOf("month"); // Start of the month (e.g., 2024-08-01T00:00:00.000)
+date.endOf("day"); // End of the day (e.g., 2024-08-14T23:59:59.999)
+```
+
+## Weekday Manipulation
+
+```ts
+// Get or set the day of the week (1=Monday, 7=Sunday)
+date.dayOfWeek(); // Getter: returns 3 (for a Wednesday)
+date.dayOfWeek(1); // Setter: moves the date to the Monday of that week
+```
+
+# Getters
+
+Access parts of the date using properties and methods.
+
+```ts
+const date = atemporal("2024-08-14T10:30:45.123Z");
+
+date.year; // 2024
+date.month; // 8
+date.day; // 14
+date.hour; // 10
+date.minute; // 30
+date.second; // 45
+date.millisecond; // 123
+date.daysInMonth; // 31
+date.weekOfYear; // 33 (ISO week number)
+
+// Methods
+date.get("month"); // 8
+date.quarter(); // 3 (third quarter)
+date.isLeapYear(); // true (2024 is a leap year)
+date.toDate(); // Convert to a JS `Date` object
+date.toString(); // '2024-08-14T10:30:45.123Z'
+date.raw; // Access the underlying `Temporal.ZonedDateTime` object
+```
+
+
+--- FILE: api/formatting.md ---
+
+# Formatting
+
+The `.format()` method is very versatile. It accepts a token string or an `Intl` options object.
+
+## Token-based Formatting
+
+| Token  | Output Example     | Description                           |
+| ------ | ------------------ | ------------------------------------- |
+| `YYYY` | `2025`             | 4-digit year                          |
+| `YY`   | `25`               | 2-digit year                          |
+| `MM`   | `07`               | Month, 2-digits (01-12)               |
+| `M`    | `7`                | Month (1-12)                          |
+| `DD`   | `09`               | Day of month, 2-digits (01-31)        |
+| `D`    | `9`                | Day of month (1-31)                   |
+| `HH`   | `14`               | Hour, 2-digits (00-23)                |
+| `H`    | `14`               | Hour (0-23)                           |
+| `hh`   | `02`               | Hour, 12-hour clock, 2-digits (01-12) |
+| `h`    | `2`                | Hour, 12-hour clock (1-12)            |
+| `mm`   | `05`               | Minute, 2-digits (00-59)              |
+| `m`    | `5`                | Minute (0-59)                         |
+| `ss`   | `02`               | Second, 2-digits (00-59)              |
+| `s`    | `2`                | Second (0-59)                         |
+| `SSS`  | `123`              | Millisecond, 3-digits                 |
+| `dddd` | `Wednesday`        | Full day of the week name             |
+| `ddd`  | `Wed`              | Short day of the week name            |
+| `Z`    | `+02:00`           | Time zone offset with colon           |
+| `ZZ`   | `+0200`            | Time zone offset without colon        |
+| `z`    | `America/New_York` | IANA time zone name                   |
+
+> [!TIP]
+> Use brackets `[]` to display literal characters: `format("[Today is] YYYY-MM-DD")`.
+
+```ts
+atemporal().format("YYYY-MM-DD [at] HH:mm:ss");
+// => "2025-07-09 at 14:23:00"
+```
+
+## `Intl.DateTimeFormat`
+
+For advanced localization, pass an options object.
+
+```ts
+atemporal().format({ dateStyle: "full", timeStyle: "medium" }, "es-CR");
+// => "miércoles, 9 de julio de 2025, 14:23:00"
+```
+
+## Advanced Tokens
+
+Additional tokens like `Do` (ordinals) and `zzz` (timezone names) are available via the [advancedFormat](/plugins/advanced-format) plugin.
+
+
+--- FILE: api/comparison-difference.md ---
+
+# Comparison & Difference
+
+## Comparison
+
+```ts
+const d1 = atemporal("2024-01-01");
+const d2 = atemporal("2024-06-15");
+const d3 = atemporal("2024-01-01");
+
+d1.isBefore(d2); // true
+d2.isAfter(d1); // true
+d1.isSame(d3); // true
+
+// Compare only up to a specific unit
+d1.isSame("2024-01-01T12:00:00", "day"); // true
+d1.isSameDay("2024-01-01T12:00:00"); // true (alias for .isSame(..., 'day'))
+
+// Inclusive comparisons
+d1.isSameOrBefore(d2); // true
+d2.isSameOrAfter(d1); // true
+
+// Check if a date is between two others
+d1.isBetween("2023-12-31", "2024-01-02"); // true
+d1.isBetween("2024-01-01", "2024-01-02", "()"); // false (exclusive inclusivity)
+```
+
+## Difference
+
+Calculate the difference between two dates.
+
+```ts
+const start = atemporal("2024-01-01T10:00:00");
+const end = atemporal("2024-01-02T13:00:00"); // 27 hours later
+
+// By default, returns a truncated integer
+end.diff(start, "day"); // 1
+end.diff(start, "hour"); // 27
+
+// To get the exact floating-point value, pass `true`
+end.diff(start, "day", true); // 1.125
+```
+
+## Min / Max
+
+Find the earliest or latest date from a list of inputs.
+
+```typescript
+const d1 = atemporal("2023-01-01");
+const d2 = atemporal("2023-06-01");
+const d3 = atemporal("2023-03-01");
+
+const min = atemporal.min(d1, d2, d3); // 2023-01-01
+const max = atemporal.max([d1, d2, d3]); // 2023-06-01
+```
+
+
+--- FILE: api/durations-utilities.md ---
+
+# Durations & Utilities
+
+## Durations
+
+Create and manipulate `Temporal.Duration` objects.
+
+```ts
+// Create a duration
+const duration = atemporal.duration({ hours: 3, minutes: 30 });
+
+// Use it in manipulations
+const now = atemporal();
+const future = now.add(duration);
+
+console.log(future.format("HH:mm")); // => 3 hours and 30 minutes in the future
+```
+
+> [!TIP]
+> Check out the [durationHumanizer](/plugins/duration-humanizer) plugin for human-readable duration strings.
+
+## Validators & Type Guards
+
+Atemporal provides TypeScript type guards for Firebase timestamps:
+
+```ts
+import { isFirebaseTimestamp, isFirebaseTimestampLike } from "atemporal";
+
+const unknownValue: unknown = { seconds: 1672531200, nanoseconds: 0 };
+
+if (isFirebaseTimestamp(unknownValue)) {
+  // TypeScript now knows this is a valid Firebase timestamp
+  const date = atemporal(unknownValue);
+}
+
+// Check for timestamp-like objects (more lenient)
+if (isFirebaseTimestampLike(unknownValue)) {
+  const date = atemporal(unknownValue);
+}
+```
+
+
+--- FILE: api/ranges.md ---
+
+# Generating Date Ranges
+
+The `.range()` method generates an array of dates between a start and end date. It can return either `atemporal` instances or formatted strings.
+
+**API:** `start.range(endDate, unit, options)`
+
+- `endDate`: The end of the range.
+- `unit`: The step unit (e.g., `'day'`, `'week'`).
+- `options` (optional):
+  - `inclusivity`: `'[]'` (default), `'()'`, `'[)'`, `'(]'`.
+  - `format`: If provided, returns a `string[]` instead of `atemporal[]`.
+
+```ts
+const start = atemporal("2024-04-28");
+const end = atemporal("2024-05-02");
+
+// 1. Get an array of atemporal instances (default)
+const dateRange = start.range(end, "day");
+// => [atemporal, atemporal, atemporal, atemporal, atemporal]
+
+// 2. Get an array of formatted strings directly
+const formattedRange = start.range(end, "day", {
+  format: "YYYY-MM-DD",
+  inclusivity: "[)", // Include start, exclude end
+});
+// => ['2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01']
+
+// 3. Generate by week
+const weeklyRange = start.range(end, "week", { format: "MMMM Do" });
+// => ['April 28th']
+```
+
+
+--- FILE: plugins/index.md ---
+
+# Plugin System
+
+Atemporal has a lightweight plugin system that allows you to extend its functionality only when needed, keeping the core bundle small.
+
+## How to Use Plugins
+
+### Standard Extension
+
+Import the plugin and extend `atemporal` using `atemporal.extend()`.
+
+```ts
+import atemporal from "atemporal";
+import relativeTime from "atemporal/plugins/relativeTime";
+
+atemporal.extend(relativeTime);
+
+// Now you can use .fromNow()
+atemporal().subtract(5, "m").fromNow();
+```
+
+### Lazy Loading
+
+To reduce the initial bundle size, you can load plugins on demand:
+
+```ts
+import atemporal from "atemporal";
+
+async function showRelativeTime() {
+  await atemporal.lazyLoad("relativeTime");
+
+  const twoHoursAgo = atemporal().subtract(2, "hour");
+  console.log(twoHoursAgo.fromNow()); // "2 hours ago"
+}
+```
+
+## Plugin Utilities
+
+```ts
+// Check if a plugin is loaded
+atemporal.isPluginLoaded("relativeTime");
+
+// View all loaded plugins
+atemporal.getLoadedPlugins();
+```
+
+## Available Plugins
+
+- [**relativeTime**](/plugins/relative-time): `.fromNow()`, `.toNow()`.
+- [**customParseFormat**](/plugins/custom-parse-format): Advanced string parsing.
+- [**advancedFormat**](/plugins/advanced-format): Ordinals and timezone names.
+- [**weekDay**](/plugins/week-day): Enhanced weekday handling.
+- [**durationHumanizer**](/plugins/duration-humanizer): Readable durations.
+- [**dateRangeOverlap**](/plugins/date-range-overlap): Overlap detection.
+- [**businessDays**](/plugins/business-days): Working day calculations.
+- [**timeSlots**](/plugins/time-slots): Appointment slot finding.
+
+
+--- FILE: plugins/relative-time.md ---
+
+# relativeTime
+
+The `relativeTime` plugin adds the `.fromNow()` and `.toNow()` methods for displaying relative time strings (e.g., "5 minutes ago").
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import relativeTime from "atemporal/plugins/relativeTime";
+
+atemporal.extend(relativeTime);
+
+atemporal().subtract(5, "minutes").fromNow(); // "5 minutes ago"
+atemporal().add(2, "hours").fromNow(); // "in 2 hours"
+```
+
+## Methods
+
+### `.fromNow(withoutSuffix?: boolean)`
+
+Returns the relative time from now.
+
+### `.toNow(withoutSuffix?: boolean)`
+
+Returns the relative time to now.
+
+
+--- FILE: plugins/custom-parse-format.md ---
+
+# customParseFormat
+
+Allows creating an `atemporal` instance from a string with a custom format. Features high-performance parsing with intelligent caching.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import customParseFormat from "atemporal/plugins/customParseFormat";
+
+atemporal.extend(customParseFormat);
+
+// Basic date parsing
+const date1 = atemporal.fromFormat("15/03/2024 10:30", "DD/MM/YYYY HH:mm");
+console.log(date1.toString()); // "2024-03-15T10:30:00.000Z"
+
+// 12-hour format with AM/PM
+const ampm = atemporal.fromFormat("2024-01-01 02:30 PM", "YYYY-MM-DD hh:mm A");
+```
+
+## Supported Tokens
+
+- `YYYY` - 4-digit year
+- `YY` - 2-digit year (Y2K logic: 00-68 -> 2000s, 69-99 -> 1900s)
+- `MM` - 2-digit month (01-12)
+- `M` - 1-2 digit month (1-12)
+- `MMMM` - Full month name
+- `MMM` - Abbreviated month name
+- `DD` - 2-digit day (01-31)
+- `D` - 1-2 digit day (1-31)
+- `HH` - 2-digit hour (00-23)
+- `hh` - 2-digit hour (01-12)
+- `mm` - 2-digit minute
+- `ss` - 2-digit second
+- `SSS` - Milliseconds
+- `A` - Uppercase AM/PM
+- `a` - Lowercase am/pm
+
+## Error Handling
+
+### Default Behavior
+
+Returns an invalid `atemporal` instance. Use `.isValid()` to check.
+
+```ts
+import { getParseError } from "atemporal/plugins/customParseFormat";
+
+const invalidDate = atemporal.fromFormat("invalid", "YYYY-MM-DD");
+if (!invalidDate.isValid()) {
+  const error = getParseError(invalidDate);
+  console.log(error.message);
+}
+```
+
+### Strict Mode
+
+Throws an exception if the format doesn't match or components are invalid.
+
+```ts
+atemporal.fromFormatStrict("2024-13-45", "YYYY-MM-DD"); // Throws Error
+```
+
+
+--- FILE: plugins/advanced-format.md ---
+
+# advancedFormat
+
+Extends the `.format()` method to support advanced formatting tokens including ordinals and timezone names.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import advancedFormat from "atemporal/plugins/advancedFormat";
+
+atemporal.extend(advancedFormat);
+
+const date = atemporal("2024-01-15");
+console.log(date.format("Do MMMM YYYY")); // "15th January 2024"
+```
+
+## Advanced Tokens
+
+- `Do` - Day of month with ordinal suffix (e.g., "1st", "22nd")
+- `Qo` - Quarter of year with ordinal suffix (e.g., "1st", "2nd")
+- `zzz` - Short timezone name (e.g., "EST", "PDT")
+- `zzzz` - Long timezone name (e.g., "Eastern Standard Time")
+
+## Multi-Language Support
+
+Ordinal suffixes are supported for several languages: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`.
+
+```ts
+atemporal("2024-01-15").format("Do [de] MMMM", "es"); // "15º de enero"
+```
+
+
+--- FILE: plugins/week-day.md ---
+
+# weekDay
+
+Adds functionality to work with weekdays, including setting the day of the week, finding the start/end of the week, and localized weekday names.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import weekDay from "atemporal/plugins/weekDay";
+
+atemporal.extend(weekDay);
+
+const date = atemporal("2024-05-15"); // Wednesday
+
+// Get weekday details
+console.log(date.weekday().name); // "Wednesday"
+console.log(date.weekday().number); // 3
+console.log(date.weekday().isWeekend); // false
+
+// Set weekday
+const nextFriday = date.weekday(5);
+
+// Start/End of week
+date.startOf("week"); // Monday
+date.endOf("week"); // Sunday 23:59:59.999
+```
+
+
+--- FILE: plugins/duration-humanizer.md ---
+
+# durationHumanizer
+
+Converts `Temporal.Duration` objects into human-readable, localized strings.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import durationHumanizer from "atemporal/plugins/durationHumanizer";
+
+atemporal.extend(durationHumanizer);
+
+const duration = { hours: 2, minutes: 30 };
+console.log(atemporal.humanize(duration)); // "2 hours and 30 minutes"
+```
+
+## Multi-Language Support
+
+```ts
+atemporal.humanize(duration, { locale: "es" }); // "2 horas y 30 minutos"
+atemporal.humanize(duration, { locale: "ja" }); // "2時間30分"
+```
+
+## Options
+
+- `locale`: The locale string (default: `'en'`).
+- `listStyle`: `'long'`, `'short'`, or `'narrow'`.
+- `unitDisplay`: `'long'`, `'short'`, or `'narrow'`.
+
+```ts
+atemporal.humanize(duration, { unitDisplay: "short" }); // "2 hr and 30 min"
+```
+
+
+--- FILE: plugins/date-range-overlap.md ---
+
+# dateRangeOverlap
+
+Provides date range overlap detection capabilities.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import dateRangeOverlapPlugin from "atemporal/plugins/dateRangeOverlap";
+
+atemporal.extend(dateRangeOverlapPlugin);
+
+const range1 = { start: "2024-01-01", end: "2024-01-15" };
+const range2 = { start: "2024-01-10", end: "2024-01-20" };
+
+const result = atemporal.checkDateRangeOverlap(range1, range2);
+console.log(result.overlaps); // true
+console.log(result.overlapRange); // { start: ..., end: ... }
+```
+
+## Instance Method
+
+```ts
+const date = atemporal("2024-01-15");
+const range = { start: "2024-01-10", end: "2024-01-20" };
+
+date.rangeOverlapsWith(range); // overlaps: true
+```
+
+## Configuration
+
+- `includeBoundaries`: Whether touching ranges count as overlap (default: `true`).
+- `timezone`: Timezone for date interpretation.
+- `strictValidation`: Whether to perform strict input validation (default: `true`).
+
+
+--- FILE: plugins/business-days.md ---
+
+# businessDays
+
+Adds calculations for working days, allowing you to skip weekends and holidays.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import businessDays from "atemporal/plugins/businessDays";
+
+atemporal.extend(businessDays);
+
+// Configure (optional)
+atemporal.setBusinessDaysConfig({
+  holidays: ["2023-12-25", "2024-01-01"],
+  weekendDays: [6, 7], // Saturday, Sunday
+});
+
+const friday = atemporal("2023-01-06");
+const monday = friday.addBusinessDays(1); // Skips Sat/Sun
+```
+
+## Methods
+
+- `.isBusinessDay()`
+- `.isHoliday()`
+- `.isWeekend()`
+- `.addBusinessDays(n)`
+- `.nextBusinessDay()`
+
+
+--- FILE: plugins/time-slots.md ---
+
+# timeSlots
+
+Find available free time slots in a schedule.
+
+## Usage
+
+```ts
+import atemporal from "atemporal";
+import timeSlots from "atemporal/plugins/timeSlots";
+
+atemporal.extend(timeSlots);
+
+const slots = atemporal.findAvailableSlots({
+  range: { start: "2023-01-01T09:00:00", end: "2023-01-01T17:00:00" },
+  duration: { minutes: 30 },
+  interval: { minutes: 30 },
+  busySlots: [{ start: "2023-01-01T12:00:00", end: "2023-01-01T13:00:00" }],
+});
+```
+
+## API
+
+`atemporal.findAvailableSlots(options)`
+
+### Options
+
+- `range`: `{ start, end }`.
+- `duration`: `Temporal.DurationLike`.
+- `interval`: Defaults to `duration`.
+- `busySlots`: Array of `{ start, end }`.
