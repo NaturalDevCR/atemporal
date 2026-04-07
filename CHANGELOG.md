@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.5](https://github.com/NaturalDevCR/atemporal/compare/v1.3.0...v1.3.5) (2026-04-07)
+
+
+### Bug Fixes
+
+* **diff:** normalize ZonedDateTime to polyfill before calling since() ([f8ea619](https://github.com/NaturalDevCR/atemporal/commit/f8ea61988196bd4b32a06fa21f90aa910504ea54))
+* **temporal-api:** correct type exports for DTS compatibility ([4d44a98](https://github.com/NaturalDevCR/atemporal/commit/4d44a981e149932f573171110d96d01155b4e968))
+
 ## [1.3.0](https://github.com/NaturalDevCR/atemporal/compare/v1.1.1...v1.3.0) (2026-04-04)
 
 
