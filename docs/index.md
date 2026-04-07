@@ -13,6 +13,9 @@ hero:
       text: API Reference
       link: /api/
     - theme: alt
+      text: LLMs documentation
+      link: /llms.txt
+    - theme: alt
       text: View on GitHub
       link: https://github.com/NaturalDevCR/atemporal
 

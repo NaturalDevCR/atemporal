@@ -9,7 +9,8 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'API', link: '/api/' },
-      { text: 'Plugins', link: '/plugins/' }
+      { text: 'Plugins', link: '/plugins/' },
+      { text: 'LLMs', link: '/llms.txt', target: '_blank' }
     ],
 
     sidebar: {

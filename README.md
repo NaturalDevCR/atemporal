@@ -30,6 +30,8 @@ For full guides and API reference, please visit:
 
 👉 **[naturaldevcr.github.io/atemporal](https://naturaldevcr.github.io/atemporal/)**
 
+🤖 **[AI-Friendly Documentation (llms.txt)](https://naturaldevcr.github.io/atemporal/llms.txt)**
+
 ---
 
 ## 📦 Installation
