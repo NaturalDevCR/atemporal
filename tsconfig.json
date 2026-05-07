@@ -5,12 +5,14 @@
     "module": "NodeNext",
     "lib": ["ES2022", "DOM"],
     "declaration": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "downlevelIteration": true
   },
-  "include": ["src/**/*", "jest.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]
 }

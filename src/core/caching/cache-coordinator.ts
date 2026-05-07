@@ -5,6 +5,7 @@
 import { IntlCache } from './intl-cache';
 import { DiffCache } from './diff-cache';
 import { CacheOptimizer } from './cache-optimizer';
+import { debugLog } from '../debug';
 import type { CacheMetrics } from './lru-cache';
 
 /**
@@ -79,7 +80,7 @@ export class GlobalCacheCoordinator {
       try {
         cache.clear();
       } catch (error) {
-        console.warn('Failed to clear cache:', error);
+        debugLog('warn', 'Failed to clear cache', String(error));
       }
     }
   }
@@ -138,7 +139,7 @@ export class GlobalCacheCoordinator {
         try {
           cache.optimize();
         } catch (error) {
-          console.warn('Failed to optimize cache:', error);
+          debugLog('warn', 'Failed to optimize cache', String(error));
         }
       }
     }

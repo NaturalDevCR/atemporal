@@ -6,6 +6,7 @@
 import { TemporalWrapper } from '../TemporalWrapper';
 import { TemporalUtils, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
 import { LocaleUtils } from '../core/locale';
+import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin } from '../types';
 
 /**
@@ -25,7 +26,7 @@ class WeekCache {
      * @returns Calculated weekday number
      */
     static getWeekday(isoDay: number, weekStartsOn: number): number | null {
-        const key = `${isoDay}:${weekStartsOn}`;
+        const key = JSON.stringify([isoDay, weekStartsOn]);
         const result = this.weekdayCache.get(key);
         return result !== undefined ? result : null;
     }
@@ -37,7 +38,7 @@ class WeekCache {
      * @param result - The calculated weekday
      */
     static setWeekday(isoDay: number, weekStartsOn: number, result: number): void {
-        const key = `${isoDay}:${weekStartsOn}`;
+        const key = JSON.stringify([isoDay, weekStartsOn]);
         this.weekdayCache.set(key, result);
     }
 
@@ -165,7 +166,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
             
             return result;
         } catch (error) {
-            console.warn('WeekDay: Error calculating weekday:', error);
+            debugLog('warn', 'WeekDay: Error calculating weekday');
             return NaN;
         }
     };
@@ -189,8 +190,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                     if (cachedInstance.isValid()) {
                         return cachedInstance;
                     } else {
-                        console.warn('WeekDay: Invalid cached result for startOf:', cachedResult, 'removing from cache');
-                        // Remove invalid cache entry
+                        debugLog('warn', 'WeekDay: Invalid cached result for startOf - removing from cache');
                         WeekCache.removeWeekBoundary(dateKey);
                     }
                 }
@@ -200,16 +200,14 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 
                 // Debug: Check if weekday() returned a valid number
                 if (isNaN(daysToSubtract) || daysToSubtract < 0 || daysToSubtract > 6) {
-                    console.warn('WeekDay: Invalid weekday value:', daysToSubtract, 'for date:', this.raw.toString());
-                    // Fallback to original calculation
+                    debugLog('warn', `WeekDay: Invalid weekday value ${daysToSubtract}`);
                     return originalStartOf.call(this, unit);
                 }
                 
                 // Subtract that many days and go to the start of that day.
                 const subtracted = this.subtract(daysToSubtract, 'days');
                 if (!subtracted.isValid()) {
-                    console.warn('WeekDay: Subtract operation failed for:', this.raw.toString(), 'days to subtract:', daysToSubtract);
-                    // Fallback to original calculation
+                    debugLog('warn', 'WeekDay: Subtract operation failed');
                     return originalStartOf.call(this, unit);
                 }
                 
@@ -220,8 +218,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 
                 return result;
             } catch (error) {
-                console.warn('WeekDay: Error calculating week start:', error);
-                // Fallback to original calculation without caching
+                debugLog('warn', 'WeekDay: Error calculating week start');
                 const daysToSubtract = this.weekday();
                 return this.subtract(daysToSubtract, 'days').startOf('day');
             }
@@ -250,8 +247,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                     if (cachedInstance.isValid()) {
                         return cachedInstance;
                     } else {
-                        console.warn('WeekDay: Invalid cached result for endOf:', cachedResult, 'removing from cache');
-                        // Remove invalid cache entry
+                        debugLog('warn', 'WeekDay: Invalid cached result for endOf - removing from cache');
                         WeekCache.removeWeekBoundary(dateKey);
                     }
                 }
@@ -260,15 +256,13 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 // This correctly uses our newly wrapped `startOf` method.
                 const startOfWeek = this.startOf('week');
                 if (!startOfWeek.isValid()) {
-                    console.warn('WeekDay: startOf(week) failed for endOf calculation:', this.raw.toString());
-                    // Fallback to original calculation
+                    debugLog('warn', 'WeekDay: startOf(week) failed for endOf calculation');
                     return originalEndOf.call(this, unit);
                 }
                 
                 const addedWeek = startOfWeek.add(1, 'week');
                 if (!addedWeek.isValid()) {
-                    console.warn('WeekDay: add(1, week) failed for endOf calculation:', this.raw.toString());
-                    // Fallback to original calculation
+                    debugLog('warn', 'WeekDay: add(1, week) failed for endOf calculation');
                     return originalEndOf.call(this, unit);
                 }
                 
@@ -279,8 +273,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 
                 return result;
             } catch (error) {
-                console.warn('WeekDay: Error calculating week end:', error);
-                // Fallback to original calculation without caching
+                debugLog('warn', 'WeekDay: Error calculating week end');
                 return this.startOf('week').add(1, 'week').subtract(1, 'millisecond');
             }
         }

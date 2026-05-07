@@ -65,9 +65,9 @@ const tokenMap: { [key: string]: string } = {
   // dd: '(0[0-6])',               // Day of week 00-06
   // d: '([0-6])',                 // Day of week 0-6
 
-  // Month names (case-insensitive)
-  MMMM: "([Jj][Aa][Nn][Uu][Aa][Rr][Yy]|[Ff][Ee][Bb][Rr][Uu][Aa][Rr][Yy]|[Mm][Aa][Rr][Cc][Hh]|[Aa][Pp][Rr][Ii][Ll]|[Mm][Aa][Yy]|[Jj][Uu][Nn][Ee]|[Jj][Uu][Ll][Yy]|[Aa][Uu][Gg][Uu][Ss][Tt]|[Ss][Ee][Pp][Tt][Ee][Mm][Bb][Ee][Rr]|[Oo][Cc][Tt][Oo][Bb][Ee][Rr]|[Nn][Oo][Vv][Ee][Mm][Bb][Ee][Rr]|[Dd][Ee][Cc][Ee][Mm][Bb][Ee][Rr])",
-  MMM: "([Jj][Aa][Nn]|[Ff][Ee][Bb]|[Mm][Aa][Rr]|[Aa][Pp][Rr]|[Mm][Aa][Yy]|[Jj][Uu][Nn]|[Jj][Uu][Ll]|[Aa][Uu][Gg]|[Ss][Ee][Pp]|[Oo][Cc][Tt]|[Nn][Oo][Vv]|[Dd][Ee][Cc])",
+  // Month names - use generic word pattern, validated by getMonthFromName() lookup table
+  MMMM: "([A-Za-z]+)",
+  MMM: "([A-Za-z]+)",
 };
 
 // Order tokens by length (longer ones first) to avoid parsing conflicts

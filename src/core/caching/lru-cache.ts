@@ -11,11 +11,10 @@ export class LRUCache<K, V> {
   private cache = new Map<K, V>();
   private maxSize: number;
 
-  // Metrics for dynamic adjustment
   private hits = 0;
   private misses = 0;
   private lastResize = Date.now();
-  private resizeInterval = 60000; // 1 minute default
+  private resizeInterval = 60000;
 
   constructor(maxSize = 100) {
     if (maxSize < 1) throw new Error("Cache size must be at least 1");
@@ -24,8 +23,7 @@ export class LRUCache<K, V> {
 
   get(key: K): V | undefined {
     const value = this.cache.get(key);
-    if (value) {
-      // Update position (LRU)
+    if (value !== undefined) {
       this.cache.delete(key);
       this.cache.set(key, value);
       this.hits++;
@@ -39,7 +37,6 @@ export class LRUCache<K, V> {
     if (this.cache.has(key)) {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
-      // Remove the least recently used element
       const oldestKey = this.cache.keys().next().value;
       if (oldestKey !== undefined) {
         this.cache.delete(oldestKey);
@@ -53,13 +50,11 @@ export class LRUCache<K, V> {
   }
 
   delete(key: K): boolean {
-    const deleted = this.cache.delete(key);
-    return deleted;
+    return this.cache.delete(key);
   }
 
   clear(): void {
     this.cache.clear();
-    // Reset metrics on clear
     this.hits = 0;
     this.misses = 0;
   }
@@ -84,15 +79,12 @@ export class LRUCache<K, V> {
     return this.cache.entries();
   }
 
-  forEach(callbackfn: (value: V, key: K, map: this) => void): void {
+  forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void): void {
     this.cache.forEach((value, key) => {
-      callbackfn(value, key, this);
+      callbackfn(value, key, this as unknown as Map<K, V>);
     });
   }
 
-  /**
-   * Gets cache usage metrics
-   */
   getMetrics() {
     return {
       hits: this.hits,
@@ -105,46 +97,32 @@ export class LRUCache<K, V> {
     };
   }
 
-  /**
-   * Adjusts the maximum cache size
-   */
   setMaxSize(newSize: number): void {
     if (newSize < 1) throw new Error("Cache size must be at least 1");
 
-    // If the new size is smaller than the current one, remove elements until it fits
     while (this.cache.size > newSize) {
       const oldestKey = this.cache.keys().next().value;
       if (oldestKey !== undefined) {
         this.cache.delete(oldestKey);
       } else {
-        break; // Protection against unexpected cases
+        break;
       }
     }
 
     this.maxSize = newSize;
   }
 
-  /**
-   * Configures the time interval for automatic adjustment
-   */
   setResizeInterval(milliseconds: number): void {
-    // Allow shorter intervals in test environment
     if (milliseconds < 1000 && process.env.NODE_ENV !== "test") {
       throw new Error("Resize interval must be at least 1000ms");
     }
     this.resizeInterval = milliseconds;
   }
 
-  /**
-   * Checks if it is time to adjust the cache size
-   */
   shouldResize(): boolean {
     return Date.now() - this.lastResize >= this.resizeInterval;
   }
 
-  /**
-   * Marks the time of the last adjustment
-   */
   markResized(): void {
     this.lastResize = Date.now();
   }
@@ -163,7 +141,8 @@ export interface CacheMetrics {
 }
 
 /**
- * Enhanced LRU cache with resizing capabilities
+ * Enhanced LRU cache with resizing capabilities.
+ * Extends Map so consumers referencing ResizableLRUCache as a Map-like continue to work.
  * @internal
  */
 export class ResizableLRUCache<K, V> extends Map<K, V> {
@@ -216,7 +195,6 @@ export class ResizableLRUCache<K, V> extends Map<K, V> {
   setMaxSize(newSize: number): void {
     if (newSize < 1) throw new Error("Cache size must be at least 1");
 
-    // Remove excess items if new size is smaller
     while (this.size > newSize) {
       const firstKey = this.keys().next().value;
       if (firstKey !== undefined) {

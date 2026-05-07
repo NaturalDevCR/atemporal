@@ -217,15 +217,15 @@ describe('ArrayLikeStrategy', () => {
             expect(result.warnings).toContain('Millisecond 1000 is out of typical range (0-999)');
         });
 
-        it('should warn about very long arrays', () => {
-            const longArray = new Array(15).fill(0);
-            longArray[0] = 2023;
-            longArray[1] = 1;
-            longArray[2] = 1;
-            
-            const result = strategy.validate(longArray, context);
-            expect(result.warnings).toContain('Array has more than 10 elements - extra elements will be ignored');
-        });
+  it('should error about very long arrays', () => {
+      const longArray = new Array(150).fill(0);
+      longArray[0] = 2023;
+      longArray[1] = 1;
+      longArray[2] = 1;
+      
+      const result = strategy.validate(longArray, context);
+      expect(result.errors).toContain('Array length 150 exceeds maximum allowed (100)');
+    });
 
         it('should handle multiple validation errors', () => {
             const result = strategy.validate([0, 13, 32, 25, 61, 61], context);

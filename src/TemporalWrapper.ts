@@ -4,13 +4,9 @@
  * native Temporal.ZonedDateTime object to provide a more ergonomic API.
  */
 
-import { getCachedTemporalAPI } from './core/temporal-detection';
-// Import Temporal types for TypeScript compilation
 import type { Temporal } from '@js-temporal/polyfill';
-
-// Get the appropriate Temporal API (native or polyfilled)
-const { Temporal: TemporalAPI } = getCachedTemporalAPI();
-import { TemporalUtils } from './TemporalUtils';
+import { Temporal as TemporalAPI } from './core/temporal-api';
+import { TemporalUtils, IntlCache } from './TemporalUtils';
 import type {DateInput, TimeUnit, SettableUnit, StartOfUnit} from './types';
 import { InvalidAtemporalInstanceError } from './errors';
 import { FormattingEngine, legacyFormat } from './core/formatting';
@@ -33,49 +29,27 @@ function toStartOfUnit(unit: TimeUnit): StartOfUnit | null {
 }
 
 /**
- * Normalizes and pluralizes a library time unit to its corresponding form for the Temporal API.
+ * Lookup map for normalizing time unit aliases to their plural Temporal API form.
+ * @internal
+ */
+const DURATION_UNIT_MAP: Record<string, string> = {
+    year: 'years', years: 'years', y: 'years',
+    month: 'months', months: 'months',
+    week: 'weeks', weeks: 'weeks', w: 'weeks',
+    day: 'days', days: 'days', d: 'days',
+    hour: 'hours', hours: 'hours', h: 'hours',
+    minute: 'minutes', minutes: 'minutes', m: 'minutes',
+    second: 'seconds', seconds: 'seconds', s: 'seconds',
+    millisecond: 'milliseconds', milliseconds: 'milliseconds', ms: 'milliseconds',
+};
+
+/**
+ * Normalizes a library time unit to its corresponding form for the Temporal API.
  * Accepts singular, plural, and short-hand aliases (e.g., 'hour', 'hours', 'h' all become 'hours').
  * @internal
  */
 function getDurationUnit(unit: TimeUnit): string {
-    const u = unit.toLowerCase();
-    switch (u) {
-        case 'year':
-        case 'years':
-        case 'y':
-            return 'years';
-        case 'month':
-        case 'months':
-            return 'months';
-        case 'week':
-        case 'weeks':
-        case 'w':
-            return 'weeks';
-        case 'day':
-        case 'days':
-        case 'd':
-            return 'days';
-        case 'hour':
-        case 'hours':
-        case 'h':
-            return 'hours';
-        case 'minute':
-        case 'minutes':
-        case 'm':
-            return 'minutes';
-        case 'second':
-        case 'seconds':
-        case 's':
-            return 'seconds';
-        case 'millisecond':
-        case 'milliseconds':
-        case 'ms':
-            return 'milliseconds';
-        // This default case should ideally not be reached if using TypeScript types,
-        // but it's a safeguard.
-        default:
-            return u;
-    }
+    return DURATION_UNIT_MAP[unit.toLowerCase()] || unit;
 }
 
 /**
@@ -85,6 +59,7 @@ function getDurationUnit(unit: TimeUnit): string {
 export class TemporalWrapper {
     private readonly _datetime: Temporal.ZonedDateTime | null;
     private readonly _isValid: boolean;
+    private readonly _error: string | null;
     readonly _isTemporalWrapper: true = true;
 
     /**
@@ -96,10 +71,19 @@ export class TemporalWrapper {
         try {
             this._datetime = TemporalUtils.from(input, timeZone);
             this._isValid = true;
+            this._error = null;
         } catch (e) {
             this._datetime = null;
             this._isValid = false;
+            this._error = e instanceof Error ? e.message : String(e);
         }
+    }
+
+    /**
+     * Returns the error message if the instance is invalid, null otherwise.
+     */
+    get error(): string | null {
+        return this._error;
     }
 
     /**
@@ -194,9 +178,15 @@ export class TemporalWrapper {
      */
     private static _fromZonedDateTime(dateTime: Temporal.ZonedDateTime): TemporalWrapper {
         const wrapper = Object.create(TemporalWrapper.prototype);
-        wrapper._datetime = dateTime;
-        wrapper._isValid = true;
-        wrapper._isTemporalWrapper = true;
+        try {
+            wrapper._datetime = dateTime;
+            wrapper._isValid = true;
+            wrapper._isTemporalWrapper = true;
+        } catch (e) {
+            wrapper._datetime = null;
+            wrapper._isValid = false;
+            wrapper._error = e instanceof Error ? e.message : String(e);
+        }
         return wrapper;
     }
 
@@ -570,7 +560,7 @@ export class TemporalWrapper {
 
         // If the user provides any specific options, use them exclusively.
         if (options && Object.keys(options).length > 0) {
-            return new Intl.DateTimeFormat(locale, {
+            return IntlCache.getDateTimeFormatter(locale, {
                 timeZone: this.datetime.timeZoneId,
                 ...options
             }).format(this.toDate());
@@ -582,7 +572,7 @@ export class TemporalWrapper {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         };
 
-        return new Intl.DateTimeFormat(locale, {
+        return IntlCache.getDateTimeFormatter(locale, {
             timeZone: this.datetime.timeZoneId,
             ...defaultOptions
         }).format(this.toDate());
@@ -836,7 +826,7 @@ export class TemporalWrapper {
      * start.range(end, 'day');
      * // => [Atemporal, Atemporal, Atemporal]
      */
-    // ▼▼▼ AQUÍ ESTÁ LA CORRECCIÓN: '[]' fue cambiado a '[)' ▼▼▼
+    
     range(endDate: DateInput, unit: TimeUnit, options?: { inclusivity?: '()' | '[]' | '(]' | '[)' }): TemporalWrapper[];
 
     // Actual Implementation

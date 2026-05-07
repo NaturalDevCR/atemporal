@@ -145,10 +145,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.startOf("week");
         expect(result.isValid()).toBe(true); // Should fallback to original method
         expect(warnSpy).toHaveBeenCalledWith(
-          "WeekDay: Invalid weekday value:",
-          NaN,
-          "for date:",
-          expect.any(String)
+          expect.stringContaining("WeekDay: Invalid weekday value")
         );
       } finally {
         date.weekday = originalWeekday;
@@ -172,10 +169,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.startOf("week");
         expect(result.isValid()).toBe(true); // Should fallback to original method
         expect(warnSpy).toHaveBeenCalledWith(
-          "WeekDay: Invalid weekday value:",
-          10,
-          "for date:",
-          expect.any(String)
+          expect.stringContaining("WeekDay: Invalid weekday value")
         );
       } finally {
         date.weekday = originalWeekday;
@@ -199,10 +193,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.startOf("week");
         expect(result.isValid()).toBe(true); // Should fallback to original method
         expect(warnSpy).toHaveBeenCalledWith(
-          "WeekDay: Subtract operation failed for:",
-          expect.any(String),
-          "days to subtract:",
-          expect.any(Number)
+          expect.stringContaining("WeekDay: Subtract operation failed")
         );
       } finally {
         date.subtract = originalSubtract;
@@ -351,8 +342,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
       const result = mockInstance.weekday();
       expect(result).toBeNaN();
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "WeekDay: Error calculating weekday:",
-        expect.any(Error)
+        expect.stringContaining("WeekDay: Error calculating weekday")
       );
 
       mockConsoleWarn.mockRestore();
@@ -378,10 +368,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.startOf("week");
         expect(result.isValid()).toBe(true); // Should fallback to original method
         expect(mockConsoleWarn).toHaveBeenCalledWith(
-          "WeekDay: Invalid weekday value:",
-          NaN,
-          "for date:",
-          expect.any(String)
+          expect.stringContaining("WeekDay: Invalid weekday value")
         );
       } finally {
         date.weekday = originalWeekday;
@@ -405,10 +392,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.startOf("week");
         expect(result.isValid()).toBe(true); // Should fallback to original method
         expect(mockConsoleWarn).toHaveBeenCalledWith(
-          "WeekDay: Subtract operation failed for:",
-          expect.any(String),
-          "days to subtract:",
-          expect.any(Number)
+          expect.stringContaining("WeekDay: Subtract operation failed")
         );
       } finally {
         date.subtract = originalSubtract;
@@ -603,8 +587,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         const result = date.weekday();
         expect(result).toBeNaN();
         expect(mockConsoleWarn).toHaveBeenCalledWith(
-          "WeekDay: Error calculating weekday:",
-          expect.any(Error)
+          expect.stringContaining("WeekDay: Error calculating weekday")
         );
       } finally {
         (TemporalUtils as any).getWeekStartsOn = originalGetWeekStartsOn;
@@ -638,8 +621,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
       // Since fallback is originalEndOf, and we didn't mock originalEndOf, it should succeed (return default endOf calculation).
       // We just want to ensure the warn log happened.
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining("WeekDay: add(1, week) failed"),
-        expect.any(String)
+        expect.stringContaining("WeekDay: add(1, week) failed")
       );
 
       mockConsoleWarn.mockRestore();
@@ -665,8 +647,7 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
         // Should fallback to original calculation which calls startOf -> getWeekStartsOn (call 1 -> success)
         expect(result.isValid()).toBe(true);
         expect(mockConsoleWarn).toHaveBeenCalledWith(
-          "WeekDay: Error calculating week end:",
-          expect.any(Error)
+          expect.stringContaining("WeekDay: Error calculating week end")
         );
       } finally {
         (TemporalUtils as any).getWeekStartsOn = originalGetWeekStartsOn;

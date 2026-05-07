@@ -6,6 +6,7 @@ import { Temporal } from '../temporal-api';
 import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';
+import { debugLog } from '../debug';
 import type { TimeUnit } from '../../types';
 
 /**
@@ -65,8 +66,7 @@ export class DiffCache {
       // re-exports getCachedTemporalAPI(). No cross-implementation conversion needed.
       return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
     } catch (error) {
-      // Fallback for unsupported units or edge cases
-      console.warn(`Failed to calculate diff for unit ${unit}:`, error);
+      debugLog('warn', `Failed to calculate diff for unit ${unit}`);
       return 0;
     }
   }

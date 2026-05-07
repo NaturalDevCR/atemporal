@@ -63,7 +63,7 @@ class OverlapCache {
         const r2Start = typeof range2.start === 'string' ? range2.start : String(range2.start);
         const r2End = typeof range2.end === 'string' ? range2.end : String(range2.end);
         
-        return `${r1Start}:${r1End}:${r2Start}:${r2End}:${options.includeBoundaries}:${options.timezone}:${options.strictValidation}`;
+        return JSON.stringify([r1Start, r1End, r2Start, r2End, options.includeBoundaries, options.timezone, options.strictValidation]);
     }
 
     /**

@@ -7,6 +7,7 @@ import { TemporalWrapper } from '../TemporalWrapper';
 import { RegexCache } from '../RegexCache';
 import { TemporalUtils, IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
 import { LocaleUtils } from '../core/locale';
+import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin } from '../types';
 import type { Temporal } from '@js-temporal/polyfill';
 
@@ -41,7 +42,7 @@ class OrdinalCache {
      * @returns Ordinal string (e.g., "1st", "2nd")
      */
     static getOrdinal(num: number, locale: string): string {
-        const key = `${num}:${locale}`;
+        const key = JSON.stringify([num, locale]);
         
         let result = this.cache.get(key);
         if (result === undefined) {
@@ -120,7 +121,7 @@ class TimezoneCache {
      * @returns Timezone name string
      */
     static getTimezoneName(zdt: Temporal.ZonedDateTime, locale: string, nameType: 'short' | 'long'): string {
-        const key = `${zdt.timeZoneId}:${locale}:${nameType}:${zdt.toInstant().epochMilliseconds}`;
+        const key = JSON.stringify([zdt.timeZoneId, locale, nameType, zdt.toInstant().epochMilliseconds]);
         
         let result = this.cache.get(key);
         if (result === undefined) {
@@ -152,8 +153,7 @@ class TimezoneCache {
             const tzPart = parts.find(p => p.type === 'timeZoneName');
             return tzPart?.value || zdt.timeZoneId;
         } catch (error) {
-            // Enhanced error handling: log the error for debugging
-            console.warn(`TimezoneCache: Error formatting timezone for ${zdt.timeZoneId} with locale ${locale}:`, error);
+            debugLog('warn', `TimezoneCache: Error formatting timezone for ${zdt.timeZoneId} with locale ${locale}`);
             return zdt.timeZoneId;
         }
     }
@@ -237,8 +237,7 @@ const advancedFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) =>
                     // Wrap the result in brackets to protect it from the next formatting step.
                     return `[${replacements[key]()}]`;
                 } catch (error) {
-                    // Enhanced error handling: log error and return fallback
-                    console.warn(`AdvancedFormat: Error processing token ${match}:`, error);
+                    debugLog('warn', `AdvancedFormat: Error processing token ${match}`);
                     return match; // Return original token as fallback
                 }
             }
@@ -264,23 +263,15 @@ const advancedFormatPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) =>
             };
         };
         
-        // Integrate with GlobalCacheCoordinator
-        (atemporal as any).clearAllCaches = function() {
-            GlobalCacheCoordinator.clearAll();
-            OrdinalCache.clear();
-            TimezoneCache.clear();
-        };
-        
-        (atemporal as any).getAllCacheStats = function() {
-            const globalStats = GlobalCacheCoordinator.getAllStats();
-            return {
-                ...globalStats,
-                advancedFormat: {
-                    ordinal: OrdinalCache.getStats(),
-                    timezone: TimezoneCache.getStats()
-                }
-            };
-        };
+    // Register with global cache coordinator
+    GlobalCacheCoordinator.registerCache('advancedFormat/ordinal', {
+        clear: () => OrdinalCache.clear(),
+        getStats: () => OrdinalCache.getStats()
+    });
+    GlobalCacheCoordinator.registerCache('advancedFormat/timezone', {
+        clear: () => TimezoneCache.clear(),
+        getStats: () => TimezoneCache.getStats()
+    });
     }
 };
 

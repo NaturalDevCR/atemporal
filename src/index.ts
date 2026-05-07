@@ -4,16 +4,12 @@
  * and handles the plugin system, making it the central hub for all functionality.
  */
 
-// Import the temporal detection system to use native Temporal when available
 import {
-  getCachedTemporalAPI,
   getTemporalInfo,
 } from "./core/temporal-detection";
-// Import Temporal types for TypeScript compilation
 import type { Temporal } from "@js-temporal/polyfill";
 
-// Get the appropriate Temporal API (native or polyfilled)
-const { Temporal: TemporalAPI } = getCachedTemporalAPI();
+import { Temporal as TemporalAPI } from "./core/temporal-api";
 import { TemporalWrapper } from "./TemporalWrapper";
 import { TemporalUtils } from "./TemporalUtils";
 import {
@@ -38,6 +34,7 @@ import {
   InvalidDateError,
   InvalidTimeZoneError,
 } from "./errors";
+import { debugLog } from "./core/debug";
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
@@ -199,7 +196,7 @@ atemporal.isValidLocale = isValidLocale;
 /**
  * Checks if a given function has the shape of an atemporal plugin.
  */
-atemporal.isPlugin = isPlugin as (input: any) => input is Plugin;
+atemporal.isPlugin = isPlugin as (input: unknown) => input is Plugin;
 
 /**
  * Sets the default locale for all new atemporal instances. Used for formatting.
@@ -225,24 +222,22 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
  */
 const appliedPlugins = new Set<Plugin>();
 
-atemporal.extend = (plugin: Plugin, options) => {
-  // Validate plugin parameter
-  if (!plugin || typeof plugin !== "function") {
-    throw new Error("Plugin must be a function");
-  }
+  atemporal.extend = (plugin: Plugin, options) => {
+    if (!plugin || typeof plugin !== "function") {
+      throw new Error("Plugin must be a function");
+    }
 
-  if (appliedPlugins.has(plugin)) {
-    // Plugin already applied, skip to avoid duplicates
-    return;
-  }
-  try {
-    plugin(TemporalWrapper, atemporal, options);
-    appliedPlugins.add(plugin);
-  } catch (error) {
-    console.error("Error applying plugin:", error);
-    throw error;
-  }
-};
+    if (appliedPlugins.has(plugin)) {
+      return;
+    }
+    try {
+      plugin(TemporalWrapper, atemporal, options);
+      appliedPlugins.add(plugin);
+    } catch (error) {
+      debugLog('error', 'Error applying plugin', String(error));
+      throw error;
+    }
+  };
 
 // Add these functions before the final export
 
@@ -320,8 +315,7 @@ atemporal.lazyLoad = async (
     loadedPlugins.set(pluginName, plugin);
   } catch (error) {
     if (error instanceof Error) {
-      // Provide a more descriptive error message
-      throw new Error(`Error loading plugin '${pluginName}': ${error.message}`);
+      throw new Error(`Error loading plugin '${pluginName}': ${error.message}`, { cause: error });
     }
     throw error;
   }

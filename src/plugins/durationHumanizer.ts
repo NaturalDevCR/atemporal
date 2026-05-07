@@ -9,6 +9,7 @@ import type { Temporal } from "@js-temporal/polyfill";
 import { Temporal as TemporalRuntime } from "../core/temporal-api";
 import { IntlCache, LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";
 import { LocaleUtils } from "../core/locale";
+import { debugLog } from "../core/debug";
 import type { Plugin, AtemporalFactory } from "../types";
 
 /**
@@ -35,7 +36,7 @@ class DurationFormatCache {
     locale: string,
     unitDisplay: string
   ): string {
-    const cacheKey = `${value}:${unit}:${locale}:${unitDisplay}`;
+    const cacheKey = JSON.stringify([value, unit, locale, unitDisplay]);
 
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!;
@@ -75,12 +76,7 @@ class DurationFormatCache {
       });
       return nf.format(value);
     } catch (error) {
-      // Enhanced error handling: log the error for debugging
-      console.warn(
-        `DurationFormatCache: Error formatting ${value} ${unit} with locale ${locale}:`,
-        error
-      );
-      // Fallback for units not supported by Intl.NumberFormat
+      debugLog('warn', `DurationFormatCache: Error formatting ${value} ${unit} with locale ${locale}`);
       return this.getFallbackFormat(value, unit, locale, unitDisplay);
     }
   }
@@ -371,8 +367,8 @@ function humanize(
       });
       return nf.format(0);
     } catch (e) {
-      console.warn("DurationHumanizer: Error formatting zero duration:", e);
-      return "0 seconds"; // Final fallback
+      debugLog('warn', 'DurationHumanizer: Error formatting zero duration');
+      return "0 seconds";
     }
   }
 
@@ -418,15 +414,14 @@ function humanize(
       });
       return listFormatter.format(parts);
     } catch (e) {
-      console.warn("DurationHumanizer: Error formatting list:", e);
-      // Simple fallback: join with 'and'
+      debugLog('warn', 'DurationHumanizer: Error formatting list');
       if (parts.length === 1) return parts[0];
       if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
       return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
     }
   } catch (error) {
-    console.warn("DurationHumanizer: Error processing duration:", error);
-    return "0 seconds"; // Ultimate fallback
+    debugLog('warn', 'DurationHumanizer: Error processing duration');
+    return "0 seconds";
   }
 }
 

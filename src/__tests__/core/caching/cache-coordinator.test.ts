@@ -245,7 +245,7 @@ describe('GlobalCacheCoordinator', () => {
                 GlobalCacheCoordinator.clearAll();
             }).not.toThrow();
             
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to clear cache:', expect.any(Error));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to clear cache'));
         });
 
         it('should clear core caches even if plugin caches fail', () => {
@@ -341,7 +341,7 @@ describe('GlobalCacheCoordinator', () => {
                 GlobalCacheCoordinator.optimizeAll();
             }).not.toThrow();
             
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to optimize cache:', expect.any(Error));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to optimize cache'));
         });
 
         it('should skip optimization for caches without optimize method', () => {

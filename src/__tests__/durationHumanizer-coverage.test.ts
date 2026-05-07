@@ -326,8 +326,7 @@ describe("DurationHumanizer Plugin - Coverage Improvements", () => {
         const result = atemporal.humanize({ hours: "invalid" } as any);
         expect(result).toBe("0 seconds"); // Should use ultimate fallback
         expect(warnSpy).toHaveBeenCalledWith(
-          "DurationHumanizer: Error processing duration:",
-          expect.any(Error)
+          expect.stringContaining("DurationHumanizer: Error processing duration")
         );
       } finally {
         Temporal.Duration.from = originalFrom;
@@ -419,8 +418,7 @@ describe("DurationHumanizer Plugin - Coverage Improvements", () => {
       const result = atemporal.humanize({ minutes: 30 });
       expect(typeof result).toBe("string");
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining("DurationFormatCache: Error formatting"),
-        expect.any(Error)
+        expect.stringContaining("DurationFormatCache: Error formatting")
       );
 
       // Restore original
@@ -515,8 +513,7 @@ describe("DurationHumanizer Plugin - Coverage Improvements", () => {
       const result = atemporal.humanize({});
       expect(result).toBe("0 seconds"); // Should fallback to simple string
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "DurationHumanizer: Error formatting zero duration:",
-        expect.any(Error)
+        expect.stringContaining("DurationHumanizer: Error formatting zero duration")
       );
 
       // Restore original
@@ -545,8 +542,7 @@ describe("DurationHumanizer Plugin - Coverage Improvements", () => {
       expect(typeof result).toBe("string");
       expect(result).toContain("and"); // Should fallback to simple join
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "DurationHumanizer: Error formatting list:",
-        expect.any(Error)
+        expect.stringContaining("DurationHumanizer: Error formatting list")
       );
 
       // Restore original
@@ -570,8 +566,7 @@ describe("DurationHumanizer Plugin - Coverage Improvements", () => {
       const result = atemporal.humanize({ invalid: "data" } as any);
       expect(result).toBe("0 seconds"); // Ultimate fallback
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "DurationHumanizer: Error processing duration:",
-        expect.any(Error)
+        expect.stringContaining("DurationHumanizer: Error processing duration")
       );
 
       // Restore original
