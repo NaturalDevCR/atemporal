@@ -1,0 +1,71 @@
+# .github/workflows/mutation.yml
+name: Mutation testing (Stryker, nightly)
+
+# Mutation testing is intentionally NOT run on every PR — it is slow and
+# flaky by design. It runs nightly, on demand, and on every push to main
+# to keep the trend line current.
+
+on:
+  schedule:
+    # Every day at 04:00 UTC (off-peak, deterministic enough to surface trends).
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    name: Stryker mutation testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Stryker
+        env:
+          NODE_OPTIONS: '--max-old-space-size=6144'
+          TZ: 'UTC'
+        run: npm run test:mutation
+
+      - name: Upload Stryker reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stryker-reports
+          path: reports/mutation
+          retention-days: 30
+
+      - name: Comment mutation score on PR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const path = 'reports/mutation/mutation.json';
+            if (!fs.existsSync(path)) {
+              core.warning('No mutation.json produced; skipping summary.');
+              return;
+            }
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const score = data.metrics?.mutationScore;
+            if (typeof score !== 'number') return;
+            const pct = (score * 100).toFixed(2);
+            core.summary.addHeading('Mutation score', 1);
+            core.summary.addText(`Mutation score: **${pct}%** (nightly run on main).`);
+            await core.summary.write();

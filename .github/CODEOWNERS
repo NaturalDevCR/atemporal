@@ -1,0 +1,35 @@
+# Code Owners
+#
+# Each line is a file pattern followed by one or more owners. Owners
+# will be auto-assigned to PRs that touch the matching files.
+#
+# Order matters: later patterns override earlier ones.
+
+# Default owners for everything in the repository.
+*                       @NaturalDevCR/maintainers
+
+# Core engine — needs extra scrutiny.
+/src/core/              @NaturalDevCR/core-team
+/src/index.ts           @NaturalDevCR/core-team
+/src/TemporalWrapper.ts @NaturalDevCR/core-team
+
+# Public types and errors — touches the public API.
+/src/types.ts           @NaturalDevCR/api-team
+/src/errors.ts          @NaturalDevCR/api-team
+/src/typeGuards.ts      @NaturalDevCR/api-team
+
+# Plugin code — plugins are independently versioned.
+/src/plugins/           @NaturalDevCR/plugins-team
+
+# Security-sensitive code.
+/SECURITY.md                    @NaturalDevCR/security-team
+/docs/security/                 @NaturalDevCR/security-team
+/src/core/temporal-detection.ts @NaturalDevCR/security-team
+/src/core/strict-mode.ts        @NaturalDevCR/security-team
+
+# CI / build / docs infra
+/.github/             @NaturalDevCR/devx-team
+/docs/                @NaturalDevCR/docs-team
+/package.json         @NaturalDevCR/devx-team
+/tsconfig.json        @NaturalDevCR/devx-team
+/tsup.config.ts       @NaturalDevCR/devx-team

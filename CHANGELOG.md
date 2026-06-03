@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/NaturalDevCR/atemporal/compare/v1.3.7...v1.4.0) (2026-06-03)
+
+
+### Features
+
+* **api:** add `atemporal.try()`, `atemporal.iso()`, `atemporal.validate()` ergonomic static helpers ([Sprint 1.1](#))
+* **errors:** publish the full `ATEMPORAL_*` error-code catalog in `src/errors.ts` JSDoc; codes are now a documented public contract
+* **formatting:** expose `atemporal.presets.list()` and `atemporal.presets.get(name)` as the programmatic preset API
+* **strict-mode:** ship `atemporal.setStrictMode`, `isStrictMode`, `getStrictModeFlags`, `clearStrictWarnings` as the supported API (no longer internal)
+* **llms.txt:** comprehensive LLM-friendly documentation bundle (5 500+ lines) with method index, cookbook, migration guides, threat model, and ADRs
+* **supply-chain:** mutation testing (Stryker), SBOM (SPDX + CycloneDX), signed releases with `--provenance` (SLSA OIDC), Codecov coverage trend, Dependabot auto-updates, license allow-list, performance regression gate, doc link checker, secret scanning (gitleaks), dependency CVE gate (npm audit --audit-level=high + OSV-Scanner)
+
+
+### Bug Fixes
+
+* **parsing:** harden parse strategies against malformed inputs (firebase, string, fallback, temporal-instant, temporal-plain-date, temporal-plain-datetime, temporal-wrapper, temporal-zoned)
+* **caching:** invalidate the diff cache when the diff function's unit normalizer changes
+* **bench:** import the published `dist/index.mjs` instead of the source tree, so the benchmark measures what we ship
+
+
+### Documentation
+
+* complete and reorganise the cookbook (audit logs, business hours, REST validation, Prisma, Drizzle, RSC, Cloudflare Workers, structured logging, microservice timezones, i18n)
+* complete migration guides (Day.js, Luxon, moment.js, raw Temporal)
+* add ADR 0007 — supply chain hardening
+* threat model rewritten as a public-facing document in `docs/security/threat-model.md`
+
+
 ### [1.3.7](https://github.com/NaturalDevCR/atemporal/compare/v1.3.6...v1.3.7) (2026-05-07)
 
 

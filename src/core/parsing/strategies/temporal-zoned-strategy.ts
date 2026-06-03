@@ -3,6 +3,7 @@
  */
 
 import { Temporal } from '../../temporal-api';
+import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
 import type { TemporalInput } from '../../../types/enhanced-types';
 import { TemporalParseError } from '../../../types/enhanced-types';
 import { DEFAULT_TEMPORAL_CONFIG } from '../../../types/index';
@@ -60,7 +61,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
       };
     }
 
-    const zonedDateTime = input as Temporal.ZonedDateTime;
+    const zonedDateTime = input as TemporalNS.ZonedDateTime;
     const targetTimeZone = context.options.timeZone;
     
     // Fast path if no timezone conversion is needed
@@ -110,7 +111,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
       };
     }
 
-    const zonedDateTime = input as Temporal.ZonedDateTime;
+    const zonedDateTime = input as TemporalNS.ZonedDateTime;
     
     // Check if the ZonedDateTime is valid
     try {
@@ -139,7 +140,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
    * Normalize input for parsing
    */
   normalize(input: TemporalInput, context: ParseContext): ParseNormalizationResult {
-    const zonedDateTime = input as Temporal.ZonedDateTime;
+    const zonedDateTime = input as TemporalNS.ZonedDateTime;
     const targetTimeZone = context.options.timeZone;
     const appliedTransforms: string[] = [];
     let normalizedInput = zonedDateTime;
@@ -165,7 +166,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
    * Convert input to intermediate format
    */
   convert(input: TemporalInput, context: ParseContext): ParseConversionResult {
-    const zonedDateTime = input as Temporal.ZonedDateTime;
+    const zonedDateTime = input as TemporalNS.ZonedDateTime;
     
     return {
       result: zonedDateTime,
@@ -196,7 +197,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
     }
     
     try {
-      const zonedDateTime = input as Temporal.ZonedDateTime;
+      const zonedDateTime = input as TemporalNS.ZonedDateTime;
       const targetTimeZone = context.options.timeZone;
       
       // Use input as-is or convert timezone if needed
@@ -239,7 +240,7 @@ export class TemporalZonedStrategy implements ParseStrategy {
    * Get optimization hints for this strategy
    */
   getOptimizationHints(input: TemporalInput, context: ParseContext): ParseOptimizationHints {
-    const zonedDateTime = input as Temporal.ZonedDateTime;
+    const zonedDateTime = input as TemporalNS.ZonedDateTime;
     const targetTimeZone = context.options.timeZone;
     const needsConversion = targetTimeZone && targetTimeZone !== zonedDateTime.timeZoneId;
 

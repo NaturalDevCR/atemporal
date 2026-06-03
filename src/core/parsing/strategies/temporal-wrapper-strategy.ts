@@ -3,6 +3,7 @@
  */
 
 import { Temporal } from '../../temporal-api';
+import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
 import type {
   TemporalInput,
   StrictParsingOptions
@@ -200,7 +201,7 @@ export class TemporalWrapperStrategy implements ParseStrategy {
         throw new Error('Invalid TemporalWrapper object');
       }
       
-      let result: Temporal.ZonedDateTime;
+      let result: TemporalNS.ZonedDateTime;
       
       // The datetime property is already a ZonedDateTime, use it directly
       result = wrapper.datetime;

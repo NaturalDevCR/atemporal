@@ -10,9 +10,12 @@ yarn-error.log*
 /node_modules/
 /dist/
 /coverage/
+/coverage-strategies/
 /out-tsc/
 /.pnp/
 .pnp.js
+/docs/.vitepress/dist/
+/docs/.vitepress/cache/
 
 # Carpetas de editores de código
 /.idea/
@@ -20,3 +23,8 @@ yarn-error.log*
 
 # Archivos temporales
 /tmp/
+
+# Reports generados por herramientas de CI (Stryker, perf gate, SBOM)
+bench-out.json
+/reports/
+/sbom/

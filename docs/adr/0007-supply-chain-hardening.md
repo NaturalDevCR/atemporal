@@ -1,0 +1,186 @@
+# ADR 0007: Supply chain hardening
+
+**Status:** Accepted
+**Date:** 2026-06-03
+**Authors:** @NaturalDevCR/devx-team, @NaturalDevCR/security-team
+
+## Context
+
+Until now, atemporal's CI was structurally sound for **functional** quality
+(3042 tests, strict TypeScript, bundle smoke, threat model, ADRs) but had
+several gaps that any enterprise security review will flag:
+
+1. **No automated secret scanning.** Committed secrets would only be caught
+   after push, if at all.
+2. **Soft `npm audit`.** The `audit` job ran with `continue-on-error: true`,
+   so high-severity CVEs in dependencies did not block merges.
+3. **No SBOM / no provenance.** Downstream consumers (regulated industries,
+   supply-chain audits) had no machine-readable inventory of the build and
+   no SLSA attestation for the published tarball.
+4. **No mutation testing.** 3042 tests with green coverage is a *coverage*
+   signal, not a *strength* signal. A test suite that survives 60% of
+   mutants is much weaker than one that survives 85%, even at 100% line
+   coverage.
+5. **No performance gate.** The reproducible benchmark existed, but it was
+   manually invoked. A 3× regression on `add()` would merge silently.
+6. **Manual `standard-version` releases.** Versioning was a local CLI step,
+   error-prone, and never produced provenance.
+7. **No license compliance gate.** A consumer pull-request that transitively
+   pulls in a GPL/AGPL dependency would not be caught.
+8. **No doc link check.** VitePress builds would silently produce pages
+   with broken cross-links and 404 references.
+
+## Decision
+
+We are promoting all eight of the above gaps from "recommendation" to
+**enforced CI invariants**, and we are doing so with the smallest set of
+mature, GitHub-native tools that satisfy each requirement:
+
+| Gap | Tool | Where |
+| --- | --- | --- |
+| Secret scanning | `gitleaks/gitleaks-action@v2` | `.github/workflows/ci.yml` (`gitleaks` job) |
+| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v1` | `.github/workflows/ci.yml` (`audit` job) |
+| SBOM | `npm sbom` (SPDX) + `anchore/sbom-action@v0` (CycloneDX) | `.github/workflows/release.yml` |
+| Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
+| Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (nightly + on-demand) |
+| Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | `.github/workflows/ci.yml` (`perf-gate` job) |
+| Auto versioning | `googleapis/release-please-action@v4` | `.github/workflows/release.yml` |
+| License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
+| Doc link check | `lycheeverse/lychee-action@v2` | `.github/workflows/ci.yml` (`doc-links` job) |
+| Auto dependency updates | `.github/dependabot.yml` (Dependabot) | GitHub-native |
+| Coverage trend | `codecov/codecov-action@v4` | `.github/workflows/ci.yml` (`coverage` job) |
+
+### Why these specific tools
+
+- **gitleaks over GitHub native secret scanning.** Gitleaks is a strict
+  superset of GitHub's secret scanner, has zero false-positive tooling
+  we'd have to manage, and integrates with SARIF for the Security tab.
+- **`npm audit --audit-level=high` + OSV-Scanner.** `npm audit` covers the
+  npm registry view; OSV-Scanner is registry-agnostic and surfaces
+  GHSA-advisories not yet in npm's mirror. Both are kept; one is the
+  primary gate, the other is the cross-check.
+- **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the npm
+  ecosystem; CycloneDX is what most enterprise SCA tools consume. We emit
+  both and attach the CycloneDX to the GitHub Release.
+- **Stryker for mutation.** Stryker is the only JavaScript mutation
+  testing tool that integrates with Jest, has TypeScript checker
+  support, and is actively maintained. We do not run it on every PR
+  (slow + flaky) — only nightly, on-demand, and on every push to `main`.
+  The `thresholds: { high: 80, low: 70, break: 60 }` is a *score* gate;
+  the CI is informational (logs the score) and the team reviews weekly
+  trends via the uploaded reports.
+- **`release-please` over `standard-version`.** `standard-version` requires
+  a human to run the CLI and push tags. `release-please` turns the whole
+  release flow into a PR review — version bump, CHANGELOG diff, and
+  semantic analysis are all visible in the PR before any tag is created.
+  It also pairs naturally with `--provenance`, which `standard-version`
+  cannot trigger.
+- **Dependabot over Renovate.** Dependabot is GitHub-native, requires no
+  PAT or self-hosted runner, and groups related updates so we get one PR
+  for `@js-temporal/polyfill` updates, not five. Renovate would buy us
+  nothing we don't already get for free here.
+- **Codecov over SonarCloud (for now).** Codecov's signal (coverage diff
+  per PR + historical trend) is what the team currently consumes.
+  SonarCloud would add code smell / duplication analysis, which is out
+  of scope for the supply-chain hardening pass and is therefore deferred
+  to a future ADR.
+- **lychee over `markdown-link-check`.** lychee runs faster, supports
+  the `--offline` mode we need (no network calls in CI), and is
+  actively maintained. `markdown-link-check` is unmaintained since 2023.
+- **Custom `perf-gate.js` over `bench-jest` / `vitest bench`.** Our
+  benchmark is intentionally framework-agnostic (Node `performance.now`
+  only) so it can compare to a *committed baseline* across CI runners
+  and Node versions without skewing the metric.
+
+### Tolerance and gates
+
+- **Audit:** fails on `high` or `critical`. `moderate` and `low` are
+  reported but do not block. This matches the policy in
+  `SECURITY.md` ("Run `npm audit` in CI").
+- **Performance gate:** 25% regression on any gated hot path fails the
+  build. The tolerance is a property of the gate, not the baseline.
+  To change it, edit `scripts/perf-gate.js` (deliberate, reviewed).
+- **License gate:** any forbidden license (GPL family, AGPL, SSPL,
+  BUSL, Elastic, Commons-Clause) fails the build. Unknown licenses
+  fail for production deps and warn for dev deps (toggle via
+  `CHECK_DEV_LICENSES=true`).
+- **Mutation score:** threshold 60% (break). Scores below this are
+  surfaced in the artifact and the weekly summary but do not block
+  PRs — the historical signal is what matters.
+
+## Consequences
+
+### Easier
+
+- Downstream consumers can `npm install atemporal` and immediately run
+  `npm sbom` against the published tarball to see exactly what shipped.
+- Security review questionnaires ("do you have secret scanning?" "do you
+  sign your releases?" "do you gate on CVE severity?") can be answered
+  with a link to `.github/workflows/` and the `SECURITY.md` provenance
+  section.
+- Releases are boring and PR-shaped; the only manual step is "merge the
+  Release PR".
+- Performance regressions are caught at PR time, not at the next release
+  retrospective.
+
+### Harder
+
+- **CI minutes go up.** We estimate the new jobs add ~5 min per PR
+  (lychee, license-check, audit, gitleaks, perf-gate). We mitigate with
+  `concurrency.cancel-in-progress: true` so a push that supersedes a
+  PR build cancels the in-flight one.
+- **`release-please` requires Conventional Commits discipline.** Commits
+  like `wip` or `fix stuff` will be classified as `chore: fix stuff`
+  and will not trigger a release. The team is briefed; the
+  `CONTRIBUTING.md` workflow already requires Conventional Commits.
+- **Stryker reports are large.** Reports are uploaded as artifacts
+  with a 30-day retention; they are NOT committed to the repo.
+- **Dependabot needs a labels workflow.** The `dependencies`,
+  `automated`, `ci` labels must exist (they already do, see
+  `.github/ISSUE_TEMPLATE/config.yml` — verified, no action needed).
+- **`npm audit` may flag transitive dev deps.** We pass
+  `--ignore-scripts` to the install in the audit job to avoid
+  postinstall side effects from flagged packages, but the audit
+  itself is run against the full lockfile. False positives in dev
+  tooling must be addressed by either upgrading or pinning away.
+
+## Alternatives considered
+
+1. **Renovate instead of Dependabot.** Rejected: requires a PAT,
+   no GitHub-native grouping, and the team already knows Dependabot's
+   PR model. Future migration is a config-file swap, not a process
+   change.
+2. **SonarCloud for code quality + coverage.** Deferred. SonarCloud
+   overlaps with Codecov on coverage and adds value on smell / dup
+   detection. We are not paying for that signal yet; a follow-up ADR
+   will revisit when the team has bandwidth to act on Sonar findings.
+3. **Custom mutation test harness.** Rejected. Stryker already
+   covers TS + Jest, with a maintained set of mutators. Writing our
+   own would be 10× the work and we'd reinvent the score model.
+4. **Sigstore `cosign` keyless signing of the tarball.** Considered.
+   `npm publish --provenance` already does this for npm-side
+   verification, and the SLSA build-level attestation is the
+   enterprise-recognized equivalent. `cosign` is the right tool if
+   we later publish to an internal registry.
+5. **`bench-jest` / Vitest's `bench()` API.** Rejected. They tie the
+   benchmark to a test runner, which makes it harder to compare
+   against a fixed baseline. Node's `performance.now` is the smallest
+   possible surface area.
+
+## References
+
+- `SECURITY.md` — Threat model + signed releases
+- `docs/adr/0004-error-codes.md` — Why we treat the error code list as
+  a public contract (mirrors how we treat the SBOM as a public contract)
+- `docs/adr/0006-no-opentelemetry-dep.md` — The "smallest possible
+  surface" argument extends to our supply chain tooling
+- <https://docs.npmjs.com/generating-provenance-statements>
+- <https://github.com/googleapis/release-please>
+- <https://github.com/stryker-mutator/stryker-js>
+- <https://github.com/anchore/sbom-action>
+- <https://github.com/gitleaks/gitleaks>
+- <https://github.com/lycheeverse/lychee>
+
+---
+
+Last updated: 2026-06-03

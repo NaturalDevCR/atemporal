@@ -286,8 +286,7 @@ describe('Atemporal: Edge Cases, Error Handling, and Branch Coverage', () => {
         it('should trigger catch block in .isBetween() with invalid input', () => {
             const start = '2024-01-01';
             const invalidEnd = {}; // An un-parsable object
-            // @ts-expect-error
-            expect(validDate.isBetween(start, invalidEnd)).toBe(false);
+            expect(validDate.isBetween(start, invalidEnd as any)).toBe(false);
         });
 
         it('should trigger catch block in .isSame() with invalid input', () => {

@@ -3,7 +3,8 @@
  */
 
 import '@js-temporal/polyfill';
-import { Temporal } from '../temporal-api';
+import { Temporal as TemporalRuntime } from '../temporal-api';
+import type { Temporal } from '@js-temporal/polyfill';
 import type {
   TemporalInput,
   StrictParsingOptions
@@ -372,7 +373,7 @@ export class ParseCoordinator {
     switch (this.config.fallbackBehavior) {
       case 'null':
         // Return epoch as fallback
-        return Temporal.Instant.fromEpochMilliseconds(0)
+        return TemporalRuntime.Instant.fromEpochMilliseconds(0)
           .toZonedDateTimeISO(context.options.timeZone || 'UTC');
       
       case 'retry':

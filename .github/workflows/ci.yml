@@ -6,18 +6,65 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+# Default minimal permissions; jobs opt in to the ones they need.
+permissions:
+  contents: read
+
+# Cancel in-progress runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION_DEFAULT: '20.x'
 
 jobs:
-  build-and-test:
+  # ----------------------------------------------------------------
+  # 1. Type-check + build (gate before any other check runs)
+  # ----------------------------------------------------------------
+  build:
+    name: Type-check + Build
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x] # Probar en múltiples versiones de Node
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION_DEFAULT }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION_DEFAULT }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build CJS+ESM+DTS
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  # ----------------------------------------------------------------
+  # 2. Test matrix — Jest + bundle smoke + coverage on LTS
+  # ----------------------------------------------------------------
+  test:
+    name: Tests (Node ${{ matrix.node-version }})
+    needs: [build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -26,15 +73,234 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run tests with coverage (excluding performance tests)
-        run: |
-          echo "Node version: $(node --version)"
-          echo "NPM version: $(npm --version)"
-          echo "Timezone: $(date)"
-          npm run test:ci -- --verbose
+      - name: Run unit + integration + property + fuzz + telemetry tests
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           TZ: 'UTC'
           CI: 'true'
+        run: |
+          echo "Node version: $(node --version)"
+          echo "NPM version:  $(npm --version)"
+          echo "Timezone:     $(date)"
+          npm run test:ci -- --verbose
+
+      - name: Bundle size budget check
+        if: matrix.node-version == env.NODE_VERSION_DEFAULT
+        run: npm run size
+
+      - name: Bundle smoke test
+        if: matrix.node-version == env.NODE_VERSION_DEFAULT
+        run: npx ts-node --transpile-only scripts/bundle-smoke-test.ts
+
+  # ----------------------------------------------------------------
+  # 3. Coverage trend — upload to Codecov (PR comment + history)
+  # ----------------------------------------------------------------
+  coverage:
+    name: Coverage trend (Codecov)
+    needs: [test]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION_DEFAULT }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION_DEFAULT }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage (LTS only)
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          TZ: 'UTC'
+          CI: 'true'
+        run: npm run test:ci
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unit
+          name: atemporal-ci
+          fail_ci_if_error: false
+          verbose: false
+
+  # ----------------------------------------------------------------
+  # 4. Secret scan — gitleaks (committed secrets, leaked tokens)
+  # ----------------------------------------------------------------
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'true'
+
+  # ----------------------------------------------------------------
+  # 5. Dependency audit — npm audit (high+critical) + OSV
+  #    Fails the build on any high or critical CVE.
+  # ----------------------------------------------------------------
+  audit:
+    name: Dependency audit (npm + OSV)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION_DEFAULT }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION_DEFAULT }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: npm audit (fails on high/critical)
+        # --audit-level=high means exit non-zero on high OR critical.
+        # Moderate / low are reported but do not fail the build.
+        run: npm audit --audit-level=high
+
+      - name: OSV-Scanner (recursive, lockfile + source)
+        uses: google/osv-scanner-action@v1
+        with:
+          scan-args: '--recursive . --no-ignore --config=osv-scanner.toml'
+
+  # ----------------------------------------------------------------
+  # 6. License compliance — only declared-compatible licenses
+  # ----------------------------------------------------------------
+  license-check:
+    name: License compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION_DEFAULT }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION_DEFAULT }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify license allow-list
+        run: node scripts/check-licenses.js
+
+  # ----------------------------------------------------------------
+  # 7. Performance regression gate
+  #    Compares fresh benchmark output to benchmarks/baseline.json
+  #    and fails on >25% regression on any hot path.
+  # ----------------------------------------------------------------
+  perf-gate:
+    name: Performance regression gate
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ env.NODE_VERSION_DEFAULT }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION_DEFAULT }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Run reproducible benchmark
+        run: |
+          echo "Running bench with ${{ env.NODE_VERSION_DEFAULT }} and 100k ops..."
+          # Use ts-node so the .ts file is transpiled to CJS, avoiding Node's
+          # "MODULE_TYPELESS_PACKAGE_JSON" warning on .ts files.
+          npx ts-node --transpile-only benchmarks/bench.ts 100000 | tee bench-out.json
+
+      - name: Enforce performance gate against baseline
+        run: node scripts/perf-gate.js bench-out.json benchmarks/baseline.json
+
+      - name: Upload benchmark artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-output
+          path: bench-out.json
+          retention-days: 30
+
+  # ----------------------------------------------------------------
+  # 8. Documentation link check (lychee)
+  #    Catches broken / redirected internal links and 404s.
+  # ----------------------------------------------------------------
+  doc-links:
+    name: Doc link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: lychee link checker
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --offline
+            --no-progress
+            --exclude-loopback
+            --exclude-mail
+            --exclude 'https://github.com/NaturalDevCR/atemporal/*'
+            --exclude 'https://atemporal-*.pages.dev'
+            --max-concurrency 16
+            --timeout 20
+            'docs/**/*.md'
+            'README.md'
+            'CHANGELOG.md'
+            'SECURITY.md'
+            'CONTRIBUTING.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ----------------------------------------------------------------
+  # 9. All checks must pass — fan-in gate for branch protection.
+  # ----------------------------------------------------------------
+  ci-success:
+    name: CI success
+    needs:
+      - build
+      - test
+      - coverage
+      - gitleaks
+      - audit
+      - license-check
+      - perf-gate
+      - doc-links
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every required job passed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.test.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.coverage.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.gitleaks.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.audit.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.license-check.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.perf-gate.result }}" != "success" ]; then exit 1; fi
+          if [ "${{ needs.doc-links.result }}" != "success" ]; then exit 1; fi
+          echo "All required jobs passed."

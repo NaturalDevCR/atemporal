@@ -1,0 +1,111 @@
+# .github/workflows/release.yml
+name: Release (release-please)
+
+# Automates the boring parts of releasing:
+#   1. Scans commits since the last release for Conventional Commits.
+#   2. Opens / updates a "Release PR" with version bump + CHANGELOG entry.
+#   3. On merge of the Release PR, creates a GitHub Release with notes.
+#   4. Publishes the npm package with `--provenance` (SLSA build-level
+#      attestation, verifiable via Sigstore).
+#
+# Replaces the old `npm run release` (standard-version) flow with a
+# fully automated, PR-based process. See docs/adr/0007-supply-chain-hardening.md.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+  issues: write
+  # For npm provenance + OIDC, see https://docs.npmjs.com/generating-provenance-statements
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-npm:
+    name: Publish to npm (provenance)
+    if: ${{ steps.release.outputs.release_created }}
+    needs: release-please
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish with provenance + OIDC
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # --provenance enables SLSA build-level provenance attestation.
+          # --access public is required for unscoped packages on the public registry.
+          # Tag is set explicitly from the release output to avoid a second bump.
+          npm publish --provenance --access public --tag ${{ steps.release.outputs.tag_name }}
+
+  attach-sbom:
+    name: Attach SBOM to GitHub Release
+    if: ${{ steps.release.outputs.release_created }}
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate npm SBOM (SPDX JSON)
+        run: |
+          mkdir -p sbom
+          npm sbom --sbom-format=spdx2 --json > sbom/atemporal.spdx.json
+
+      - name: Generate CycloneDX SBOM for the GitHub Release asset
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          artifact-name: atemporal.cdx.json
+          path: .
+
+      - name: Upload CycloneDX SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release.outputs.tag_name }}
+          files: |
+            sbom/atemporal.spdx.json
+          fail_on_unmatched_files: true

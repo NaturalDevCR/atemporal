@@ -2,7 +2,8 @@
  * @file Optimized diff cache with structured keys and enhanced performance
  */
 
-import { Temporal } from '../temporal-api';
+import { Temporal as TemporalRuntime } from '../temporal-api';
+import type { Temporal } from '@js-temporal/polyfill';
 import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';
@@ -162,7 +163,7 @@ export class DiffCache {
    * Pre-warms the cache with common diff calculations
    */
   static preWarm(baseDate?: Temporal.ZonedDateTime): void {
-    const base = baseDate || Temporal.Now.zonedDateTimeISO('UTC');
+    const base = baseDate || TemporalRuntime.Now.zonedDateTimeISO('UTC');
     const units: TimeUnit[] = ['day', 'hour', 'minute', 'second', 'millisecond'];
     
     // Pre-calculate common diffs

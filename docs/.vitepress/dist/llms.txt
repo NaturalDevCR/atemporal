@@ -12,7 +12,7 @@ This file provides comprehensive documentation formatted for AI assistants.
 
 Atemporal is a modern, immutable, and ergonomic date-time library built on top of the new Temporal API — with support for formatting, localization, plugins, and time zones.
 
-> ⚡️ Powered by the Temporal API and polyfilled automatically via `@js-temporal/polyfill` — no extra setup required.
+> Powered by the Temporal API and polyfilled automatically via `@js-temporal/polyfill` — no extra setup required.
 
 ## Installation
 
@@ -22,7 +22,9 @@ To install `atemporal`, run:
 npm install atemporal
 ```
 
-> 🔧 You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
+> You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
+
+Atemporal ships with full TypeScript declarations. Autocompletion and type checking work out of the box.
 
 ## Quick Start
 
@@ -54,6 +56,108 @@ console.log(past.fromNow());
 // => "5 minutes ago"
 ```
 
+## Basic Operations
+
+### Creating Instances
+
+```ts
+// Current time (uses default time zone, UTC by default)
+atemporal();
+
+// From ISO 8601 string
+atemporal("2025-07-09T15:30:00Z");
+
+// From a JavaScript Date
+atemporal(new Date());
+
+// From a Unix timestamp (seconds)
+atemporal.unix(1752096000); // => 2025-07-09T00:00:00Z
+
+// From a Unix timestamp (milliseconds)
+atemporal(1752096000000);
+
+// From an array [year, month, day, hour, min, sec, ms]
+atemporal([2025, 7, 9, 15, 30]);
+
+// From a plain object
+atemporal({ year: 2025, month: 7, day: 9 });
+
+// From Firebase/Firestore timestamps
+atemporal({ seconds: 1672531200, nanoseconds: 0 });
+
+// Clone an existing instance
+const original = atemporal();
+const clone = atemporal(original);
+
+// Specify a time zone
+atemporal("2025-01-01T12:00:00", "America/New_York");
+```
+
+### Working with Durations
+
+```ts
+// Create a duration
+const twoHours = atemporal.duration({ hours: 2, minutes: 30 });
+
+// From an ISO string
+const fromString = atemporal.duration("PT2H30M");
+
+// Use in manipulations
+const now = atemporal();
+const future = now.add(twoHours);
+
+// Subtract with a duration
+const past = now.subtract({ hours: 1, minutes: 15 });
+```
+
+### Global Configuration
+
+```ts
+// Set default time zone (affects all new instances)
+atemporal.setDefaultTimeZone("America/New_York");
+
+// Set default locale (affects formatting)
+atemporal.setDefaultLocale("es-CR");
+
+// Get current defaults
+const locale = atemporal.getDefaultLocale(); // "es-CR"
+```
+
+### Validation
+
+```ts
+// Check if input can be parsed
+atemporal.isValid("2025-07-09"); // true
+atemporal.isValid("not a date"); // false
+
+// Check timezone validity
+atemporal.isValidTimeZone("Asia/Tokyo"); // true
+atemporal.isValidTimeZone("Narnia");     // false
+
+// Check locale validity
+atemporal.isValidLocale("en-US"); // true
+atemporal.isValidLocale("zz");    // false
+```
+
+### Formatting
+
+```ts
+const date = atemporal("2025-07-09T14:30:00Z");
+
+// Token-based formatting
+date.format("YYYY-MM-DD");                     // "2025-07-09"
+date.format("dddd, MMMM Do YYYY [at] HH:mm"); // "Wednesday, July 9th 2025 at 14:30"
+
+// Intl-based formatting
+date.format({ dateStyle: "full" }, "es-CR");   // "miércoles, 9 de julio de 2025"
+```
+
+## Next Steps
+
+- [Core Concepts](./core-concepts) — Understand immutability, plugins, input types, and architecture
+- [API Reference](/api/) — Complete reference for all methods
+- [Plugins](/plugins/) — Explore all 8 official plugins
+
 
 --- FILE: guide/core-concepts.md ---
 
@@ -61,12 +165,12 @@ console.log(past.fromNow());
 
 ## Why Atemporal?
 
-- ✅ **Immutable and Chainable API**: A fluid and predictable coding style, inspired by Day.js.
-- 🧩 **Extensible Plugin System**: Add only the functionality you need, keeping the core lightweight.
-- 🌐 **Localization-Ready**: Native integration with `Intl` for localized formats and names.
-- 🌍 **Time Zone-Aware**: First-class support for IANA time zones (e.g., `America/New_York`).
-- 🔒 **Type-Safe**: Built in TypeScript for an excellent developer experience and autocompletion.
-- 🎯 **Temporal-Powered**: Uses the future standard JavaScript API for date handling, with a polyfill included.
+- **Immutable & Chainable**: A fluid and predictable coding style, inspired by Day.js. Every manipulation returns a new instance.
+- **Plugin-Powered Extensibility**: Add only the functionality you need, keeping the core lightweight. 8 official plugins available, plus the ability to create your own.
+- **Localization-Ready**: Native integration with `Intl` for localized formats, weekday names, month names, and relative time.
+- **Time Zone-Aware**: First-class support for IANA time zones (e.g., `America/New_York`, `Asia/Tokyo`). All operations respect time zone context.
+- **Type-Safe**: Built in TypeScript for excellent autocompletion, rich type guards, and detailed type definitions.
+- **Temporal-Powered**: Uses the TC39 Stage 4 Temporal API (ES2026) as its foundation, with automatic polyfill fallback.
 
 ## Immutability
 
@@ -76,19 +180,538 @@ All manipulation methods in Atemporal are immutable. This means that instead of 
 const original = atemporal();
 const future = original.add(1, "day");
 
-console.log(original.isSame(future)); // false
+console.log(original.isSame(future)); // false — original is unchanged
+```
+
+This prevents the class of bugs caused by accidentally mutating date objects shared across different parts of an application.
+
+## Plugin System
+
+Atemporal has a lightweight plugin system that allows you to extend functionality only when needed. This keeps the core bundle small while enabling powerful features on demand.
+
+### How Plugins Work
+
+Plugins are functions that receive the `atemporal` factory and instances, allowing them to add new methods:
+
+```ts
+import atemporal from "atemporal";
+import relativeTime from "atemporal/plugins/relativeTime";
+
+// Register a plugin — it adds methods like .fromNow() and .toNow()
+atemporal.extend(relativeTime);
+
+// Now you can use plugin methods
+atemporal().subtract(5, "minutes").fromNow(); // "5 minutes ago"
+```
+
+### Lazy Loading
+
+To reduce initial bundle size, plugins can be loaded on demand:
+
+```ts
+// Load a plugin only when needed
+await atemporal.lazyLoad("relativeTime");
+
+// Load multiple plugins at once
+await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
+```
+
+### Plugin Utilities
+
+```ts
+atemporal.isPluginLoaded("relativeTime");   // Check if a plugin is loaded
+atemporal.getLoadedPlugins();                // List all loaded plugins
+atemporal.getAvailablePlugins();             // List all plugins available for lazy loading
+```
+
+### Creating Your Own Plugin
+
+You can create custom plugins using the `Plugin` type signature:
+
+```ts
+import type { Plugin } from "atemporal";
+import { markAsPlugin } from "atemporal";
+
+const myPlugin: Plugin = (Atemporal, atemporal, options) => {
+  // Add instance methods to the prototype
+  Atemporal.prototype.myMethod = function () {
+    // 'this' refers to the atemporal instance
+    return this.format("YYYY-MM-DD");
+  };
+
+  // Add static methods to the factory
+  (atemporal as any).myStaticMethod = function () {
+    return "hello from plugin";
+  };
+};
+
+// Mark it as a valid atemporal plugin
+markAsPlugin(myPlugin);
+
+// Register it
+atemporal.extend(myPlugin);
+```
+
+The `Plugin` type signature is:
+
+```ts
+type Plugin = (
+  Atemporal: typeof TemporalWrapper,
+  atemporal: AtemporalFactory,
+  options?: any
+) => void;
+```
+
+## Input Types (DateInput)
+
+Atemporal accepts a wide variety of input types via the `DateInput` union type:
+
+| Input Type | Example |
+|------------|---------|
+| `string` (ISO 8601) | `"2025-07-09T15:30:00Z"`, `"2025-07-09"` |
+| `number` (timestamp ms) | `1752096000000` |
+| `Date` | `new Date()` |
+| `Temporal.ZonedDateTime` | `Temporal.ZonedDateTime.from(...)` |
+| `Temporal.PlainDateTime` | `Temporal.PlainDateTime.from(...)` |
+| `Temporal.PlainDate` | `Temporal.PlainDate.from(...)` |
+| `Temporal.Instant` | `Temporal.Instant.fromEpochMilliseconds(...)` |
+| `FirebaseTimestamp` | `{ seconds: 1672531200, nanoseconds: 0 }` |
+| `Array` | `[2025, 7, 9, 15, 30]` (year, month, day, hour, min) |
+| `Plain Object` | `{ year: 2025, month: 7, day: 9 }` |
+| `TemporalWrapper` | Another atemporal instance (cloned) |
+
+When no input is provided (`atemporal()`), the current date and time is used. Passing `null` or `undefined` behaves the same way.
+
+### Error Handling
+
+Invalid inputs do **not** throw exceptions. Instead, an invalid instance is returned. You can check validity with `.isValid()`:
+
+```ts
+const maybeDate = atemporal("not a date");
+console.log(maybeDate.isValid()); // false
+console.log(maybeDate.format("YYYY-MM-DD")); // "Invalid Date"
+```
+
+You can also pre-validate inputs before creating instances:
+
+```ts
+if (atemporal.isValid(someInput)) {
+  const date = atemporal(someInput);
+  // ...
+}
+```
+
+## Time Zone Management
+
+Atemporal provides full IANA time zone support:
+
+```ts
+// Set a global default time zone (default: UTC)
+atemporal.setDefaultTimeZone("America/New_York");
+
+// Create instances in specific zones
+const ny = atemporal("2025-01-01T12:00:00", "America/New_York");
+const tokyo = ny.timeZone("Asia/Tokyo");
+
+// Check the current default
+atemporal.getDefaultLocale();
+```
+
+### Validating Time Zones
+
+```ts
+atemporal.isValidTimeZone("America/New_York"); // true
+atemporal.isValidTimeZone("Invalid/Zone");     // false
+```
+
+## Locale & Internationalization
+
+Atemporal uses the `Intl` API for locale-aware formatting:
+
+```ts
+// Set a global default locale (default: "en")
+atemporal.setDefaultLocale("es-CR");
+
+// Format with a specific locale
+atemporal().format({ dateStyle: "full" }, "ja-JP"); // Japanese full date
+atemporal().format("dddd, MMMM Do YYYY", "es");     // Spanish with ordinals
+```
+
+### Validating Locales
+
+```ts
+atemporal.isValidLocale("en-US");  // true
+atemporal.isValidLocale("en");     // true
+atemporal.isValidLocale("zz");     // false
 ```
 
 ## Temporal API
 
-Atemporal is built directly on top of the [Temporal API](https://tc39.es/proposal-temporal/docs/), which is the new standard for date and time in JavaScript. It solves many of the problems with the legacy `Date` object, such as:
+Atemporal is built directly on top of the [Temporal API](https://tc39.es/proposal-temporal/docs/), which is the modern standard for date and time in JavaScript (TC39 Stage 4, ES2026). It solves many of the problems with the legacy `Date` object:
 
-- Mutability
-- Difficulties with time zones
-- Lack of support for non-Gregorian calendars
-- Missing common functionality like date-only types
+- **Immutability**: Temporal objects are immutable by design
+- **Time Zone Support**: `ZonedDateTime` provides accurate wall-clock time with IANA zones
+- **Date-Only Types**: `PlainDate` and `PlainDateTime` for calendar operations without time zone concerns
+- **Durations**: First-class `Duration` type with correct arithmetic
+- **Non-Gregorian Calendars**: Built-in support for multiple calendar systems
 
-Atemporal provides a more ergonomic wrapper around this powerful API.
+### Accessing the Underlying Temporal Object
+
+You can access the raw `Temporal.ZonedDateTime` for advanced use cases:
+
+```ts
+const date = atemporal();
+const raw: Temporal.ZonedDateTime = date.datetime; // or date.raw
+```
+
+### Checking Temporal Implementation
+
+```ts
+const info = atemporal.getTemporalInfo();
+// { isNative: boolean, environment: "browser" | "node" | "unknown", version: "native" | "polyfill" }
+```
+
+## Internal Architecture
+
+Under the hood, Atemporal is powered by several high-performance subsystems:
+
+- **ParseCoordinator**: Type-first parsing engine with 12 strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects). Uses intelligent caching and auto-optimization.
+- **FormattingEngine**: Token-based formatter with token compilation, object pooling, and multi-level caching for high-throughput scenarios.
+- **ComparisonEngine**: Optimized date comparison logic with its own cache layer.
+- **DiffCache**: LRU-based cache for `diff()` calculations between recurring date pairs.
+- **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to reduce GC pressure.
+- **RegexCache**: Centralized regex cache with precompiled static patterns and LRU-backed dynamic regex.
+- **GlobalCacheCoordinator**: Cross-plugin cache management with unified stats and bulk operations.
+
+For advanced usage, see the [Performance & Caching](./performance) guide.
+
+
+--- FILE: guide/performance.md ---
+
+# Performance & Caching
+
+Atemporal is built with performance in mind. To handle intensive formatting, parsing, and difference calculations, it implements several internal caching mechanisms and coordinators.
+
+In this guide, you will learn how Atemporal optimizes operations and how you can interact with these engines to monitor or fine-tune performance.
+
+## Internal Caching Systems
+
+Atemporal relies on several key optimization engines:
+
+- **ParseCoordinator**: Speeds up parsing by caching string inputs and dynamically choosing the most efficient parsing strategy based on the input type. Uses 12 specialized strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects).
+- **FormattingEngine**: Pools tokens and caches format compilations to drastically reduce the overhead of string formatting. Pre-compiles common patterns on initialization.
+- **DiffCache**: Caches the results of difference calculations (`diff()`) for recurring date pairs using an LRU strategy.
+- **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to avoid repeated construction costs.
+- **LRUCache**: Generic Least Recently Used cache implementation used throughout the library.
+- **RegexCache**: Centralized regex cache with precompiled static patterns and LRU-backed dynamic pattern caching.
+
+## Formatting Performance Utilities
+
+If you are using Atemporal in an environment with high formatting throughput (like a large list rendering in a UI framework), you can interact directly with the formatting engine.
+
+```ts
+import atemporal from "atemporal";
+
+// Pre-warms the formatting system with common patterns
+// Useful to call during app startup so initial renders are lightning fast
+atemporal.prewarmFormattingSystem();
+
+// Get a human readable formatting performance report
+console.log(atemporal.getFormattingPerformanceReport());
+
+// Get the raw formatting metrics object
+const metrics = atemporal.getFormattingMetrics();
+/* {
+     totalFormats: number,
+     averageFormatTime: number,
+     cacheHits: number,
+     fastPathHits: number,
+     // ...
+   }
+*/
+
+// Clear all formatting caches and resets metrics
+atemporal.resetFormattingSystem();
+```
+
+## Parsing Performance Utilities
+
+Parsing strings into dates is notoriously slow in JS. Atemporal exposes static methods via `TemporalUtils` to benchmark and manage parsing.
+
+> [!NOTE]
+> Since these are advanced utilities, they are not exported on the main `atemporal` factory. You must import `TemporalUtils` from the internal source path.
+
+```ts
+import { TemporalUtils } from "atemporal/src/TemporalUtils";
+
+// Get a comprehensive human-readable parsing performance report
+console.log(TemporalUtils.getParsingPerformanceReport());
+
+// Get raw parsing metrics (cache hit ratio, strategy usage)
+const metrics = TemporalUtils.getParsingMetrics();
+
+// Benchmark parsing for different input types
+const results = TemporalUtils.benchmarkParsing();
+console.log(results);
+
+// Clear the parsing cache (useful for testing or memory management)
+TemporalUtils.clearParsingCache();
+
+// Reset metrics for benchmarking
+TemporalUtils.resetParsingMetrics();
+
+// Update parsing configuration
+TemporalUtils.updateParsingConfig({
+  enableAutoOptimization: true,
+  autoOptimizationInterval: 60000,
+  maxStrategyAttempts: 3
+});
+```
+
+## Diff Cache
+
+The `DiffCache` caches results from `diff()` calculations. It is exported from the same module as `TemporalUtils`:
+
+```ts
+import { DiffCache, TemporalUtils } from "atemporal/src/TemporalUtils";
+
+// Get diff cache statistics
+const stats = DiffCache.getStats();
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
+
+// Clear the diff cache
+DiffCache.clear();
+```
+
+## Intl Cache
+
+The `IntlCache` reuses `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances:
+
+```ts
+import { IntlCache } from "atemporal/src/TemporalUtils";
+
+// Pre-warm the Intl cache with common locale/option combinations
+// This is done automatically by the FormattingEngine
+const formatter = IntlCache.get("en-US", { dateStyle: "full" });
+```
+
+## LRU Cache
+
+A generic `LRUCache<K, V>` is available for custom caching needs:
+
+```ts
+import { LRUCache } from "atemporal/src/TemporalUtils";
+
+const cache = new LRUCache<string, number>(100); // max 100 entries
+
+cache.set("key1", 42);
+console.log(cache.get("key1")); // 42
+console.log(cache.getMetrics());
+// { hits: 1, misses: 0, hitRatio: 1.0, size: 1, maxSize: 100, utilization: 0.01 }
+```
+
+You can also use `ResizableLRUCache<K, V>` which extends `Map` and supports dynamic resizing:
+
+```ts
+import { ResizableLRUCache } from "atemporal/src/TemporalUtils"; // via LRUCache module
+
+const cache = new ResizableLRUCache<string, number>(200);
+cache.setMaxSize(500); // Resize on demand
+cache.setResizeInterval(60000); // Auto-resize every 60 seconds
+```
+
+## Global Cache Coordinator
+
+For complete control over all caches, Atemporal exports `GlobalCacheCoordinator`.
+
+```ts
+import { GlobalCacheCoordinator } from "atemporal/src/TemporalUtils";
+
+// Clear ALL caches (Parsing, Formatting, Diff, and any plugin-registered caches)
+GlobalCacheCoordinator.clearAll();
+
+// Get combined stats across all caching engines
+const stats = GlobalCacheCoordinator.getAllStats();
+console.log(stats.total.cacheCount);
+
+// Register a custom cache to be managed by the coordinator
+GlobalCacheCoordinator.registerCache("myCache", myCacheInstance);
+```
+
+
+--- FILE: TEMPORAL_DETECTION.md ---
+
+# Native Temporal Detection
+
+The atemporal library automatically detects native Temporal API support, allowing seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
+
+## How It Works
+
+The library automatically detects whether the native Temporal API is available in the current environment:
+
+- **Native Temporal Available**: Uses the browser's native implementation for optimal performance
+- **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
+
+**Current browser support:** Native Temporal is available in Chrome 144+, Firefox 139+, and other modern runtimes implementing the TC39 Stage 4 (ES2026) specification.
+
+## Checking Temporal Implementation
+
+You can check which Temporal implementation is being used:
+
+```javascript
+import atemporal from "atemporal";
+
+// Get information about the current Temporal implementation
+const info = atemporal.getTemporalInfo();
+console.log(info);
+// Output example:
+// {
+//   isNative: false,
+//   environment: 'node',
+//   version: 'polyfill'
+// }
+```
+
+## Benefits
+
+### Future-Ready
+
+Automatically uses native Temporal when browsers support it, without requiring code changes.
+
+### Performance
+
+Native implementations are typically faster than polyfills.
+
+### Seamless Transition
+
+No breaking changes — your existing code continues to work exactly the same.
+
+### Bundle Size
+
+When native Temporal is available, the polyfill overhead is eliminated.
+
+## Browser Support Timeline
+
+The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**. Browser support is rolling out:
+
+- **Chrome 144+**: Native support
+- **Firefox 139+**: Native support
+- **Other browsers**: Automatic fallback to `@js-temporal/polyfill`
+- **Node.js**: Detection works across all supported versions
+
+The automatic detection ensures smooth migration across all environments.
+
+## Technical Details
+
+### Detection Logic
+
+The detection system:
+
+1. Checks for `Temporal` in the global scope (`globalThis`, `window`, `global`, or `self`)
+2. Verifies the presence of all required Temporal methods (`Temporal.Now.zonedDateTimeISO`, `Temporal.ZonedDateTime`, etc.)
+3. Validates the API structure matches the specification
+4. Falls back to polyfill if any checks fail
+
+### Cross-Platform Support
+
+The detection works across different JavaScript environments:
+
+- **Browsers**: Checks `window.Temporal`
+- **Node.js**: Checks `global.Temporal`
+- **Web Workers**: Checks `self.Temporal`
+- **Universal**: Uses `globalThis.Temporal` when available
+
+**Helper utilities** (available internally in `src/core/temporal-detection.ts`):
+- `isBrowserEnvironment()` — Returns `true` in browser contexts
+- `isNodeEnvironment()` — Returns `true` in Node.js contexts
+- `isNativeTemporalAvailable()` — Returns `true` if native Temporal is detected (cached)
+
+### Caching
+
+The detection result is cached for performance:
+
+- Detection runs once per application lifecycle
+- Results are cached to avoid repeated checks
+- Cache can be reset for testing purposes via `resetTemporalAPICache()`
+
+## Migration Guide
+
+### For Existing Users
+
+**No action required!** The detection system is backward compatible:
+
+```javascript
+// This code works exactly the same as before
+const date = atemporal("2023-12-25");
+const formatted = date.format("YYYY-MM-DD");
+```
+
+### For New Projects
+
+Simply use atemporal as normal — the detection happens automatically:
+
+```javascript
+import atemporal from "atemporal";
+
+// The library automatically uses the best available Temporal implementation
+const now = atemporal();
+const christmas = atemporal("2023-12-25");
+```
+
+## API Reference
+
+### `atemporal.getTemporalInfo()`
+
+Returns information about the current Temporal implementation.
+
+**Returns:**
+
+```typescript
+{
+  isNative: boolean;   // true if using native Temporal
+  environment: string; // 'browser', 'node', or 'unknown'
+  version: string;     // 'native' or 'polyfill'
+}
+```
+
+**Example:**
+
+```javascript
+const info = atemporal.getTemporalInfo();
+
+if (info.isNative) {
+  console.log("Using native Temporal API!");
+} else {
+  console.log("Using Temporal polyfill");
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Q: How do I know if native Temporal is being used?**
+A: Use `atemporal.getTemporalInfo()` to check the current implementation.
+
+**Q: Can I force the use of the polyfill?**
+A: The detection system automatically chooses the best implementation. Manual override is not recommended as it may cause compatibility issues.
+
+**Q: Will my existing code break when browsers add native Temporal?**
+A: No! The detection system ensures backward compatibility. Your code will continue to work exactly the same.
+
+**Q: How can I test with native Temporal?**
+A: You can mock the global Temporal object in your tests to simulate native support.
+
+### Performance Considerations
+
+- Detection runs once per application lifecycle
+- Results are cached to avoid repeated checks
+- No performance impact on regular atemporal operations
+- Native Temporal (when available) is typically faster than polyfill
+
+---
+
+_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._
 
 
 --- FILE: api/index.md ---
@@ -103,8 +726,60 @@ Atemporal provides a comprehensive and type-safe API for date-time manipulation,
 - [**Manipulation**](./manipulation): Immutably adding, subtracting, and setting date components.
 - [**Formatting**](./formatting): Versatile string formatting using tokens or `Intl` options.
 - [**Comparison & Difference**](./comparison-difference): Comparing dates and calculating time differences.
-- [**Durations & Utilities**](./durations-utilities): Working with Temporal Durations and TypeScript type guards.
+- [**Durations & Utilities**](./durations-utilities): Working with Temporal Durations, type guards, and validators.
 - [**Generating Ranges**](./ranges): Creating arrays of dates or formatted strings within a period.
+
+## Static Utilities
+
+The `atemporal` factory object exposes static utility methods beyond instance creation:
+
+### Creators
+
+| Method | Description |
+|--------|-------------|
+| `atemporal()` | Create current date/time instance |
+| `atemporal(input, tz?)` | Create from any `DateInput` |
+| `atemporal.from(input, tz?)` | Alias for `atemporal(input, tz?)` |
+| `atemporal.unix(seconds)` | Create from Unix timestamp (seconds) |
+| `atemporal.duration(like)` | Create a `Temporal.Duration` from an object or ISO string |
+
+### Validation
+
+| Method | Description |
+|--------|-------------|
+| `atemporal.isValid(input)` | Check if input can be parsed to a valid date |
+| `atemporal.isAtemporal(input)` | Type guard: check if input is a `TemporalWrapper` instance |
+| `atemporal.isDuration(input)` | Type guard: check if input is a `Temporal.Duration` |
+| `atemporal.isValidTimeZone(tz)` | Validate IANA time zone string |
+| `atemporal.isValidLocale(code)` | Validate locale identifier |
+| `atemporal.isPlugin(input)` | Check if value is a valid atemporal plugin |
+
+### Comparison
+
+| Method | Description |
+|--------|-------------|
+| `atemporal.min(...dates)` | Return the earliest date from a list |
+| `atemporal.max(...dates)` | Return the latest date from a list |
+
+### Configuration
+
+| Method | Description |
+|--------|-------------|
+| `atemporal.setDefaultLocale(code)` | Set the default locale for all new instances |
+| `atemporal.setDefaultTimeZone(tz)` | Set the default IANA time zone |
+| `atemporal.getDefaultLocale()` | Get the current default locale |
+| `atemporal.getTemporalInfo()` | Get info about the Temporal implementation (`{ isNative, environment, version }`) |
+
+### Plugin Management
+
+| Method | Description |
+|--------|-------------|
+| `atemporal.extend(plugin, options?)` | Register and apply a plugin |
+| `atemporal.lazyLoad(name, options?)` | Lazy-load a plugin on demand (async) |
+| `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load multiple plugins (async) |
+| `atemporal.isPluginLoaded(name)` | Check if a plugin has been loaded |
+| `atemporal.getLoadedPlugins()` | Get list of loaded plugin names |
+| `atemporal.getAvailablePlugins()` | Get list of all plugins available for lazy loading |
 
 ## Plugins
 
@@ -148,6 +823,77 @@ const clone = atemporal(original);
 
 // Specify a time zone on creation
 atemporal("2025-01-01T12:00:00", "America/New_York");
+```
+
+## `atemporal.from()`
+
+`atemporal.from(input, timeZone?)` is an alias for `atemporal(input, timeZone?)`. Both work identically:
+
+```ts
+atemporal.from("2025-07-09T15:30:00");
+atemporal.from([2025, 7, 9], "Europe/London");
+```
+
+## `atemporal.unix()`
+
+Create an instance from a Unix timestamp in seconds:
+
+```ts
+atemporal.unix(1752096000); // => 2025-07-09T00:00:00Z
+```
+
+For millisecond timestamps, use `atemporal(number)`:
+
+```ts
+atemporal(1752096000000); // Same result
+```
+
+## Native Temporal Objects
+
+Atemporal accepts native `Temporal` objects directly:
+
+```ts
+import { Temporal } from "@js-temporal/polyfill";
+
+const zdt = Temporal.ZonedDateTime.from("2025-07-09T15:30:00[UTC]");
+const date = atemporal(zdt);
+
+const plain = Temporal.PlainDateTime.from({ year: 2025, month: 7, day: 9 });
+const date2 = atemporal(plain);
+
+const instant = Temporal.Instant.fromEpochMilliseconds(1752096000000);
+const date3 = atemporal(instant);
+```
+
+## Null and Undefined Handling
+
+When no input is provided, or when `null` or `undefined` is passed, the current date and time is used:
+
+```ts
+atemporal();       // Current time
+atemporal(null);   // Current time
+atemporal(undefined); // Current time
+```
+
+## Error Behavior
+
+Atemporal does **not** throw exceptions for invalid inputs. Instead, an invalid instance is created. Check validity with `.isValid()`:
+
+```ts
+const maybeDate = atemporal("not a valid date");
+console.log(maybeDate.isValid()); // false
+console.log(maybeDate.format("YYYY-MM-DD")); // "Invalid Date"
+```
+
+You can pre-validate inputs before creating instances:
+
+```ts
+if (atemporal.isValid(userInput)) {
+  const date = atemporal(userInput);
+  // Safe to use
+} else {
+  console.error("Invalid date input");
+}
 ```
 
 ## Firebase/Firestore Timestamps
@@ -208,29 +954,54 @@ All manipulation methods are immutable and return a new `atemporal` instance.
 ```ts
 const date = atemporal("2024-08-14T10:00:00Z");
 
-// Add time
+// Add time with value + unit
 date.add(5, "days"); // Add 5 days
 date.add(2, "h"); // Add 2 hours (alias)
+date.add(3, "months"); // Add 3 months
+
+// Add time with a plain object
 date.add({ months: 1, days: 10 }); // Add 1 month and 10 days
+
+// Add time with a Temporal.Duration
+const dur = atemporal.duration({ hours: 2, minutes: 30 });
+date.add(dur); // Add 2h 30m directly from a Duration
 
 // Subtract time
 date.subtract(2, "weeks"); // Subtract 2 weeks
 date.subtract(30, "m"); // Subtract 30 minutes (alias)
+
+// Subtract with a Duration
+date.subtract(atemporal.duration({ days: 5, hours: 3 }));
 ```
+
+**Supported time unit aliases:**
+- `"years"` / `"y"`, `"months"`, `"weeks"` / `"w"`
+- `"days"` / `"d"`, `"hours"` / `"h"`
+- `"minutes"` / `"m"`, `"seconds"` / `"s"`
+- `"milliseconds"` / `"ms"`
 
 ## Setters
 
 ```ts
 date.set("year", 2025); // Set the year to 2025
 date.set("hour", 9); // Set the hour to 9
-date.set("quarter", 1); // Set the date to the start of the 1st quarter
+
+// Setting quarter moves to the start of that quarter
+date.set("quarter", 1); // Moves to January 1st (start of Q1)
+date.set("quarter", 3); // Moves to July 1st (start of Q3)
+
+// Setting dayOfWeek adjusts within the current week
+date.dayOfWeek(1); // Moves to the Monday of that week
 ```
 
 ## Start of & End of
 
 ```ts
 date.startOf("month"); // Start of the month (e.g., 2024-08-01T00:00:00.000)
-date.endOf("day"); // End of the day (e.g., 2024-08-14T23:59:59.999)
+date.startOf("year");  // Start of the year
+date.startOf("week");  // Start of the week (ISO, Monday-based, configurable via weekDay plugin)
+date.endOf("day");     // End of the day (e.g., 2024-08-14T23:59:59.999)
+date.endOf("month");   // End of the month
 ```
 
 ## Weekday Manipulation
@@ -239,6 +1010,21 @@ date.endOf("day"); // End of the day (e.g., 2024-08-14T23:59:59.999)
 // Get or set the day of the week (1=Monday, 7=Sunday)
 date.dayOfWeek(); // Getter: returns 3 (for a Wednesday)
 date.dayOfWeek(1); // Setter: moves the date to the Monday of that week
+date.dayOfWeek(7); // Setter: moves to the Sunday of that week
+```
+
+## Time Zone
+
+```ts
+// Change the time zone of an instance, returning a new instance
+const dateWithNewTz = date.timeZone("America/New_York");
+```
+
+## Clone
+
+```ts
+// Create a copy of the instance
+const copy = date.clone();
 ```
 
 # Getters
@@ -257,14 +1043,19 @@ date.second; // 45
 date.millisecond; // 123
 date.daysInMonth; // 31
 date.weekOfYear; // 33 (ISO week number)
+date.dayOfWeekName; // "Wednesday" (full weekday name)
+date.timeZoneName; // "UTC" (or another IANA time zone)
+date.timeZoneId; // "UTC" (alias for timeZoneName)
 
 // Methods
 date.get("month"); // 8
 date.quarter(); // 3 (third quarter)
 date.isLeapYear(); // true (2024 is a leap year)
+date.isValid(); // true
 date.toDate(); // Convert to a JS `Date` object
 date.toString(); // '2024-08-14T10:30:45.123Z'
 date.raw; // Access the underlying `Temporal.ZonedDateTime` object
+date.datetime; // Same as `.raw` — the `Temporal.ZonedDateTime` object
 ```
 
 
@@ -276,35 +1067,50 @@ The `.format()` method is very versatile. It accepts a token string or an `Intl`
 
 ## Token-based Formatting
 
-| Token  | Output Example     | Description                           |
-| ------ | ------------------ | ------------------------------------- |
-| `YYYY` | `2025`             | 4-digit year                          |
-| `YY`   | `25`               | 2-digit year                          |
-| `MM`   | `07`               | Month, 2-digits (01-12)               |
-| `M`    | `7`                | Month (1-12)                          |
-| `DD`   | `09`               | Day of month, 2-digits (01-31)        |
-| `D`    | `9`                | Day of month (1-31)                   |
-| `HH`   | `14`               | Hour, 2-digits (00-23)                |
-| `H`    | `14`               | Hour (0-23)                           |
-| `hh`   | `02`               | Hour, 12-hour clock, 2-digits (01-12) |
-| `h`    | `2`                | Hour, 12-hour clock (1-12)            |
-| `mm`   | `05`               | Minute, 2-digits (00-59)              |
-| `m`    | `5`                | Minute (0-59)                         |
-| `ss`   | `02`               | Second, 2-digits (00-59)              |
-| `s`    | `2`                | Second (0-59)                         |
-| `SSS`  | `123`              | Millisecond, 3-digits                 |
-| `dddd` | `Wednesday`        | Full day of the week name             |
-| `ddd`  | `Wed`              | Short day of the week name            |
-| `Z`    | `+02:00`           | Time zone offset with colon           |
-| `ZZ`   | `+0200`            | Time zone offset without colon        |
-| `z`    | `America/New_York` | IANA time zone name                   |
+### Complete Token Reference
+
+| Token  | Output Example               | Description                                      |
+| ------ | ---------------------------- | ------------------------------------------------ |
+| `YYYY` | `2025`                       | 4-digit year                                     |
+| `YY`   | `25`                         | 2-digit year                                     |
+| `MMMM` | `January`                    | Full month name                                  |
+| `MMM`  | `Jan`                        | Abbreviated month name                           |
+| `MM`   | `07`                         | Month, 2-digits (01-12)                          |
+| `M`    | `7`                          | Month (1-12)                                     |
+| `DD`   | `09`                         | Day of month, 2-digits (01-31)                   |
+| `D`    | `9`                          | Day of month (1-31)                              |
+| `dddd` | `Wednesday`                  | Full day of the week name                        |
+| `ddd`  | `Wed`                        | Short day of the week name                       |
+| `dd`   | `We`                         | Minimal day of the week name                     |
+| `d`    | `3`                          | Day of the week, Sunday as 0 (0-6)               |
+| `HH`   | `14`                         | Hour, 2-digits (00-23)                           |
+| `H`    | `14`                         | Hour (0-23)                                      |
+| `hh`   | `02`                         | Hour, 12-hour clock, 2-digits (01-12)            |
+| `h`    | `2`                          | Hour, 12-hour clock (1-12)                       |
+| `mm`   | `05`                         | Minute, 2-digits (00-59)                         |
+| `m`    | `5`                          | Minute (0-59)                                    |
+| `ss`   | `02`                         | Second, 2-digits (00-59)                         |
+| `s`    | `2`                          | Second (0-59)                                    |
+| `SSS`  | `123`                        | Millisecond, 3-digits (000-999)                  |
+| `A`    | `PM`                         | AM PM (uppercase)                                |
+| `a`    | `pm`                         | am pm (lowercase)                                |
+| `Z`    | `+02:00`                     | Time zone offset with colon (±HH:mm)            |
+| `ZZ`   | `+0200`                      | Time zone offset without colon (±HHmm)          |
+| `z`    | `America/New_York`           | IANA time zone name                              |
 
 > [!TIP]
-> Use brackets `[]` to display literal characters: `format("[Today is] YYYY-MM-DD")`.
+> Use brackets `[]` to escape literal characters: `.format("[Today is] YYYY-MM-DD")`.
 
 ```ts
 atemporal().format("YYYY-MM-DD [at] HH:mm:ss");
 // => "2025-07-09 at 14:23:00"
+```
+
+```ts
+// Month name and AM/PM examples
+atemporal("2024-08-14T16:30:00").format("MMM DD, YYYY");       // "Aug 14, 2024"
+atemporal("2024-08-14T16:30:00").format("MMMM Do, hh:mm A");   // "August 14th, 04:30 PM"
+atemporal("2024-08-14T16:30:00").format("hh:mm a");             // "04:30 pm"
 ```
 
 ## `Intl.DateTimeFormat`
@@ -316,9 +1122,24 @@ atemporal().format({ dateStyle: "full", timeStyle: "medium" }, "es-CR");
 // => "miércoles, 9 de julio de 2025, 14:23:00"
 ```
 
+Any valid `Intl.DateTimeFormatOptions` works:
+
+```ts
+// Custom weekday + month + day
+atemporal().format({ weekday: "long", month: "long", day: "numeric" }, "ja-JP");
+// => "7月9日水曜日"
+```
+
 ## Advanced Tokens
 
-Additional tokens like `Do` (ordinals) and `zzz` (timezone names) are available via the [advancedFormat](/plugins/advanced-format) plugin.
+Additional tokens are available via the [advancedFormat](/plugins/advanced-format) plugin:
+
+| Token  | Output Example          | Description                           | Requires Plugin |
+| ------ | ----------------------- | ------------------------------------- | --------------- |
+| `Do`   | `15th`                  | Day of month with ordinal suffix      | advancedFormat  |
+| `Qo`   | `3rd`                   | Quarter with ordinal suffix           | advancedFormat  |
+| `zzz`  | `EST`                   | Short localized time zone name        | advancedFormat  |
+| `zzzz` | `Eastern Standard Time` | Long localized time zone name         | advancedFormat  |
 
 
 --- FILE: api/comparison-difference.md ---
@@ -337,7 +1158,11 @@ d2.isAfter(d1); // true
 d1.isSame(d3); // true
 
 // Compare only up to a specific unit
-d1.isSame("2024-01-01T12:00:00", "day"); // true
+d1.isSame("2024-01-01T12:00:00", "day"); // true — same day
+d1.isSame("2024-06-01", "month");        // false — different months
+d1.isSame("2024-01-01", "year");          // true — same year
+
+// Shorthand for day-level comparison
 d1.isSameDay("2024-01-01T12:00:00"); // true (alias for .isSame(..., 'day'))
 
 // Inclusive comparisons
@@ -346,7 +1171,13 @@ d2.isSameOrAfter(d1); // true
 
 // Check if a date is between two others
 d1.isBetween("2023-12-31", "2024-01-02"); // true
-d1.isBetween("2024-01-01", "2024-01-02", "()"); // false (exclusive inclusivity)
+
+// Inclusivity options: '[]' (default), '()', '[)', '(]'
+d1.isBetween("2024-01-01", "2024-01-02", "()"); // false (both excluded)
+d1.isBetween("2024-01-01", "2024-01-02", "[)"); // true (start included, end excluded)
+
+// Leap year check
+d1.isLeapYear(); // true (2024 is a leap year)
 ```
 
 ## Difference
@@ -357,12 +1188,17 @@ Calculate the difference between two dates.
 const start = atemporal("2024-01-01T10:00:00");
 const end = atemporal("2024-01-02T13:00:00"); // 27 hours later
 
-// By default, returns a truncated integer
-end.diff(start, "day"); // 1
-end.diff(start, "hour"); // 27
+// By default, returns a truncated integer (default unit: milliseconds)
+end.diff(start); // 97200000 (milliseconds)
 
-// To get the exact floating-point value, pass `true`
+// Specify a unit for a more readable result
+end.diff(start, "day");  // 1 (truncated to full days)
+end.diff(start, "hour"); // 27
+end.diff(start, "minute"); // 1620
+
+// To get the exact floating-point value, pass `true` as the third argument
 end.diff(start, "day", true); // 1.125
+end.diff(start, "hour", true); // 27.0
 ```
 
 ## Min / Max
@@ -374,8 +1210,15 @@ const d1 = atemporal("2023-01-01");
 const d2 = atemporal("2023-06-01");
 const d3 = atemporal("2023-03-01");
 
+// Accepts spread arguments
 const min = atemporal.min(d1, d2, d3); // 2023-01-01
+
+// Also accepts an array
 const max = atemporal.max([d1, d2, d3]); // 2023-06-01
+
+// Works with DateInput strings directly
+const earliest = atemporal.min("2024-01-01", "2024-06-01", "2024-03-01");
+// => 2024-01-01
 ```
 
 
@@ -391,6 +1234,9 @@ Create and manipulate `Temporal.Duration` objects.
 // Create a duration
 const duration = atemporal.duration({ hours: 3, minutes: 30 });
 
+// From an ISO duration string
+const fromISO = atemporal.duration("PT2H30M");
+
 // Use it in manipulations
 const now = atemporal();
 const future = now.add(duration);
@@ -398,15 +1244,100 @@ const future = now.add(duration);
 console.log(future.format("HH:mm")); // => 3 hours and 30 minutes in the future
 ```
 
+Duration objects support their own arithmetic:
+
+```ts
+const d1 = atemporal.duration({ hours: 1 });
+const d2 = atemporal.duration({ minutes: 30 });
+const total = d1.add(d2); // Temporal.Duration of 1 hour 30 minutes
+
+const diff = d1.subtract({ minutes: 10 }); // 50 minutes
+```
+
 > [!TIP]
 > Check out the [durationHumanizer](/plugins/duration-humanizer) plugin for human-readable duration strings.
 
-## Validators & Type Guards
+## Static Validators & Type Guards
 
-Atemporal provides TypeScript type guards for Firebase timestamps:
+Atemporal provides several type guard functions for runtime validation:
+
+### `atemporal.isValid(input)`
+
+Check if any input can be parsed to a valid date:
 
 ```ts
-import { isFirebaseTimestamp, isFirebaseTimestampLike } from "atemporal";
+atemporal.isValid("2025-07-09");    // true
+atemporal.isValid("not a date");     // false
+atemporal.isValid(1752096000000);    // true
+atemporal.isValid({ seconds: 1672531200, nanoseconds: 0 }); // true
+```
+
+### `atemporal.isAtemporal(input)`
+
+TypeScript type guard — checks if a value is an `atemporal` (TemporalWrapper) instance:
+
+```ts
+const value: unknown = atemporal();
+
+if (atemporal.isAtemporal(value)) {
+  // TypeScript now knows 'value' is a TemporalWrapper instance
+  console.log(value.format("YYYY-MM-DD"));
+}
+```
+
+### `atemporal.isDuration(input)`
+
+TypeScript type guard — checks if a value is a `Temporal.Duration`:
+
+```ts
+const dur = atemporal.duration({ hours: 2 });
+
+if (atemporal.isDuration(dur)) {
+  // TypeScript narrows to Temporal.Duration
+  console.log(dur.hours); // 2
+}
+```
+
+### `atemporal.isValidTimeZone(tz)`
+
+Validates IANA time zone strings:
+
+```ts
+atemporal.isValidTimeZone("America/New_York"); // true
+atemporal.isValidTimeZone("UTC");              // true
+atemporal.isValidTimeZone("Invalid/Zone");     // false
+```
+
+### `atemporal.isValidLocale(code)`
+
+Validates locale identifiers:
+
+```ts
+atemporal.isValidLocale("en-US"); // true
+atemporal.isValidLocale("en");    // true
+atemporal.isValidLocale("zz");    // false
+```
+
+### `atemporal.isPlugin(input)`
+
+Checks if a value is a valid atemporal plugin:
+
+```ts
+import relativeTime from "atemporal/plugins/relativeTime";
+
+atemporal.isPlugin(relativeTime); // true
+atemporal.isPlugin(() => {});     // false
+```
+
+## Firebase Timestamp Type Guards
+
+Atemporal exports Firebase timestamp type guards that are available from the main entry point:
+
+```ts
+import {
+  isFirebaseTimestamp,
+  isFirebaseTimestampLike,
+} from "atemporal/types/enhanced-types";
 
 const unknownValue: unknown = { seconds: 1672531200, nanoseconds: 0 };
 
@@ -421,6 +1352,28 @@ if (isFirebaseTimestampLike(unknownValue)) {
 }
 ```
 
+> [!NOTE]
+> These Firebase type guards are exported from `atemporal/types/enhanced-types`. They are part of the internal type system but available for direct import.
+
+## Type Safety Utilities
+
+Atemporal also exports plugin authoring utilities:
+
+```ts
+import { markAsPlugin, PLUGIN_SENTINEL } from "atemporal";
+
+// Mark a function as a verified plugin
+const myPlugin = markAsPlugin((Atemporal, atemporal, options) => {
+  // plugin implementation
+});
+
+// Check if something is a plugin
+atemporal.isPlugin(myPlugin); // true
+```
+
+> [!NOTE]
+> Looking for Performance and Caching utilities? Check out the comprehensive **[Performance & Caching Guide](/guide/performance)**.
+
 
 --- FILE: api/ranges.md ---
 
@@ -431,9 +1384,9 @@ The `.range()` method generates an array of dates between a start and end date. 
 **API:** `start.range(endDate, unit, options)`
 
 - `endDate`: The end of the range.
-- `unit`: The step unit (e.g., `'day'`, `'week'`).
+- `unit`: The step unit (e.g., `'day'`, `'week'`, `'month'`).
 - `options` (optional):
-  - `inclusivity`: `'[]'` (default), `'()'`, `'[)'`, `'(]'`.
+  - `inclusivity`: `'[]'` (default, includes both start and end), `'()'`, `'[)'`, `'(]'`.
   - `format`: If provided, returns a `string[]` instead of `atemporal[]`.
 
 ```ts
@@ -454,6 +1407,19 @@ const formattedRange = start.range(end, "day", {
 // 3. Generate by week
 const weeklyRange = start.range(end, "week", { format: "MMMM Do" });
 // => ['April 28th']
+
+// 4. Generate by month
+const monthlyRange = atemporal("2024-01-01").range("2024-06-01", "month", {
+  format: "YYYY-MM",
+});
+// => ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06']
+
+// 5. Exclusive range
+const exclusiveRange = start.range(end, "day", {
+  inclusivity: "()", // Exclude both start and end
+  format: "MM-DD",
+});
+// => ['04-29', '04-30', '05-01']
 ```
 
 
@@ -479,41 +1445,123 @@ atemporal.extend(relativeTime);
 atemporal().subtract(5, "m").fromNow();
 ```
 
+Plugins can optionally accept configuration options:
+
+```ts
+atemporal.extend(relativeTime, { threshold: 45 });
+```
+
 ### Lazy Loading
 
-To reduce the initial bundle size, you can load plugins on demand:
+To reduce the initial bundle size, you can load plugins on demand. Atemporal provides robust lazy-loading utilities that dynamically import plugins when requested.
 
 ```ts
 import atemporal from "atemporal";
 
+// Load a single plugin
 async function showRelativeTime() {
   await atemporal.lazyLoad("relativeTime");
 
   const twoHoursAgo = atemporal().subtract(2, "hour");
   console.log(twoHoursAgo.fromNow()); // "2 hours ago"
 }
+
+// Load multiple plugins at once
+async function loadAdvancedFeatures() {
+  await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
+}
+
+// Pass options to lazy-loaded plugins
+await atemporal.lazyLoadMultiple(["weekDay", "customParseFormat"], {
+  weekDay: { defaultWeekStart: 1 },
+});
 ```
 
 ## Plugin Utilities
 
-```ts
-// Check if a plugin is loaded
-atemporal.isPluginLoaded("relativeTime");
+You can query the state of plugins at runtime using the following utilities:
 
-// View all loaded plugins
-atemporal.getLoadedPlugins();
+```ts
+// Check if a specific plugin is loaded
+const hasRelativeTime = atemporal.isPluginLoaded("relativeTime");
+
+// View an array of all currently loaded plugins
+const loaded = atemporal.getLoadedPlugins();
+
+// View all available plugins that can be lazy-loaded
+const available = atemporal.getAvailablePlugins();
 ```
 
 ## Available Plugins
 
 - [**relativeTime**](/plugins/relative-time): `.fromNow()`, `.toNow()`.
-- [**customParseFormat**](/plugins/custom-parse-format): Advanced string parsing.
+- [**customParseFormat**](/plugins/custom-parse-format): Advanced string parsing with custom format tokens.
 - [**advancedFormat**](/plugins/advanced-format): Ordinals and timezone names.
 - [**weekDay**](/plugins/week-day): Enhanced weekday handling.
-- [**durationHumanizer**](/plugins/duration-humanizer): Readable durations.
-- [**dateRangeOverlap**](/plugins/date-range-overlap): Overlap detection.
-- [**businessDays**](/plugins/business-days): Working day calculations.
+- [**durationHumanizer**](/plugins/duration-humanizer): Human-readable duration strings.
+- [**dateRangeOverlap**](/plugins/date-range-overlap): Overlap detection between date ranges.
+- [**businessDays**](/plugins/business-days): Working day calculations with holidays.
 - [**timeSlots**](/plugins/time-slots): Appointment slot finding.
+
+## Creating Your Own Plugin
+
+Atemporal's plugin system is designed to be extensible. You can create custom plugins using the `Plugin` type signature.
+
+### Plugin Type Signature
+
+```ts
+type Plugin = (
+  Atemporal: typeof TemporalWrapper,  // The TemporalWrapper class
+  atemporal: AtemporalFactory,        // The factory function with all static methods
+  options?: any                       // Optional configuration
+) => void;
+```
+
+### Basic Plugin Example
+
+```ts
+import atemporal, { type Plugin, markAsPlugin } from "atemporal";
+
+const myPlugin: Plugin = (Atemporal, atemporal, options) => {
+  // Add instance methods to the prototype
+  Atemporal.prototype.isMorning = function () {
+    return this.hour < 12;
+  };
+
+  // Add static methods to the factory
+  (atemporal as any).greet = function (name: string) {
+    return `Hello, ${name}! The time is ${atemporal().format("HH:mm")}`;
+  };
+};
+
+// Mark it as a valid atemporal plugin (required for isPlugin() detection)
+markAsPlugin(myPlugin);
+
+// Register it
+atemporal.extend(myPlugin, { /* optional config */ });
+
+// Now use your custom methods
+const now = atemporal();
+console.log(now.isMorning()); // true or false
+console.log(atemporal.greet("World")); // "Hello, World! The time is 10:30"
+```
+
+### Plugin Detection
+
+Plugins marked with `markAsPlugin()` are identifiable:
+
+```ts
+import { markAsPlugin, PLUGIN_SENTINEL } from "atemporal";
+
+const myPlugin = markAsPlugin((Atemporal, atemporal) => {
+  // ...
+});
+
+atemporal.isPlugin(myPlugin); // true
+
+// The PLUGIN_SENTINEL symbol is used internally for plugin identification
+console.log((myPlugin as any)[PLUGIN_SENTINEL]); // true
+```
 
 
 --- FILE: plugins/relative-time.md ---
@@ -532,6 +1580,7 @@ atemporal.extend(relativeTime);
 
 atemporal().subtract(5, "minutes").fromNow(); // "5 minutes ago"
 atemporal().add(2, "hours").fromNow(); // "in 2 hours"
+atemporal("2022-01-01").fromNow(); // "3 years ago" (example)
 ```
 
 ## Methods
@@ -540,16 +1589,71 @@ atemporal().add(2, "hours").fromNow(); // "in 2 hours"
 
 Returns the relative time from now.
 
+```ts
+const past = atemporal().subtract(45, "seconds");
+past.fromNow();          // "a few seconds ago"
+past.fromNow(true);      // "a few seconds"
+```
+
 ### `.toNow(withoutSuffix?: boolean)`
 
-Returns the relative time to now.
+Returns the relative time to now (inverse of `fromNow`).
+
+```ts
+const future = atemporal().add(3, "hours");
+future.toNow();         // "in 3 hours"
+future.toNow(true);     // "3 hours"
+```
+
+## Localization
+
+`relativeTime` uses the default locale set via `atemporal.setDefaultLocale()`. The plugin leverages `Intl.RelativeTimeFormat` with an LRU cache for locale fallback:
+
+```ts
+atemporal.setDefaultLocale("es");
+atemporal().subtract(1, "day").fromNow(); // "hace 1 día"
+
+atemporal.setDefaultLocale("ja");
+atemporal().subtract(1, "day").fromNow(); // "1日前"
+```
+
+## Threshold Logic
+
+The plugin uses intelligent thresholds to decide which unit to display:
+
+| Difference | Unit Displayed |
+|------------|----------------|
+| < 45 seconds | `"a few seconds"` |
+| < 90 seconds | `"a minute"` |
+| < 45 minutes | `seconds` |
+| < 90 minutes | `"an hour"` |
+| < 22 hours | `minutes` |
+| < 36 hours | `hours` |
+| < 26 days | `days` |
+| < 45 days | `months` (approx.) |
+| < 11 months | `months` |
+| otherwise | `years` |
+
+## Cache Management
+
+The plugin caches `Intl.RelativeTimeFormat` instances and calculation results:
+
+```ts
+// Clear the relative time cache
+atemporal.clearRelativeTimeCache();
+
+// Get cache statistics
+const stats = atemporal.getRelativeTimeCacheStats();
+console.log(stats);
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
+```
 
 
 --- FILE: plugins/custom-parse-format.md ---
 
 # customParseFormat
 
-Allows creating an `atemporal` instance from a string with a custom format. Features high-performance parsing with intelligent caching.
+Allows creating an `atemporal` instance from a string with a custom format. Features high-performance parsing with intelligent caching and comprehensive date validation.
 
 ## Usage
 
@@ -565,49 +1669,103 @@ console.log(date1.toString()); // "2024-03-15T10:30:00.000Z"
 
 // 12-hour format with AM/PM
 const ampm = atemporal.fromFormat("2024-01-01 02:30 PM", "YYYY-MM-DD hh:mm A");
+
+// With a specific time zone
+const withTz = atemporal.fromFormat("2024-01-01 10:00", "YYYY-MM-DD HH:mm", "America/New_York");
 ```
 
 ## Supported Tokens
 
-- `YYYY` - 4-digit year
-- `YY` - 2-digit year (Y2K logic: 00-68 -> 2000s, 69-99 -> 1900s)
-- `MM` - 2-digit month (01-12)
-- `M` - 1-2 digit month (1-12)
-- `MMMM` - Full month name
-- `MMM` - Abbreviated month name
-- `DD` - 2-digit day (01-31)
-- `D` - 1-2 digit day (1-31)
-- `HH` - 2-digit hour (00-23)
-- `hh` - 2-digit hour (01-12)
-- `mm` - 2-digit minute
-- `ss` - 2-digit second
-- `SSS` - Milliseconds
-- `A` - Uppercase AM/PM
-- `a` - Lowercase am/pm
+| Token  | Description                                       | Example Input    |
+| ------ | ------------------------------------------------- | ---------------- |
+| `YYYY` | 4-digit year                                       | `2024`           |
+| `YY`   | 2-digit year (00-68 → 2000s, 69-99 → 1900s)      | `24` → `2024`    |
+| `MMMM` | Full month name (case-insensitive)                 | `January`, `january` |
+| `MMM`  | Abbreviated month name (case-insensitive)          | `Jan`, `jan`     |
+| `MM`   | 2-digit month (01-12)                              | `03`             |
+| `M`    | 1-2 digit month (1-12)                             | `3`              |
+| `DD`   | 2-digit day of month (01-31)                       | `15`             |
+| `D`    | 1-2 digit day of month (1-31)                      | `5`              |
+| `DDD`  | Zero-padded day of year (001-366)                  | `074`            |
+| `DDDD` | Non-padded day of year (1-366)                     | `74`             |
+| `HH`   | 2-digit 24h hour (00-23)                           | `10`             |
+| `H`    | 1-2 digit 24h hour (0-23)                          | `8`              |
+| `hh`   | 2-digit 12h hour (01-12)                           | `02`             |
+| `h`    | 1-2 digit 12h hour (1-12)                          | `2`              |
+| `mm`   | 2-digit minute (00-59)                             | `30`             |
+| `m`    | 1-2 digit minute (0-59)                            | `5`              |
+| `ss`   | 2-digit second (00-59)                             | `45`             |
+| `s`    | 1-2 digit second (0-59)                            | `9`              |
+| `SSS`  | 3-digit millisecond (000-999)                      | `123`            |
+| `SS`   | 2-digit centisecond (00-99)                        | `45`             |
+| `S`    | 1-digit decisecond (0-9)                           | `3`              |
+| `A`    | Uppercase AM/PM                                    | `PM`             |
+| `a`    | Lowercase am/pm                                    | `pm`             |
 
 ## Error Handling
 
-### Default Behavior
-
-Returns an invalid `atemporal` instance. Use `.isValid()` to check.
+When the date string does not match the format, `fromFormat()` returns an **invalid instance** rather than throwing. Use `.isValid()` to check:
 
 ```ts
-import { getParseError } from "atemporal/plugins/customParseFormat";
+const result = atemporal.fromFormat("invalid", "YYYY-MM-DD");
 
-const invalidDate = atemporal.fromFormat("invalid", "YYYY-MM-DD");
-if (!invalidDate.isValid()) {
-  const error = getParseError(invalidDate);
-  console.log(error.message);
+if (!result.isValid()) {
+  console.log("Failed to parse date");
 }
+
+// Invalid instances format as "Invalid Date"
+console.log(result.format("YYYY-MM-DD")); // "Invalid Date"
 ```
 
-### Strict Mode
+This behavior is consistent with the rest of Atemporal — invalid inputs produce invalid instances rather than throwing exceptions.
 
-Throws an exception if the format doesn't match or components are invalid.
+## Cache Management
+
+`customParseFormat` internally caches parsed format patterns for high-performance repeated parsing. You can interact with the cache:
 
 ```ts
-atemporal.fromFormatStrict("2024-13-45", "YYYY-MM-DD"); // Throws Error
+// Clear format parsing cache
+atemporal.clearFormatCache();
+
+// Get the current cache size
+console.log(atemporal.getFormatCacheSize());
+
+// Get detailed cache statistics
+console.log(atemporal.getFormatCacheStats());
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
 ```
+
+## Advanced Controls
+
+You can override the reference date used for `YY` year conversion:
+
+```ts
+import {
+  setCurrentDateFunction,
+  resetCurrentDateFunction,
+} from "atemporal/plugins/customParseFormat";
+
+// Override the date used as a reference point for YY year conversions
+setCurrentDateFunction(() => new Date(2050, 0, 1));
+atemporal.fromFormat("01-01-50", "DD-MM-YY"); // Will parse as 2050
+
+resetCurrentDateFunction(); // Restore default Date.now reference
+```
+
+### Y2K Logic
+
+Two-digit years are resolved as follows:
+- `00` to `68` → `2000` to `2068`
+- `69` to `99` → `1969` to `1999`
+
+## Validation
+
+The plugin performs rigorous date validation using `Temporal.PlainDate.from()` with `overflow: "reject"`. This means:
+
+- Invalid dates (e.g., February 30th) are rejected
+- Month names are validated against a lookup table
+- Day-of-year tokens (`DDD`/`DDDD`) are validated for leap years
+- All numeric ranges are enforced by regex patterns
 
 
 --- FILE: plugins/advanced-format.md ---
@@ -630,17 +1788,79 @@ console.log(date.format("Do MMMM YYYY")); // "15th January 2024"
 
 ## Advanced Tokens
 
-- `Do` - Day of month with ordinal suffix (e.g., "1st", "22nd")
-- `Qo` - Quarter of year with ordinal suffix (e.g., "1st", "2nd")
-- `zzz` - Short timezone name (e.g., "EST", "PDT")
-- `zzzz` - Long timezone name (e.g., "Eastern Standard Time")
+| Token  | Output Example          | Description                           |
+| ------ | ----------------------- | ------------------------------------- |
+| `Do`   | `1st`, `22nd`, `15th`   | Day of month with ordinal suffix      |
+| `Qo`   | `1st`, `2nd`, `3rd`     | Quarter of year with ordinal suffix   |
+| `zzz`  | `EST`, `PDT`, `CST`     | Short localized time zone name (abbreviation) |
+| `zzzz` | `Eastern Standard Time` | Long localized time zone name (full)  |
 
 ## Multi-Language Support
 
 Ordinal suffixes are supported for several languages: `en`, `es`, `fr`, `de`, `it`, `pt`, `ru`, `ja`, `ko`, `zh`.
 
 ```ts
+// English
+atemporal("2024-01-15").format("Do [of] MMMM", "en"); // "15th of January"
+
+// Spanish
 atemporal("2024-01-15").format("Do [de] MMMM", "es"); // "15º de enero"
+
+// French
+atemporal("2024-01-01").format("Do MMMM", "fr"); // "1er janvier"
+
+// Japanese (ordinal is just the number + 日)
+atemporal("2024-01-15").format("MMMM Do", "ja"); // "1月15日"
+
+// Korean
+atemporal("2024-01-15").format("MMMM Do", "ko"); // "1월 15일"
+```
+
+## Timezone Name Tokens
+
+The `zzz` and `zzzz` tokens extract timezone names using `Intl.DateTimeFormat.formatToParts()`. Availability depends on browser/runtime support:
+
+```ts
+const ny = atemporal("2024-06-15T12:00:00", "America/New_York");
+const tokyo = atemporal("2024-06-15T12:00:00", "Asia/Tokyo");
+
+ny.format("zzz");   // "EDT" (Eastern Daylight Time)
+ny.format("zzzz");  // "Eastern Daylight Time"
+
+tokyo.format("zzz");  // "JST" (Japan Standard Time)
+tokyo.format("zzzz"); // "Japan Standard Time"
+```
+
+> [!NOTE]
+> Timezone name abbreviations (`zzz`) may vary by browser and locale. Not all runtimes support `formatToParts()` for timezone names.
+
+## Combining Tokens
+
+Mix advanced tokens with standard format tokens:
+
+```ts
+const date = atemporal("2024-06-15T14:30:00", "Europe/London");
+
+// Ordinals + month names + timezone
+date.format("dddd, Do MMMM YYYY [at] HH:mm (zzzz)");
+// "Saturday, 15th June 2024 at 14:30 (British Summer Time)"
+
+// Quarter with ordinal
+date.format("Qo [quarter of] YYYY"); // "2nd quarter of 2024"
+```
+
+## Cache Management
+
+The plugin caches ordinal suffixes and timezone name lookups:
+
+```ts
+// Clear the advanced format cache
+atemporal.clearAdvancedFormatCache();
+
+// Get cache statistics
+const stats = atemporal.getAdvancedFormatCacheStats();
+console.log(stats);
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
 ```
 
 
@@ -660,18 +1880,71 @@ atemporal.extend(weekDay);
 
 const date = atemporal("2024-05-15"); // Wednesday
 
-// Get weekday details
-console.log(date.weekday().name); // "Wednesday"
-console.log(date.weekday().number); // 3
-console.log(date.weekday().isWeekend); // false
+// Get weekday number (0 for Sunday, 1 for Monday, etc. — based on week start config)
+console.log(date.weekday()); // 3 (Wednesday, assuming default ISO week)
 
-// Set weekday
-const nextFriday = date.weekday(5);
+// Configure start of week globally
+atemporal.setWeekStartsOn(1); // 1 = Monday (0 = Sunday)
 
-// Start/End of week
-date.startOf("week"); // Monday
-date.endOf("week"); // Sunday 23:59:59.999
+// Start/End of week respects the `setWeekStartsOn` setting
+date.startOf("week"); // Monday 2024-05-13 00:00:00
+date.endOf("week");   // Sunday 2024-05-19 23:59:59.999
 ```
+
+## Methods
+
+### `.weekday()`
+
+Returns the day of the week as a number (0-indexed, based on the configured week start).
+
+```ts
+const sunday = atemporal("2024-05-12"); // Sunday
+
+atemporal.setWeekStartsOn(1); // Week starts Monday
+sunday.weekday(); // 6 (Sunday is the 6th day when week starts Monday)
+
+atemporal.setWeekStartsOn(0); // Week starts Sunday
+sunday.weekday(); // 0 (Sunday is the 0th day when week starts Sunday)
+```
+
+### `atemporal.setWeekStartsOn(day)`
+
+Sets the global week start day. Accepts `0` (Sunday) through `6` (Saturday).
+
+```ts
+atemporal.setWeekStartsOn(1); // Monday (ISO)
+atemporal.setWeekStartsOn(0); // Sunday (US)
+atemporal.setWeekStartsOn(6); // Saturday (some regions)
+```
+
+### `startOf('week')` and `endOf('week')`
+
+These methods respect the configured week start. The plugin wraps the core `startOf()` and `endOf()` methods, delegating to the original for all other units.
+
+```ts
+atemporal.setWeekStartsOn(1); // Monday
+const wed = atemporal("2024-05-15");
+
+wed.startOf("week"); // Monday 2024-05-13
+wed.endOf("week");   // Sunday 2024-05-19
+
+// Other units are unaffected
+wed.startOf("month"); // 2024-05-01
+wed.endOf("year");    // 2024-12-31
+```
+
+## Performance & Caching
+
+The plugin utilizes intelligent caching for high-performance weekday calculation.
+You can clear or inspect these caches via the factory:
+
+```ts
+atemporal.clearWeekDayCache();
+console.log(atemporal.getWeekDayCacheStats());
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
+```
+
+The internal cache has two layers: one for weekday calculations and one for week boundaries. Both are cleared together.
 
 
 --- FILE: plugins/duration-humanizer.md ---
@@ -697,16 +1970,81 @@ console.log(atemporal.humanize(duration)); // "2 hours and 30 minutes"
 ```ts
 atemporal.humanize(duration, { locale: "es" }); // "2 horas y 30 minutos"
 atemporal.humanize(duration, { locale: "ja" }); // "2時間30分"
+atemporal.humanize(duration, { locale: "fr" }); // "2 heures et 30 minutes"
+atemporal.humanize(duration, { locale: "de" }); // "2 Stunden und 30 Minuten"
+atemporal.humanize(duration, { locale: "it" }); // "2 ore e 30 minuti"
+atemporal.humanize(duration, { locale: "pt" }); // "2 horas e 30 minutos"
+atemporal.humanize(duration, { locale: "ru" }); // "2 часа и 30 минут"
+atemporal.humanize(duration, { locale: "ko" }); // "2시간 30분"
+atemporal.humanize(duration, { locale: "zh" }); // "2小时30分钟"
 ```
+
+### Supported Languages
+
+The plugin includes localized unit names for 10 languages: English (`en`), Spanish (`es`), French (`fr`), German (`de`), Italian (`it`), Portuguese (`pt`), Russian (`ru`), Japanese (`ja`), Korean (`ko`), and Chinese (`zh`).
 
 ## Options
 
-- `locale`: The locale string (default: `'en'`).
-- `listStyle`: `'long'`, `'short'`, or `'narrow'`.
-- `unitDisplay`: `'long'`, `'short'`, or `'narrow'`.
+```ts
+interface HumanizeOptions {
+  locale?: string;       // Default: "en"
+  listStyle?: "long" | "short" | "narrow";
+  unitDisplay?: "long" | "short" | "narrow";
+}
+```
+
+**`listStyle`** controls how units are joined:
 
 ```ts
-atemporal.humanize(duration, { unitDisplay: "short" }); // "2 hr and 30 min"
+const dur = { hours: 3, minutes: 45, seconds: 30 };
+
+atemporal.humanize(dur, { listStyle: "long" });   // "3 hours, 45 minutes, and 30 seconds"
+atemporal.humanize(dur, { listStyle: "short" });  // "3 hr, 45 min, and 30 sec"
+atemporal.humanize(dur, { listStyle: "narrow" }); // "3h 45m 30s"
+```
+
+**`unitDisplay`** controls individual unit labels:
+
+```ts
+const dur = { hours: 2, minutes: 30 };
+
+atemporal.humanize(dur, { unitDisplay: "long" });  // "2 hours and 30 minutes"
+atemporal.humanize(dur, { unitDisplay: "short" }); // "2 hr and 30 min"
+atemporal.humanize(dur, { unitDisplay: "narrow" });// "2h 30m"
+```
+
+## Edge Cases
+
+```ts
+// Zero duration
+atemporal.humanize({ hours: 0 }); // "0 seconds"
+
+// Empty duration
+atemporal.humanize({}); // "0 seconds"
+
+// Very large durations
+atemporal.humanize({ days: 400 }); // "1 year, 1 month, and 5 days" (approx.)
+
+// Only one unit
+atemporal.humanize({ minutes: 45 }); // "45 minutes"
+```
+
+## Fallback System
+
+The plugin first attempts to use `Intl.NumberFormat` with unit style for the requested locale. If that fails (the locale doesn't support unit formatting), it falls back to a built-in localized unit mapping with support for all 10 languages.
+
+## Cache Management
+
+The plugin caches `Intl.NumberFormat` instances and formatted results:
+
+```ts
+// Clear the humanizer cache
+atemporal.clearDurationHumanizerCache();
+
+// Get cache statistics
+const stats = atemporal.getDurationHumanizerCacheStats();
+console.log(stats);
+// { size: number, hits: number, misses: number, hitRatio: number, ... }
 ```
 
 
@@ -718,6 +2056,27 @@ Provides date range overlap detection capabilities.
 
 ## Usage
 
+The plugin offers both a standalone static function and instance methods.
+
+### Standalone Function
+
+`checkDateRangeOverlap` is exported directly from the `atemporal` package — no plugin extension needed for the static function:
+
+```ts
+import atemporal, { checkDateRangeOverlap } from "atemporal";
+
+const range1 = { start: "2024-01-01", end: "2024-01-15" };
+const range2 = { start: "2024-01-10", end: "2024-01-20" };
+
+const result = checkDateRangeOverlap(range1, range2);
+console.log(result.overlaps); // true
+console.log(result.overlapRange); // { start: ..., end: ... }
+```
+
+### Plugin Extension (Instance Methods)
+
+For instance methods, extend atemporal with the plugin:
+
 ```ts
 import atemporal from "atemporal";
 import dateRangeOverlapPlugin from "atemporal/plugins/dateRangeOverlap";
@@ -727,6 +2086,7 @@ atemporal.extend(dateRangeOverlapPlugin);
 const range1 = { start: "2024-01-01", end: "2024-01-15" };
 const range2 = { start: "2024-01-10", end: "2024-01-20" };
 
+// Static method (also available directly via plugin)
 const result = atemporal.checkDateRangeOverlap(range1, range2);
 console.log(result.overlaps); // true
 console.log(result.overlapRange); // { start: ..., end: ... }
@@ -738,14 +2098,66 @@ console.log(result.overlapRange); // { start: ..., end: ... }
 const date = atemporal("2024-01-15");
 const range = { start: "2024-01-10", end: "2024-01-20" };
 
-date.rangeOverlapsWith(range); // overlaps: true
+const result = date.rangeOverlapsWith(range);
+console.log(result.overlaps); // true
+console.log(result.overlapRange); // { start: 2024-01-15, end: 2024-01-15 } (point)
+```
+
+### `.to(endDate: DateInput)`
+
+Returns a `DateRange` object bridging the instance to the given end date.
+
+```ts
+const start = atemporal("2024-01-01");
+const rangeObj = start.to("2024-01-15");
+// returns { start: atemporal("2024-01-01"), end: atemporal("2024-01-15") }
+
+// Use the result directly with checkDateRangeOverlap
+const overlap = checkDateRangeOverlap(
+  start.to("2024-01-15"),
+  atemporal("2024-01-10").to("2024-01-20")
+);
+console.log(overlap.overlaps); // true
 ```
 
 ## Configuration
 
-- `includeBoundaries`: Whether touching ranges count as overlap (default: `true`).
-- `timezone`: Timezone for date interpretation.
-- `strictValidation`: Whether to perform strict input validation (default: `true`).
+```ts
+const result = checkDateRangeOverlap(range1, range2, {
+  includeBoundaries: true,   // Whether touching ranges count as overlap (default: true)
+  timezone: "UTC",            // Timezone for date interpretation (default: UTC)
+  strictValidation: true,     // Perform strict input validation (default: true)
+});
+```
+
+- **`includeBoundaries`**: When `true` (default), adjacent ranges touching at a boundary count as overlapping. When `false`, they do not.
+- **`timezone`**: The IANA time zone to interpret date strings in (default: UTC).
+- **`strictValidation`**: When `true` (default), invalid inputs throw `InvalidDateRangeError`.
+
+## Return Type
+
+```ts
+interface OverlapResult {
+  overlaps: boolean;
+  overlapRange: DateRange | null;
+}
+```
+
+## Caching
+
+Results are cached via `OverlapCache` (LRU-based, max 200 entries) for repeated checks on the same ranges. The cache is registered with the `GlobalCacheCoordinator` for unified cache management.
+
+## Error Types
+
+The plugin exports custom error classes available both from the plugin and the main package:
+
+```ts
+import {
+  InvalidDateRangeError,
+  OverlapDetectionError,
+} from "atemporal";
+// (also available from "atemporal/plugins/dateRangeOverlap")
+```
 
 
 --- FILE: plugins/business-days.md ---
@@ -765,20 +2177,101 @@ atemporal.extend(businessDays);
 // Configure (optional)
 atemporal.setBusinessDaysConfig({
   holidays: ["2023-12-25", "2024-01-01"],
-  weekendDays: [6, 7], // Saturday, Sunday
+  weekendDays: [6, 7], // Saturday, Sunday (ISO: 1=Monday, 7=Sunday)
 });
 
 const friday = atemporal("2023-01-06");
 const monday = friday.addBusinessDays(1); // Skips Sat/Sun
+console.log(monday.format("YYYY-MM-DD")); // "2023-01-09" (Monday)
 ```
+
+## Configuration
+
+### `atemporal.setBusinessDaysConfig(config)`
+
+```ts
+interface BusinessDaysOptions {
+  holidays?: string[];       // Array of ISO date strings (YYYY-MM-DD)
+  weekendDays?: number[];    // Days considered weekend (1=Monday, 7=Sunday). Default: [6, 7]
+}
+
+atemporal.setBusinessDaysConfig({
+  holidays: [
+    "2024-01-01", // New Year's Day
+    "2024-12-25", // Christmas
+  ],
+  weekendDays: [5, 6], // Friday and Saturday (e.g., Middle East)
+});
+```
+
+> [!NOTE]
+> Holidays should be provided as ISO date strings in the format `YYYY-MM-DD`. They are normalized internally for accurate comparison.
 
 ## Methods
 
-- `.isBusinessDay()`
-- `.isHoliday()`
-- `.isWeekend()`
-- `.addBusinessDays(n)`
-- `.nextBusinessDay()`
+### `.isBusinessDay()`
+
+Returns `true` if the date is neither a holiday nor a weekend day.
+
+```ts
+const day = atemporal("2024-01-01");
+day.isBusinessDay(); // false (holiday)
+```
+
+### `.isHoliday()`
+
+Returns `true` if the date is in the configured holidays list.
+
+```ts
+const christmas = atemporal("2024-12-25");
+christmas.isHoliday(); // true
+```
+
+### `.isWeekend()`
+
+Returns `true` if the date falls on a configured weekend day.
+
+```ts
+const sunday = atemporal("2024-01-07");
+sunday.isWeekend(); // true (Sunday)
+
+atemporal.setBusinessDaysConfig({ weekendDays: [5, 6] });
+const friday = atemporal("2024-01-05");
+friday.isWeekend(); // true (Friday)
+```
+
+### `.addBusinessDays(n)`
+
+Adds `n` working days, skipping weekends and holidays.
+
+```ts
+const thursday = atemporal("2024-07-04"); // Thursday + holiday
+thursday.addBusinessDays(1);  // Next business day after skipping Friday (holiday) + weekend
+// => Monday 2024-07-08
+```
+
+### `.subtractBusinessDays(n)`
+
+Subtracts `n` working days (delegates to `addBusinessDays(-n)`).
+
+```ts
+const monday = atemporal("2024-01-08");
+monday.subtractBusinessDays(1); // Previous business day (Friday)
+// => 2024-01-05
+```
+
+### `.nextBusinessDay()`
+
+Returns the next business day after the current date.
+
+```ts
+const friday = atemporal("2024-01-05");
+friday.nextBusinessDay(); // Monday 2024-01-08 (skips weekend)
+```
+
+## Performance Note
+
+All checks (`isBusinessDay`, `isHoliday`, `isWeekend`) are computed fresh without caching. For very large holiday lists (thousands of entries), consider preprocessing holidays into a `Set` or performing batch operations.
 
 
 --- FILE: plugins/time-slots.md ---
@@ -801,15 +2294,92 @@ const slots = atemporal.findAvailableSlots({
   interval: { minutes: 30 },
   busySlots: [{ start: "2023-01-01T12:00:00", end: "2023-01-01T13:00:00" }],
 });
+
+// slots is an array of TimeSlot objects:
+// [
+//   { start: atemporal("2023-01-01T09:00:00"), end: atemporal("2023-01-01T09:30:00") },
+//   { start: atemporal("2023-01-01T09:30:00"), end: atemporal("2023-01-01T10:00:00") },
+//   ...
+// ]
 ```
 
 ## API
 
-`atemporal.findAvailableSlots(options)`
+### `atemporal.findAvailableSlots(options)`
 
 ### Options
 
-- `range`: `{ start, end }`.
-- `duration`: `Temporal.DurationLike`.
-- `interval`: Defaults to `duration`.
-- `busySlots`: Array of `{ start, end }`.
+```ts
+interface AvailabilityOptions {
+  range: DateRange;                // { start, end } — the search window
+  duration: Temporal.DurationLike; // Duration of each slot
+  interval?: Temporal.DurationLike; // Gap between slot start times (default: same as duration)
+  busySlots: Array<DateRange>;     // Array of { start, end } — occupied periods
+}
+```
+
+### Return Type
+
+```ts
+interface TimeSlot {
+  start: TemporalWrapper; // Start of the available slot
+  end: TemporalWrapper;   // End of the available slot
+}
+```
+
+## How It Works
+
+The algorithm operates in two phases:
+
+1. **Merge overlapping busy slots**: Overlapping or touching busy periods are merged into a single blocked span to simplify checking.
+2. **Scan for free slots**: Starting from the beginning of the range, the algorithm advances in steps of `interval` and checks each potential slot against the merged busy periods. A slot is free when its end does not extend into the next busy period.
+
+Touching boundaries are considered non-overlapping — a slot that ends exactly when a busy period starts is valid.
+
+## Examples
+
+### Basic 30-minute slots
+
+```ts
+const slots = atemporal.findAvailableSlots({
+  range: { start: "2023-01-01T09:00:00", end: "2023-01-01T11:00:00" },
+  duration: { minutes: 30 },
+  busySlots: [{ start: "2023-01-01T09:30:00", end: "2023-01-01T10:00:00" }],
+});
+
+// 4 slots total (3 free + 1 blocked):
+// 09:00-09:30 ✓
+// 09:30-10:00 ✗ (busy)
+// 10:00-10:30 ✓
+// 10:30-11:00 ✓
+```
+
+### Multiple overlapping busy slots (auto-merged)
+
+```ts
+const slots = atemporal.findAvailableSlots({
+  range: { start: "2023-01-01T09:00:00", end: "2023-01-01T12:00:00" },
+  duration: { minutes: 30 },
+  busySlots: [
+    { start: "2023-01-01T09:30:00", end: "2023-01-01T10:00:00" },
+    { start: "2023-01-01T09:45:00", end: "2023-01-01T10:15:00" }, // Overlaps with previous
+  ],
+});
+
+// Overlapping busy slots are merged into 09:30-10:15
+// Result: 09:00-09:30, 10:15-10:45, 10:45-11:15, 11:15-11:45
+```
+
+### Custom interval (gap between slots)
+
+```ts
+const slots = atemporal.findAvailableSlots({
+  range: { start: "2023-01-01T09:00:00", end: "2023-01-01T10:00:00" },
+  duration: { minutes: 15 },
+  interval: { minutes: 30 }, // Slots start every 30 minutes
+  busySlots: [],
+});
+
+// 15-minute slots starting every 30 minutes:
+// 09:00-09:15, 09:30-09:45
+```

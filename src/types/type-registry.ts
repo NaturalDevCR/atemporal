@@ -30,6 +30,7 @@ import type {
 } from './enhanced-types';
 
 import { Temporal } from '../core/temporal-api';
+import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
 
 /**
  * Type validation result
@@ -423,7 +424,7 @@ export class TemporalTypeRegistry {
 
     // Temporal types
     this.register('temporal-zoned',
-      (input): input is Temporal.ZonedDateTime => input instanceof Temporal.ZonedDateTime,
+      (input): input is TemporalNS.ZonedDateTime => input instanceof Temporal.ZonedDateTime,
       {
         priority: 10,
         description: 'Temporal ZonedDateTime',
@@ -432,39 +433,39 @@ export class TemporalTypeRegistry {
     );
 
     this.register('temporal-plain-datetime',
-      (input): input is Temporal.PlainDateTime => input instanceof Temporal.PlainDateTime,
+      (input): input is TemporalNS.PlainDateTime => input instanceof Temporal.PlainDateTime,
       {
         priority: 8,
         description: 'Temporal PlainDateTime',
         aliases: ['plain-datetime'],
         converters: {
-          'temporal': (input: Temporal.PlainDateTime, options: { timeZone?: string } = {}) => 
+          'temporal': (input: TemporalNS.PlainDateTime, options: { timeZone?: string } = {}) => 
             input.toZonedDateTime(options.timeZone || 'UTC')
         }
       }
     );
 
     this.register('temporal-plain-date',
-      (input): input is Temporal.PlainDate => input instanceof Temporal.PlainDate,
+      (input): input is TemporalNS.PlainDate => input instanceof Temporal.PlainDate,
       {
         priority: 7,
         description: 'Temporal PlainDate',
         aliases: ['plain-date'],
         converters: {
-          'temporal': (input: Temporal.PlainDate, options: { timeZone?: string } = {}) => 
+          'temporal': (input: TemporalNS.PlainDate, options: { timeZone?: string } = {}) => 
             input.toZonedDateTime(options.timeZone || 'UTC')
         }
       }
     );
 
     this.register('temporal-instant',
-      (input): input is Temporal.Instant => input instanceof Temporal.Instant,
+      (input): input is TemporalNS.Instant => input instanceof Temporal.Instant,
       {
         priority: 9,
         description: 'Temporal Instant',
         aliases: ['instant'],
         converters: {
-          'temporal': (input: Temporal.Instant, options: { timeZone?: string } = {}) => 
+          'temporal': (input: TemporalNS.Instant, options: { timeZone?: string } = {}) => 
             input.toZonedDateTimeISO(options.timeZone || 'UTC')
         }
       }

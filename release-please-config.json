@@ -1,0 +1,16 @@
+{
+  "_comment": "release-please configuration. See https://github.com/googleapis/release-/blob/main/docs/manifest-releaser.md",
+  "release-type": "node",
+  "package-name": "atemporal",
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "version-file": "package.json",
+  "changelog-path": "CHANGELOG.md",
+  "skip-github-release": false,
+  "draft": false,
+  "prerelease": false,
+  "extra-files": [
+    "src/index.ts",
+    "SECURITY.md"
+  ]
+}

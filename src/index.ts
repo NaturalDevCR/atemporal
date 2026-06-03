@@ -35,6 +35,19 @@ import {
   InvalidTimeZoneError,
 } from "./errors";
 import { debugLog } from "./core/debug";
+import {
+  FORMAT_PRESETS,
+  listPresets,
+  getPreset,
+  type ValidationResult,
+} from "./core/formatting/presets";
+import {
+  setStrictMode,
+  isStrictMode,
+  getStrictModeFlags,
+  clearStrictWarnings,
+  type StrictModeFlags,
+} from "./core/strict-mode";
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
@@ -65,6 +78,10 @@ export {
 } from "./plugins/dateRangeOverlap";
 export { default as businessDaysPlugin } from "./plugins/businessDays";
 export { default as timeSlotsPlugin } from "./plugins/timeSlots";
+
+// Re-export format presets
+export { FORMAT_PRESETS as presets, listPresets, getPreset } from "./core/formatting/presets";
+export type { ValidationResult } from "./core/formatting/presets";
 
 /**
  * The core factory function for creating atemporal instances.
@@ -366,6 +383,156 @@ atemporal.getAvailablePlugins = (): string[] => {
  * @returns Object containing information about whether native or polyfilled Temporal is being used
  */
 atemporal.getTemporalInfo = getTemporalInfo;
+
+// --- Ergonomic static helpers (Sprint 1.1) -------------------------------
+
+/**
+ * Tries to parse `input` into a `TemporalWrapper`. Returns `null` if the
+ * input cannot be parsed or is not a valid date — never throws.
+ *
+ * Use this in user-facing code paths where a thrown `InvalidDateError`
+ * would be inappropriate (e.g. parsing a value from a request body, a
+ * URL parameter, or a user-typed field).
+ *
+ * @example
+ * ```ts
+ * const a = atemporal.try('2024-01-15');   // TemporalWrapper
+ * const b = atemporal.try('not a date');   // null
+ * const c = atemporal.try(null);           // null
+ * const d = atemporal.try(undefined, 'UTC'); // current time in UTC
+ * ```
+ */
+atemporal.try = (input?: DateInput, timeZone?: string): TemporalWrapper | null => {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  try {
+    const result = atemporal(input as DateInput, timeZone);
+    if (!result.isValid()) {
+      return null;
+    }
+    return result;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Formats any value into an ISO 8601 string. Accepts the same input as
+ * `atemporal(...)`. Returns `null` for invalid inputs (never throws).
+ *
+ * Shorthand for `atemporal.try(input)?.toISO() ?? null`.
+ *
+ * @example
+ * ```ts
+ * atemporal.iso();                    // '2026-06-03T12:34:56.789Z'
+ * atemporal.iso('2024-01-15');        // '2024-01-15T00:00:00.000Z'
+ * atemporal.iso(0);                   // '1970-01-01T00:00:00.000Z'
+ * atemporal.iso('garbage');           // null
+ * atemporal.iso(date, 'America/NY');  // '2026-06-03T08:34:56.789-04:00'
+ * ```
+ */
+atemporal.iso = (input?: DateInput, timeZone?: string): string | null => {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  const wrapped = atemporal.try(input, timeZone);
+  return wrapped === null ? null : wrapped.format(atemporal.presets.ISO);
+};
+
+/**
+ * Validates `input` and returns a structured result. Does not throw.
+ *
+ * The returned object has a discriminant `ok` field. When `ok === true`,
+ * `iso` and `confidence` are populated; when `ok === false`, `reason` and
+ * `code` are populated.
+ *
+ * @example
+ * ```ts
+ * atemporal.validate('2024-01-15');
+ * // { ok: true, iso: '2024-01-15T00:00:00.000Z', confidence: 0.95 }
+ *
+ * atemporal.validate('not a date');
+ * // { ok: false, reason: '...', code: 'ATEMPORAL_INVALID_DATE' }
+ * ```
+ */
+atemporal.validate = (input: unknown): ValidationResult => {
+  if (input === null || input === undefined) {
+    return {
+      ok: false,
+      reason: 'Input is null or undefined',
+      code: 'ATEMPORAL_INVALID_INPUT',
+    };
+  }
+  try {
+    const wrapped = atemporal.try(input as DateInput);
+    if (wrapped === null || !wrapped.isValid()) {
+      return {
+        ok: false,
+        reason: 'Input could not be parsed as a valid date',
+        code: 'ATEMPORAL_INVALID_DATE',
+      };
+    }
+    return {
+      ok: true,
+      iso: wrapped.format(atemporal.presets.ISO),
+      confidence: 1,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      reason: message,
+      code: 'ATEMPORAL_PARSE_FAILED',
+    };
+  }
+};
+
+/**
+ * Built-in format presets. Use as `atemporal(input).format(atemporal.presets.ISO)`.
+ *
+ * For programmatic access, use `atemporal.presets.list()` and
+ * `atemporal.presets.get(name)`.
+ */
+atemporal.presets = Object.assign(
+  { ...FORMAT_PRESETS },
+  {
+    list: listPresets,
+    get: getPreset,
+  }
+) as Readonly<Record<string, string>> & AtemporalFactory['presets'];
+Object.freeze(atemporal.presets);
+
+// --- Strict mode (Sprint 1.3) --------------------------------------------
+
+/**
+ * Enables or disables atemporal's "strict mode". When enabled, the library
+ * will `console.warn` on operations that could lead to subtle timezone or
+ * parsing bugs.
+ *
+ * Pass `true` to enable with default flags, `false` to disable, or a
+ * partial `StrictModeFlags` object to enable with custom flags.
+ *
+ * @example Enable with defaults
+ * ```ts
+ * atemporal.setStrictMode(true);
+ * ```
+ *
+ * @example Enable only specific flags
+ * ```ts
+ * atemporal.setStrictMode({ warnOnDateObjectInput: true });
+ * ```
+ */
+atemporal.setStrictMode = setStrictMode;
+
+/** Returns true if strict mode is currently enabled. */
+atemporal.isStrictMode = isStrictMode;
+
+/** Returns the current strict-mode flags. */
+atemporal.getStrictModeFlags = getStrictModeFlags;
+
+/** Clears the strict-mode warning cache (useful in tests). */
+atemporal.clearStrictWarnings = clearStrictWarnings;
 
 // Export the final, augmented factory function as the default export of the library.
 export default atemporal;

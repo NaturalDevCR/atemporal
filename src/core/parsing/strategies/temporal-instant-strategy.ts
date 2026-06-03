@@ -3,6 +3,7 @@
  */
 
 import { Temporal } from "../../temporal-api";
+import type { Temporal as TemporalNS } from "@js-temporal/polyfill";
 import type { TemporalInput } from "../../../types/enhanced-types";
 import { TemporalParseError } from "../../../types/enhanced-types";
 import { DEFAULT_TEMPORAL_CONFIG } from "../../../types/index";
@@ -57,7 +58,7 @@ export class TemporalInstantStrategy implements ParseStrategy {
       };
     }
 
-    const instant = input as Temporal.Instant;
+    const instant = input as TemporalNS.Instant;
     const timeZone = context.options.timeZone || "UTC";
 
     // Fast path for Instant conversion to ZonedDateTime
@@ -97,7 +98,7 @@ export class TemporalInstantStrategy implements ParseStrategy {
       };
     }
 
-    const instant = input as Temporal.Instant;
+    const instant = input as TemporalNS.Instant;
 
     // Check if the instant is valid
     try {
@@ -136,7 +137,7 @@ export class TemporalInstantStrategy implements ParseStrategy {
    * Convert input to intermediate format
    */
   convert(input: TemporalInput, context: ParseContext): ParseConversionResult {
-    const instant = input as Temporal.Instant;
+    const instant = input as TemporalNS.Instant;
     const timeZone =
       context.options.timeZone ||
       (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
@@ -165,7 +166,7 @@ export class TemporalInstantStrategy implements ParseStrategy {
     }
 
     try {
-      const instant = input as Temporal.Instant;
+      const instant = input as TemporalNS.Instant;
       const timeZone =
         context.options.timeZone ||
         (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;

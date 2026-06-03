@@ -71,7 +71,7 @@ export class TemporalUtils {
             TemporalUtils._defaultTimeZone = tz;
             TemporalUtils._globalTimeZoneSet = true;
         } catch (e) {
-            throw new InvalidTimeZoneError(`Invalid time zone: ${tz}`);
+            throw new InvalidTimeZoneError(`Invalid time zone: ${tz}`, tz);
         }
     }
 
