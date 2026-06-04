@@ -1,28 +1,19 @@
 # .osv-scanner.toml
-# Configuration for OSV-Scanner (https://github.com/google/osv-scanner).
+# Configuration for OSV-Scanner v2.x (https://github.com/google/osv-scanner).
 #
-# Excludes that are NOT vulnerabilities but would otherwise be flagged:
-#   - test fixtures in __tests__/fixtures
-#   - the `coverage/` directory (instrumented output, never published)
-#   - the `dist/` directory (build output)
-#   - the `docs/.vitepress/dist/` directory (docs build output)
+# In v2.x, "IgnoredPaths" is not a config key — path filtering is done via
+# CLI flags (--exclude, --offline, etc.). This file is kept for the
+# `IgnoredVulns` table and any future configuration.
 #
-# We deliberately do NOT exclude the lockfile — that's where real CVEs live.
+# We deliberately do NOT pre-ignore any vulnerability. Every CVE must be
+# reviewed and either fixed or explicitly documented in SECURITY.md before
+# being ignored here.
+#
+# See https://google.github.io/osv-scanner/configuration/ for the v2 schema.
 
-IgnoredPaths = [
-  "node_modules",
-  "dist",
-  "coverage",
-  "coverage-strategies",
-  "docs/.vitepress/dist",
-  "docs/.vitepress/cache",
-  "src/__tests__/fixtures",
-  "src/examples",
-]
-
+# Example block — left as a template. Remove or update before adding
+# real ignores; expired entries are still parsed.
 [[IgnoredVulns]]
-# No vulns are pre-ignored. Every CVE must be reviewed and either fixed
-# or explicitly documented in SECURITY.md before being ignored here.
 id = "PLACEHOLDER_DO_NOT_USE"
 reason = "This is a template; remove it before committing."
-expiry = "1970-01-01T00:00:00Z"
+ignoreUntil = 1970-01-01 # Required format: YYYY-MM-DD; the v1 `expiry` key is gone.
