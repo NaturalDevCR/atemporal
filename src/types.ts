@@ -293,6 +293,61 @@ export interface AtemporalFactory {
   ) => OverlapResult;
 
   duration(durationLike: Temporal.DurationLike | string): Temporal.Duration;
+
+  /**
+   * Tries to parse `input` into a `TemporalWrapper`. Returns `null` on
+   * invalid input — never throws. See `src/index.ts` for full docs.
+   */
+  try: (input?: DateInput, timeZone?: string) => TemporalWrapper | null;
+
+  /**
+   * Formats any value into an ISO 8601 string, or `null` if invalid.
+   */
+  iso: (input?: DateInput, timeZone?: string) => string | null;
+
+  /**
+   * Validates `input` and returns a structured result. Never throws.
+   */
+  validate: (input: unknown) => {
+    ok: boolean;
+    iso?: string;
+    confidence?: number;
+    reason?: string;
+    code?: string;
+  };
+
+  /**
+   * Built-in format presets. Each key maps to a format string.
+   * Also exposes `.list()` and `.get(name)` helpers.
+   */
+  presets: Readonly<Record<string, string>> & {
+    list: () => string[];
+    get: (name: string) => string;
+  };
+
+  /**
+   * Enables or disables strict mode. See `core/strict-mode.ts` for details.
+   */
+  setStrictMode: (on: boolean | Partial<{
+    warnOnDateObjectInput: boolean;
+    warnOnNaiveStringInput: boolean;
+    warnOnAmbiguousFormatTokens: boolean;
+    warnOnInvalidResult: boolean;
+  }>) => void;
+
+  /** True if strict mode is enabled. */
+  isStrictMode: () => boolean;
+
+  /** Returns a copy of the strict-mode flags. */
+  getStrictModeFlags: () => {
+    warnOnDateObjectInput: boolean;
+    warnOnNaiveStringInput: boolean;
+    warnOnAmbiguousFormatTokens: boolean;
+    warnOnInvalidResult: boolean;
+  };
+
+  /** Clears the strict-mode warning cache (test helper). */
+  clearStrictWarnings: () => void;
 }
 
 /**

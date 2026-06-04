@@ -28,7 +28,14 @@ const getGlobalObject = (): any => {
 };
 
 /**
- * Checks if the native Temporal API is available in the current environment
+ * Checks if the native Temporal API is available in the current environment.
+ *
+ * ⚠️ SPEC NOTE (ECMAScript 2026 / TC39 Stage 4):
+ * `Temporal.TimeZone` and `Temporal.Calendar` were **removed** from the Temporal spec
+ * in the June 2024 TC39 meeting (scope reduction for Stage 3→4 advancement).
+ * Chrome 144+ and Firefox 139+ native implementations do NOT include these classes.
+ * We intentionally omit those checks so that native support is correctly detected.
+ *
  * @returns {boolean} True if native Temporal is available, false otherwise
  */
 export function isNativeTemporalAvailable(): boolean {
@@ -40,11 +47,15 @@ export function isNativeTemporalAvailable(): boolean {
     if ("Temporal" in globalObj) {
       const temporal = (globalObj as any).Temporal;
 
-      // Verify that it has the expected structure and key methods
+      // Verify that it has the expected structure and key methods.
+      // NOTE: We do NOT check for Temporal.TimeZone or Temporal.Calendar —
+      // both were removed from the final ECMAScript 2026 spec (TC39 Stage 4).
+      // Native implementations in Chrome 144+ and Firefox 139+ do not expose them.
       return (
         temporal &&
         typeof temporal === "object" &&
         typeof temporal.Now === "object" &&
+        typeof temporal.Now.zonedDateTimeISO === "function" &&
         typeof temporal.PlainDate === "function" &&
         typeof temporal.PlainDateTime === "function" &&
         typeof temporal.ZonedDateTime === "function" &&
@@ -52,9 +63,7 @@ export function isNativeTemporalAvailable(): boolean {
         typeof temporal.Duration === "function" &&
         typeof temporal.PlainTime === "function" &&
         typeof temporal.PlainYearMonth === "function" &&
-        typeof temporal.PlainMonthDay === "function" &&
-        typeof temporal.TimeZone === "function" &&
-        typeof temporal.Calendar === "function"
+        typeof temporal.PlainMonthDay === "function"
       );
     }
     return false;
@@ -97,9 +106,6 @@ export function getTemporalAPI(): TemporalAPI {
  */
 export function initializeTemporal(): TemporalAPI {
   const temporalAPI = getTemporalAPI();
-
-
-
   return temporalAPI;
 }
 
@@ -107,9 +113,6 @@ export function initializeTemporal(): TemporalAPI {
  * Cached Temporal API instance to avoid repeated detection
  */
 let cachedTemporalAPI: TemporalAPI | null = null;
-
-
-
 /**
  * Gets the cached Temporal API or initializes it if not already cached
  * @returns {TemporalAPI} The Temporal API instance
@@ -127,7 +130,6 @@ export function getCachedTemporalAPI(): TemporalAPI {
  */
 export function resetTemporalAPICache(): void {
   cachedTemporalAPI = null;
-
 }
 
 /**

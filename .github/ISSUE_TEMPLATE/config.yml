@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/NaturalDevCR/atemporal/discussions
+    about: Ask questions, share ideas, or get help from the community.
+  - name: Discord
+    url: https://discord.gg/atemporal
+    about: Live chat with maintainers and users.

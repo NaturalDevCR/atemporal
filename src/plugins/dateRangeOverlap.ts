@@ -50,9 +50,12 @@ class OverlapCache {
         range2: DateRange,
         options: OverlapOptions
     ): string {
-        // Handle null/undefined ranges safely
+        // Handle null/undefined ranges safely.
+        // NOTE: generateKey is only called from getOverlapResult/setOverlapResult, both of which
+        // already guard against null ranges before calling this method. This branch is a safety
+        // net — we use a static key because a random one would defeat the cache entirely.
         if (!range1 || !range2) {
-            return `null:${Date.now()}:${Math.random()}`; // Unique key for invalid ranges
+            return 'null:invalid-range';
         }
         
         const r1Start = typeof range1.start === 'string' ? range1.start : String(range1.start);
@@ -60,7 +63,7 @@ class OverlapCache {
         const r2Start = typeof range2.start === 'string' ? range2.start : String(range2.start);
         const r2End = typeof range2.end === 'string' ? range2.end : String(range2.end);
         
-        return `${r1Start}:${r1End}:${r2Start}:${r2End}:${options.includeBoundaries}:${options.timezone}:${options.strictValidation}`;
+        return JSON.stringify([r1Start, r1End, r2Start, r2End, options.includeBoundaries, options.timezone, options.strictValidation]);
     }
 
     /**

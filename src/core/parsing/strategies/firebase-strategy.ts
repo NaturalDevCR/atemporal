@@ -2,7 +2,7 @@
  * @file Firebase Timestamp parsing strategy for handling Firebase Timestamp objects
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   TemporalInput,
   FirebaseTimestamp,
@@ -225,10 +225,14 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
     
     try {
       const timestamp = input as FirebaseTimestamp;
-      
+
       // Normalize the timestamp first to handle both formats
       const normalizationResult = this.normalize(input, context);
-      const normalized = normalizationResult.normalizedInput as FirebaseTimestamp;
+      const normalized = normalizationResult.normalizedInput as {
+        seconds: number;
+        nanoseconds: number;
+        toDate?: () => Date;
+      };
       
       // Check for methods if it's a full Firebase Timestamp object (using normalized version)
       if (typeof normalized.toDate === 'function') {
@@ -318,10 +322,18 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
       };
     }
     
-    const timestamp = input as FirebaseTimestamp;
-    
+    const timestampValues = extractFirebaseTimestampValues(input);
+    if (!timestampValues) {
+      return {
+        canUseFastPath: false,
+        strategy: this.type,
+        confidence: 0
+      };
+    }
+    const timestamp = timestampValues;
+
     // Fast path for valid Firebase timestamps with integer values
-    if (Number.isInteger(timestamp.seconds) && 
+    if (Number.isInteger(timestamp.seconds) &&
         Number.isInteger(timestamp.nanoseconds) &&
         timestamp.seconds >= 0 &&
         timestamp.nanoseconds >= 0 &&
@@ -355,23 +367,34 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
    * Get optimization hints
    */
   getOptimizationHints(input: TemporalInput, context: ParseContext): ParseOptimizationHints {
-    const timestamp = input as FirebaseTimestamp;
+    const timestampValues = extractFirebaseTimestampValues(input);
+    if (!timestampValues) {
+      return {
+        preferredStrategy: this.type,
+        estimatedComplexity: 'high',
+        shouldCache: false,
+        canUseFastPath: false,
+        suggestedOptions: {},
+        warnings: ['Invalid Firebase Timestamp: missing required properties']
+      };
+    }
+    const timestamp = timestampValues;
     const confidence = this.getConfidence(input, context);
-    
+
     let estimatedComplexity: 'low' | 'medium' | 'high' = 'low';
     let shouldCache = true;
     let canUseFastPath = false;
     const warnings: string[] = [];
-    
+
     // Determine complexity
-    if (Number.isInteger(timestamp.seconds) && 
+    if (Number.isInteger(timestamp.seconds) &&
         Number.isInteger(timestamp.nanoseconds) &&
         timestamp.seconds >= 0 &&
         timestamp.nanoseconds >= 0 &&
         timestamp.nanoseconds < 1e9) {
       estimatedComplexity = 'low';
       canUseFastPath = true;
-    } else if (typeof timestamp.seconds === 'number' && 
+    } else if (typeof timestamp.seconds === 'number' &&
                typeof timestamp.nanoseconds === 'number') {
       estimatedComplexity = 'medium';
       warnings.push('Firebase Timestamp requires normalization');
@@ -381,7 +404,7 @@ export class FirebaseTimestampStrategy implements ParseStrategy {
     }
     
     // Caching recommendations
-    if (typeof timestamp.toDate === 'function') {
+    if (typeof (input as FirebaseTimestamp).toDate === 'function') {
       warnings.push('Firebase Timestamp with methods - consider caching results');
     }
     

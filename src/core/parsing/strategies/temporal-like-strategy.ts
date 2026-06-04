@@ -2,7 +2,7 @@
  * @file Temporal-like parsing strategy for handling objects with temporal properties
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   ParseStrategy,
   ParseStrategyType,

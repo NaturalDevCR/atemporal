@@ -1,0 +1,119 @@
+# .github/workflows/release.yml
+name: Release (release-please)
+
+# Automates the boring parts of releasing:
+#   1. Scans commits since the last release for Conventional Commits.
+#   2. Opens / updates a "Release PR" with version bump + CHANGELOG entry.
+#   3. On merge of the Release PR, creates a GitHub Release with notes.
+#   4. Publishes the npm package with `--provenance` (SLSA build-level
+#      attestation, verifiable via Sigstore).
+#
+# Replaces the old `npm run release` (standard-version) flow with a
+# fully automated, PR-based process. See docs/adr/0007-supply-chain-hardening.md.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+  issues: write
+  # For npm provenance + OIDC, see https://docs.npmjs.com/generating-provenance-statements
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish-npm:
+    name: Publish to npm (provenance)
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish with provenance + OIDC
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if npm view "atemporal@${package_version}" version >/dev/null 2>&1; then
+            echo "atemporal@${package_version} is already published; skipping npm publish."
+            exit 0
+          fi
+
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN is not configured. Add an npm automation token as a repository or environment secret, or configure npm trusted publishing for this repository."
+            exit 1
+          fi
+
+          npm publish --provenance --access public --tag latest
+
+  attach-sbom:
+    name: Attach SBOM to GitHub Release
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate npm SBOM (SPDX JSON)
+        run: |
+          mkdir -p sbom
+          npm sbom --sbom-format=spdx --json > sbom/atemporal.spdx.json
+
+      - name: Generate npm SBOM (CycloneDX JSON)
+        run: npm sbom --sbom-format=cyclonedx --json > sbom/atemporal.cdx.json
+
+      - name: Upload SBOMs to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            sbom/atemporal.spdx.json
+            sbom/atemporal.cdx.json
+          fail_on_unmatched_files: true

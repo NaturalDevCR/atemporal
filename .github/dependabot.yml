@@ -1,0 +1,93 @@
+# .github/dependabot.yml
+# GitHub-native Dependabot. Keeps runtime peer deps + dev toolchain
+# current without manual PRs. See docs/adr/0007-supply-chain-hardening.md.
+
+version: 2
+
+# Stop weekly PRs for actions; rely on Renovate or pinned tags instead.
+# We use Dependabot only for `npm` (the package) and `github-actions`.
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 8
+    # Only patch + minor; majors require explicit approval.
+    versioning-strategy: "increase"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    # ----------------------------------------------------------------
+    # `vite` is intentionally NOT auto-updated.
+    #
+    # Reason: `vitepress@1.6.4` declares `vite@^5.4.14` as a direct
+    # dependency (not a peerDep), and vitepress 2.x is still alpha
+    # (latest is 2.0.0-alpha.17 as of 2026-06) so we cannot migrate
+    # off the 1.x line.
+    #
+    # Mitigation: the project pins `vite` to `^8.0.6` via the npm
+    # `overrides` field in package.json. The 8.x line is past every
+    # GHSA advisory that targets vite 5.x/6.x/7.x, and the next
+    # patched 8.x release is what Dependabot would auto-apply anyway.
+    # When vitepress 2.0 ships stable AND moves `vite` to a peerDep,
+    # we drop this `ignore` and let Dependabot take over.
+    #
+    # See Dependabot run #24085112858 (2026-04-07) for the original
+    # "security_update_not_possible" error that motivated this entry.
+    # ----------------------------------------------------------------
+    ignore:
+      - dependency-name: "vite"
+    # Group related deps so we get one PR instead of five.
+    groups:
+      temporal-polyfill:
+        patterns:
+          - "@js-temporal/polyfill"
+      typescript:
+        patterns:
+          - "typescript"
+          - "ts-*"
+      jest:
+        patterns:
+          - "jest"
+          - "@types/jest"
+          - "ts-jest"
+      build:
+        patterns:
+          - "tsup"
+          - "esbuild"
+          - "rollup"
+          - "rolldown"
+      vitepress:
+        patterns:
+          - "vitepress"
+          - "vue"
+      mutation:
+        patterns:
+          - "@stryker-mutator/*"
+    # Auto-merge patch updates for non-runtime tooling.
+    # Runtime peer deps still require manual review.
+    labels:
+      - "dependencies"
+      - "automated"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "automated"
+

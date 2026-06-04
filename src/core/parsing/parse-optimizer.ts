@@ -52,11 +52,15 @@ export class ParseOptimizer {
   }
 
   /**
-   * Generate performance profile for different operations
+   * Generate performance profile for different operations.
+   *
+   * The `ParseEngine` already tracks real per-parse timing via `performance.now()` and
+   * maintains an up-to-date `performanceProfile` inside its internal metrics. This method
+   * now surfaces that data directly instead of re-computing estimates with random jitter,
+   * which made the profile non-deterministic and unreliable.
    */
   generatePerformanceProfile(metrics: ParseMetrics): ParseProfile {
     const totalOperations = metrics.totalParses;
-    const avgTime = metrics.averageExecutionTime;
 
     // Default values for empty metrics
     if (totalOperations === 0) {
@@ -69,32 +73,15 @@ export class ParseOptimizer {
       };
     }
 
-    // Find fastest and slowest strategies
-    let fastest = { strategy: 'fallback' as ParseStrategyType, time: Infinity };
-    let slowest = { strategy: 'fallback' as ParseStrategyType, time: 0 };
-    let mostUsed = { strategy: 'fallback' as ParseStrategyType, count: 0 };
-    let mostSuccessful = { strategy: 'fallback' as ParseStrategyType, rate: 0 };
+    // Use the real performance profile already computed by ParseEngine.updatePerformanceProfile()
+    // rather than estimating with random values. These are measured via performance.now().
+    const realProfile = metrics.performanceProfile;
 
-    // Analyze strategy breakdown
+    // Enrich the `mostSuccessful` field using the strategyBreakdown counts vs. total parses,
+    // since the engine tracks a simplified success rate. We recompute it here for accuracy.
+    let mostSuccessful = { ...realProfile.mostSuccessful };
     for (const [strategy, count] of Object.entries(metrics.strategyBreakdown)) {
       const strategyType = strategy as ParseStrategyType;
-      
-      // Most used strategy
-      if (count > mostUsed.count) {
-        mostUsed = { strategy: strategyType, count };
-      }
-
-      // For fastest/slowest, we'll use average time as approximation
-      // In a real implementation, this would come from detailed metrics
-      const estimatedTime = avgTime * (1 + Math.random() * 0.5); // Placeholder logic
-      if (estimatedTime < fastest.time) {
-        fastest = { strategy: strategyType, time: estimatedTime };
-      }
-      if (estimatedTime > slowest.time) {
-        slowest = { strategy: strategyType, time: estimatedTime };
-      }
-
-      // Most successful (using count as proxy for success rate)
       const successRate = count / Math.max(1, totalOperations);
       if (successRate > mostSuccessful.rate) {
         mostSuccessful = { strategy: strategyType, rate: successRate };
@@ -102,13 +89,14 @@ export class ParseOptimizer {
     }
 
     return {
-      fastest,
-      slowest,
-      mostUsed,
+      fastest: realProfile.fastest,
+      slowest: realProfile.slowest,
+      mostUsed: realProfile.mostUsed,
       mostSuccessful,
       recommendations: this.generateRecommendations(metrics).map(r => r.description)
     };
   }
+
 
   /**
    * Calculate efficiency score (0-1)

@@ -2,7 +2,7 @@
  * @file Array-like parsing strategy for handling array-like temporal inputs
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   TemporalInput,
   StrictParsingOptions
@@ -219,9 +219,9 @@ export class ArrayLikeStrategy implements ParseStrategy {
       }
     }
     
-    // Warn about unusual array lengths
-    if (numbers.length > 10) {
-      warnings.push('Array has more than 10 elements - extra elements will be ignored');
+    // Warn about and reject dangerously large arrays
+    if (numbers.length > 100) {
+      errors.push(`Array length ${numbers.length} exceeds maximum allowed (100)`);
     }
     
     const confidence = errors.length === 0 ? this.getConfidence(input, context) : 0;

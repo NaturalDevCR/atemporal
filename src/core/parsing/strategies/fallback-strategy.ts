@@ -3,7 +3,8 @@
  */
 
 import '@js-temporal/polyfill';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
+import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
 import type {
   TemporalInput,
   StrictParsingOptions
@@ -356,7 +357,7 @@ export class FallbackStrategy implements ParseStrategy {
       }
       const normalized = normalizationResult.normalizedInput;
       
-      let result: Temporal.ZonedDateTime;
+      let result: TemporalNS.ZonedDateTime;
       
       // Try parsing the normalized input
       if (typeof normalized === 'string') {
@@ -456,7 +457,7 @@ export class FallbackStrategy implements ParseStrategy {
   /**
    * Parse normalized input as string
    */
-  private parseAsString(str: string, context: ParseContext): Temporal.ZonedDateTime {
+  private parseAsString(str: string, context: ParseContext): TemporalNS.ZonedDateTime {
     // Try various string parsing approaches
     
     // 1. Try Temporal.ZonedDateTime.from()
@@ -503,7 +504,7 @@ export class FallbackStrategy implements ParseStrategy {
   /**
    * Parse normalized input as number
    */
-  private parseAsNumber(num: number, context: ParseContext): Temporal.ZonedDateTime {
+  private parseAsNumber(num: number, context: ParseContext): TemporalNS.ZonedDateTime {
     if (!Number.isFinite(num)) {
       throw new Error(`Invalid number: ${num}`);
     }
@@ -549,7 +550,7 @@ export class FallbackStrategy implements ParseStrategy {
   /**
    * Parse input as Date object
    */
-  private parseAsDate(input: Date, context: ParseContext): Temporal.ZonedDateTime {
+  private parseAsDate(input: Date, context: ParseContext): TemporalNS.ZonedDateTime {
     // Check if the Date is valid
     if (isNaN(input.getTime())) {
       throw new Error('Invalid Date object');

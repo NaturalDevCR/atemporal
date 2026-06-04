@@ -231,7 +231,6 @@ export type CalendarString =
   | 'islamic-tbla'
   | 'islamic-civil'
   | 'islamic-rgsa'
-  | 'iso8601'
   | 'japanese'
   | 'persian'
   | 'roc'

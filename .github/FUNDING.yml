@@ -1,0 +1,10 @@
+# These are the official sponsorship / funding platforms for atemporal.
+# Maintained here (and not in the README) so the project appears neutral
+# at first glance to enterprise buyers. Edit this file to update the
+# list of accepted sponsorship channels.
+github: [NaturalDevCR]
+open_collective: atemporal
+patreon: # (none currently)
+ko_fi: # (none currently)
+tidelift: # (none currently)
+custom: ['https://www.paypal.com/paypalme/NaturalCloud']

@@ -4,12 +4,8 @@
  * engine for the atemporal library, handling parsing, formatting, and comparisons.
  */
 
-import { getCachedTemporalAPI } from './core/temporal-detection';
-// Import Temporal types for TypeScript compilation
 import type { Temporal } from '@js-temporal/polyfill';
-
-// Get the appropriate Temporal API (native or polyfilled)
-const { Temporal: TemporalAPI } = getCachedTemporalAPI();
+import { Temporal as TemporalAPI } from './core/temporal-api';
 import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
 import { InvalidTimeZoneError, InvalidDateError } from './errors';
 import { ParseCoordinator } from './core/parsing/index';
@@ -43,7 +39,7 @@ export class TemporalUtils {
                 enableAutoOptimization: true,
                 autoOptimizationInterval: 60000,
                 maxStrategyAttempts: 3,
-                enableDetailedMetrics: true
+                enableDetailedMetrics: false
             });
         }
         return this._parseCoordinator;
@@ -75,7 +71,7 @@ export class TemporalUtils {
             TemporalUtils._defaultTimeZone = tz;
             TemporalUtils._globalTimeZoneSet = true;
         } catch (e) {
-            throw new InvalidTimeZoneError(`Invalid time zone: ${tz}`);
+            throw new InvalidTimeZoneError(`Invalid time zone: ${tz}`, tz);
         }
     }
 
@@ -130,8 +126,8 @@ export class TemporalUtils {
         try {
             const coordinator = this.getParseCoordinator();
             
-            // Use the coordinator's synchronous parsing through the engine
-            const parseEngine = (coordinator as any).parseEngine;
+            // Use the coordinator's synchronous parsing through the engine.
+            const parseEngine = coordinator.getParseEngine();
             if (!parseEngine) {
                 throw new InvalidDateError('ParseEngine not available');
             }
@@ -140,7 +136,7 @@ export class TemporalUtils {
             const validation = parseEngine.validate(input as any, {
                 timeZone: tz,
                 preserveOriginalTimeZone: originalTimeZone === undefined || originalTimeZone === null
-            });
+            } as any);
             
             // For validation failures on unsupported types and malformed inputs, throw immediately
             if (!validation.isValid && validation.errors.some((error: string) => 
@@ -164,7 +160,7 @@ export class TemporalUtils {
             const result = parseEngine.parse(input as any, {
                 timeZone: tz,
                 preserveOriginalTimeZone: originalTimeZone === undefined || originalTimeZone === null
-            });
+            } as any);
             
             if (!result.success || !result.data) {
                 throw new InvalidDateError(`Failed to parse input: ${input}. Error: ${result.error?.message || 'Unknown error'}`);
@@ -221,7 +217,6 @@ export class TemporalUtils {
         if (typeof originalInput === 'string' && 
             (originalTimeZone === undefined || originalTimeZone === null) && 
             /[+-]\d{2}:?\d{2}$/.test(originalInput)) {
-            // The parsing strategies should have already handled this correctly
             return parsed;
         }
         
@@ -229,18 +224,14 @@ export class TemporalUtils {
         if (typeof originalInput === 'object' && originalInput !== null && 'year' in originalInput) {
             const inputObj = originalInput as any;
             if (originalTimeZone !== undefined && originalTimeZone !== null) {
-                // Explicit timezone provided - use target timezone
                 return parsed.timeZoneId !== targetTz ? parsed.withTimeZone(targetTz) : parsed;
             } else if (TemporalUtils._globalTimeZoneSet) {
-                // Global timezone has been explicitly set - use target timezone
                 return parsed.timeZoneId !== targetTz ? parsed.withTimeZone(targetTz) : parsed;
             } else if (inputObj.timeZone && inputObj.timeZone !== targetTz) {
-                // Use object's timezone if no global timezone is set
                 return parsed.withTimeZone(inputObj.timeZone);
             }
         }
         
-        // For all other cases, ensure the result is in the target timezone
         return parsed.timeZoneId !== targetTz ? parsed.withTimeZone(targetTz) : parsed;
     }
 
@@ -277,8 +268,6 @@ export class TemporalUtils {
     static diff(a: DateInput, b: DateInput, unit: TimeUnit = 'millisecond'): number {
         const d1 = TemporalUtils.from(a);
         const d2 = TemporalUtils.from(b);
-
-        // Use the DiffCache to get or calculate the result
         return DiffCache.getDiffResult(d1, d2, unit);
     }
 
@@ -314,11 +303,9 @@ export class TemporalUtils {
      * Checks if date `a` is on the same calendar day as date `b` in their respective timezones.
      */
     static isSameDay(a: DateInput, b: DateInput): boolean {
-        // Preserve original timezone context for each input
         let dateA: Temporal.ZonedDateTime;
         let dateB: Temporal.ZonedDateTime;
         
-        // If input is already a ZonedDateTime, preserve its timezone
         if (a instanceof TemporalAPI.ZonedDateTime) {
             dateA = a;
         } else {
@@ -331,8 +318,6 @@ export class TemporalUtils {
             dateB = TemporalUtils.from(b);
         }
         
-        // Compare calendar days in their respective timezones
-        // Each date should be evaluated in its own timezone context
         const plainDateA = dateA.toPlainDate();
         const plainDateB = dateB.toPlainDate();
         return plainDateA.equals(plainDateB);
@@ -340,7 +325,6 @@ export class TemporalUtils {
 
     /**
      * Gets performance metrics from the parsing system.
-     * @returns Parsing performance metrics including cache hit ratio, strategy usage, etc.
      */
     static getParsingMetrics() {
         return this.getParseCoordinator().getMetrics();
@@ -348,7 +332,6 @@ export class TemporalUtils {
 
     /**
      * Gets a comprehensive performance report from the parsing system.
-     * @returns Detailed performance analysis and optimization recommendations
      */
     static getParsingPerformanceReport() {
         return this.getParseCoordinator().generatePerformanceReport();
@@ -370,7 +353,6 @@ export class TemporalUtils {
 
     /**
      * Updates the parsing system configuration.
-     * @param config - New configuration options
      */
     static updateParsingConfig(config: Partial<{
         enableAutoOptimization: boolean;
@@ -383,9 +365,6 @@ export class TemporalUtils {
 
     /**
      * Benchmarks parsing performance for different input types.
-     * @param testInputs - Array of test inputs with descriptions
-     * @param iterations - Number of iterations to run (default: 100)
-     * @returns Benchmark results
      */
     static benchmarkParsing(
         testInputs: Array<{ input: any; description: string }> = [
@@ -408,7 +387,7 @@ export { LRUCache } from './core/caching/lru-cache';
 // Re-export IntlCache from core/caching for plugin compatibility
 export { IntlCache } from './core/caching/intl-cache';
 
-// Create a simple GlobalCacheCoordinator for backward compatibility
+// Global cache coordinator for backward plugin compatibility
 export class GlobalCacheCoordinator {
     private static registeredCaches: Map<string, { clear: () => void; getStats: () => any }> = new Map();
 

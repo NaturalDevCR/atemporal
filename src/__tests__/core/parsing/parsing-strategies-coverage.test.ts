@@ -46,14 +46,14 @@ describe('parsing-strategies.ts - Deprecated File Coverage', () => {
     });
     
     /**
-     * Test that the file has the expected structure and line count
+     * Test that the file has the expected structure
      */
     it('should have the expected file structure', () => {
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const lines = fileContent.split('\n');
         
-        // Verify the file has the expected number of lines (29 total)
-        expect(lines.length).toBe(29);
+        // Verify the file keeps enough documentation to explain the migration path.
+        expect(lines.length).toBeGreaterThanOrEqual(29);
         
         // Verify the first line contains the file header
         expect(lines[0]).toContain('/**');

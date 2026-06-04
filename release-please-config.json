@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "_comment": "Manifest-mode release-please configuration. See https://github.com/googleapis/release-please/blob/main/docs/manifest-releaser.md",
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "skip-github-release": false,
+  "draft": false,
+  "prerelease": false,
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "atemporal",
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "src/index.ts",
+        "SECURITY.md"
+      ]
+    }
+  }
+}

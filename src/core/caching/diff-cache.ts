@@ -2,10 +2,12 @@
  * @file Optimized diff cache with structured keys and enhanced performance
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal as TemporalRuntime } from '../temporal-api';
+import type { Temporal } from '@js-temporal/polyfill';
 import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';
+import { debugLog } from '../debug';
 import type { TimeUnit } from '../../types';
 
 /**
@@ -56,12 +58,16 @@ export class DiffCache {
    */
   private static calculateDiff(d1: Temporal.ZonedDateTime, d2: Temporal.ZonedDateTime, unit: TimeUnit): number {
     type TotalUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond';
-    
+    // Normalize plural units to singular (e.g. 'milliseconds' → 'millisecond')
+    const normalizedUnit = unit.replace(/s$/, '') as TotalUnit;
+
     try {
-      return d1.since(d2).total({ unit: unit as TotalUnit, relativeTo: d1 });
+      // Both d1 and d2 are guaranteed to come from the same Temporal implementation
+      // (native or polyfill) because every module now uses ../temporal-api which
+      // re-exports getCachedTemporalAPI(). No cross-implementation conversion needed.
+      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
     } catch (error) {
-      // Fallback for unsupported units or edge cases
-      console.warn(`Failed to calculate diff for unit ${unit}:`, error);
+      debugLog('warn', `Failed to calculate diff for unit ${unit}`);
       return 0;
     }
   }
@@ -157,7 +163,7 @@ export class DiffCache {
    * Pre-warms the cache with common diff calculations
    */
   static preWarm(baseDate?: Temporal.ZonedDateTime): void {
-    const base = baseDate || Temporal.Now.zonedDateTimeISO('UTC');
+    const base = baseDate || TemporalRuntime.Now.zonedDateTimeISO('UTC');
     const units: TimeUnit[] = ['day', 'hour', 'minute', 'second', 'millisecond'];
     
     // Pre-calculate common diffs

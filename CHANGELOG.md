@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.1](https://github.com/NaturalDevCR/atemporal/compare/v1.4.0...v1.4.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** stabilize workflows and docs ([15aa796](https://github.com/NaturalDevCR/atemporal/commit/15aa7968fcc56e1ec6bf350b5980c1795175a716))
+
+## [1.4.0](https://github.com/NaturalDevCR/atemporal/compare/v1.3.7...v1.4.0) (2026-06-03)
+
+
+### Features
+
+* **api:** add `atemporal.try()`, `atemporal.iso()`, `atemporal.validate()` ergonomic static helpers ([Sprint 1.1](#))
+* **errors:** publish the full `ATEMPORAL_*` error-code catalog in `src/errors.ts` JSDoc; codes are now a documented public contract
+* **formatting:** expose `atemporal.presets.list()` and `atemporal.presets.get(name)` as the programmatic preset API
+* **strict-mode:** ship `atemporal.setStrictMode`, `isStrictMode`, `getStrictModeFlags`, `clearStrictWarnings` as the supported API (no longer internal)
+* **llms.txt:** comprehensive LLM-friendly documentation bundle (5 500+ lines) with method index, cookbook, migration guides, threat model, and ADRs
+* **supply-chain:** mutation testing (Stryker), SBOM (SPDX + CycloneDX), signed releases with `--provenance` (SLSA OIDC), Codecov coverage trend, Dependabot auto-updates, license allow-list, performance regression gate, doc link checker, secret scanning (gitleaks), dependency CVE gate (npm audit --audit-level=high + OSV-Scanner)
+
+
+### Bug Fixes
+
+* **parsing:** harden parse strategies against malformed inputs (firebase, string, fallback, temporal-instant, temporal-plain-date, temporal-plain-datetime, temporal-wrapper, temporal-zoned)
+* **caching:** invalidate the diff cache when the diff function's unit normalizer changes
+* **bench:** import the published `dist/index.mjs` instead of the source tree, so the benchmark measures what we ship
+
+
+### Documentation
+
+* complete and reorganise the cookbook (audit logs, business hours, REST validation, Prisma, Drizzle, RSC, Cloudflare Workers, structured logging, microservice timezones, i18n)
+* complete migration guides (Day.js, Luxon, moment.js, raw Temporal)
+* add ADR 0007 — supply chain hardening
+* threat model rewritten as a public-facing document in `docs/security/threat-model.md`
+
+
+### [1.3.7](https://github.com/NaturalDevCR/atemporal/compare/v1.3.6...v1.3.7) (2026-05-07)
+
+
+### Bug Fixes
+
+* security hardening and code quality improvements across the library ([74978bb](https://github.com/NaturalDevCR/atemporal/commit/74978bbf025c66f14a885b366142bd06fefef879))
+
+### [1.3.6](https://github.com/NaturalDevCR/atemporal/compare/v1.3.5...v1.3.6) (2026-04-07)
+
+### [1.3.5](https://github.com/NaturalDevCR/atemporal/compare/v1.3.0...v1.3.5) (2026-04-07)
+
+
+### Bug Fixes
+
+* **diff:** normalize ZonedDateTime to polyfill before calling since() ([f8ea619](https://github.com/NaturalDevCR/atemporal/commit/f8ea61988196bd4b32a06fa21f90aa910504ea54))
+* **temporal-api:** correct type exports for DTS compatibility ([4d44a98](https://github.com/NaturalDevCR/atemporal/commit/4d44a981e149932f573171110d96d01155b4e968))
+
+## [1.3.0](https://github.com/NaturalDevCR/atemporal/compare/v1.1.1...v1.3.0) (2026-04-04)
+
+
+### Features
+
+* v1.2.0 - code quality, deterministic profiler, plugin system improvements ([4081e01](https://github.com/NaturalDevCR/atemporal/commit/4081e011b73dae460b35e1df0ef92445cc14584d)), closes [#1](https://github.com/NaturalDevCR/atemporal/issues/1) [#2](https://github.com/NaturalDevCR/atemporal/issues/2) [#3](https://github.com/NaturalDevCR/atemporal/issues/3) [#7](https://github.com/NaturalDevCR/atemporal/issues/7) [#8](https://github.com/NaturalDevCR/atemporal/issues/8) [#9](https://github.com/NaturalDevCR/atemporal/issues/9) [#4](https://github.com/NaturalDevCR/atemporal/issues/4) [#6](https://github.com/NaturalDevCR/atemporal/issues/6)
+
+
+### Bug Fixes
+
+* **caching:** use unit normalization in diff calculations ([63ed48f](https://github.com/NaturalDevCR/atemporal/commit/63ed48f25438f42501226c705fe1155319825914))
+* **diff:** normalize plural time units to singular in calculateDiff ([2bdb0d0](https://github.com/NaturalDevCR/atemporal/commit/2bdb0d00944277912c3ca2ddf8428d0743bc8784))
+
 ### [1.1.1](https://github.com/NaturalDevCR/atemporal/compare/v1.0.0...v1.1.1) (2026-02-18)
 
 

@@ -2,7 +2,8 @@
  * @file Temporal PlainDate parsing strategy for handling Temporal.PlainDate inputs
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../../temporal-api";
+import type { Temporal as TemporalNS } from "@js-temporal/polyfill";
 import type { TemporalInput } from "../../../types/enhanced-types";
 import { TemporalParseError } from "../../../types/enhanced-types";
 import { DEFAULT_TEMPORAL_CONFIG } from "../../../types/index";
@@ -57,7 +58,7 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
       };
     }
 
-    const plainDate = input as Temporal.PlainDate;
+    const plainDate = input as TemporalNS.PlainDate;
     const timeZone = context.options.timeZone || "UTC";
 
     // Fast path for PlainDate conversion to ZonedDateTime
@@ -98,7 +99,7 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
       };
     }
 
-    const plainDate = input as Temporal.PlainDate;
+    const plainDate = input as TemporalNS.PlainDate;
 
     // Check if the PlainDate is valid
     try {
@@ -144,7 +145,7 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
    * Convert input to intermediate format
    */
   convert(input: TemporalInput, context: ParseContext): ParseConversionResult {
-    const plainDate = input as Temporal.PlainDate;
+    const plainDate = input as TemporalNS.PlainDate;
     const timeZone =
       context.options.timeZone ||
       (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;
@@ -176,7 +177,7 @@ export class TemporalPlainDateStrategy implements ParseStrategy {
     }
 
     try {
-      const plainDate = input as Temporal.PlainDate;
+      const plainDate = input as TemporalNS.PlainDate;
       const timeZone =
         context.options.timeZone ||
         (DEFAULT_TEMPORAL_CONFIG as any).defaultTimeZone;

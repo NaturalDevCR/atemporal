@@ -54,6 +54,7 @@ import {
   isTemporalLike,
   isArrayLike
 } from './enhanced-types';
+import { debugLog } from '../core/debug';
 import type { 
   GlobalTemporalConfig, 
   TemporalError, 
@@ -230,7 +231,7 @@ export function assertLocale(locale: unknown): asserts locale is LocaleString {
     ];
     
     if (!commonLocales.includes(locale)) {
-      console.warn(`Potentially invalid locale format: ${locale}`);
+      debugLog('warn', `Potentially invalid locale format: ${locale}`);
     }
   }
 }
@@ -261,12 +262,11 @@ export function assertTimezone(timezone: unknown): asserts timezone is TimezoneS
     ];
     
     if (!commonTimezones.includes(timezone)) {
-      console.warn(`Potentially invalid timezone format: ${timezone}`);
+      debugLog('warn', `Potentially invalid timezone format: ${timezone}`);
     }
   } else {
-    // Even if it matches the pattern, warn for obviously invalid ones
     if (timezone.includes('Invalid/')) {
-      console.warn(`Potentially invalid timezone format: ${timezone}`);
+      debugLog('warn', `Potentially invalid timezone format: ${timezone}`);
     }
   }
 }

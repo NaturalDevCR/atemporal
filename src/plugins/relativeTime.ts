@@ -7,6 +7,7 @@
 import { TemporalWrapper } from '../TemporalWrapper';
 import { IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
 import { LocaleUtils } from '../core/locale';
+import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin, TimeUnit } from '../types';
 
 /**
@@ -30,7 +31,7 @@ class RelativeTimeCache {
         withoutSuffix: boolean
     ): string | null {
         const normalizedLocale = LocaleUtils.validateAndNormalize(locale);
-        const key = `${diffSeconds}:${normalizedLocale}:${withoutSuffix}`;
+        const key = JSON.stringify([diffSeconds, normalizedLocale, withoutSuffix]);
         const result = this.cache.get(key);
         return result !== undefined ? result : null;
     }
@@ -49,7 +50,7 @@ class RelativeTimeCache {
         result: string
     ): void {
         const normalizedLocale = LocaleUtils.validateAndNormalize(locale);
-        const key = `${diffSeconds}:${normalizedLocale}:${withoutSuffix}`;
+        const key = JSON.stringify([diffSeconds, normalizedLocale, withoutSuffix]);
         this.cache.set(key, result);
     }
 
@@ -183,7 +184,7 @@ const getRelativeTime = (
                     bestDiff = Math.round(diffYears);
                 }
             } catch (e) {
-                console.warn('RelativeTime: Error calculating long-term diff:', e);
+                debugLog('warn', 'RelativeTime: Error calculating long-term diff', String(e));
                 // Fallback to day calculation
                 bestUnit = 'day';
                 bestDiff = Math.round(diffSeconds / 86400);
@@ -202,7 +203,7 @@ const getRelativeTime = (
                 });
                 result = nf.format(Math.abs(bestDiff));
             } catch (e) {
-                console.warn('RelativeTime: Error formatting number:', e);
+                debugLog('warn', 'RelativeTime: Error formatting number', String(e));
                 // Simple fallback
                 const absValue = Math.abs(bestDiff);
                 const unitName = bestUnit + (absValue !== 1 ? 's' : '');
@@ -214,7 +215,7 @@ const getRelativeTime = (
                 const rtf = IntlCache.getRelativeTimeFormatter(normalizedLocale, { numeric: 'auto' });
                 result = rtf.format(bestDiff, bestUnit);
             } catch (e) {
-                console.warn('RelativeTime: Error formatting relative time:', e);
+                debugLog('warn', 'RelativeTime: Error formatting relative time', String(e));
                 // Simple fallback with basic logic
                 const absValue = Math.abs(bestDiff);
                 const unitName = bestUnit + (absValue !== 1 ? 's' : '');
@@ -234,7 +235,7 @@ const getRelativeTime = (
 
         return result;
     } catch (error) {
-        console.warn('RelativeTime: Unexpected error:', error);
+        debugLog('warn', 'RelativeTime: Unexpected error', String(error));
         return 'Invalid Date';
     }
 };

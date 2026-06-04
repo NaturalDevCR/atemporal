@@ -2,7 +2,7 @@
  * @file Number parsing strategy for handling numeric temporal inputs (timestamps)
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal } from '../../temporal-api';
 import type {
   TemporalInput,
   StrictParsingOptions

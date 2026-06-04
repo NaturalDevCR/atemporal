@@ -40,8 +40,7 @@ describe('DiffCache Coverage Tests', () => {
       
       expect(result).toBe(0);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        'Failed to calculate diff for unit day:',
-        expect.any(Error)
+        expect.stringContaining('Failed to calculate diff for unit day')
       );
       
       // Restore original method
@@ -61,8 +60,7 @@ describe('DiffCache Coverage Tests', () => {
       
       expect(result).toBe(0);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        'Failed to calculate diff for unit invalid-unit:',
-        expect.any(RangeError)
+        expect.stringContaining('Failed to calculate diff for unit invalid-unit')
       );
     });
 

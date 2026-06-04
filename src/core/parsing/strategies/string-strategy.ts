@@ -2,7 +2,8 @@
  * @file String parsing strategy for handling string-based temporal inputs
  */
 
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "../../temporal-api";
+import type { Temporal as TemporalNS } from "@js-temporal/polyfill";
 import type { TemporalInput, StrictParsingOptions } from "../../../types/index";
 import { TemporalParseError } from "../../../types/enhanced-types";
 
@@ -392,7 +393,7 @@ export class StringParseStrategy implements ParseStrategy {
       const normalizedStr = normalizationResult.normalizedInput as string;
 
       // Try different parsing approaches in order of preference
-      let result: Temporal.ZonedDateTime;
+      let result: TemporalNS.ZonedDateTime;
 
       // 1. Try Temporal.ZonedDateTime.from() first (most precise)
       try {

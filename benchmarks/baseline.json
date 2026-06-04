@@ -1,0 +1,14 @@
+{
+  "version": "1.4.0",
+  "node": "20.x",
+  "ops": 100000,
+  "maxAllowedMs": {
+    "parse": 1500,
+    "format": 6000,
+    "add": 2000,
+    "diff": 11000,
+    "validate": 22000
+  },
+  "tolerance": 1.25,
+  "comment": "These thresholds are calibrated for a hosted GitHub Actions ubuntu-latest runner. They are NOT designed for local developer machines, which are usually 5-10x faster. Update after a deliberate perf change."
+}

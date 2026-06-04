@@ -3,7 +3,8 @@
  */
 
 import '@js-temporal/polyfill';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal as TemporalRuntime } from '../temporal-api';
+import type { Temporal } from '@js-temporal/polyfill';
 import type {
   TemporalInput,
   StrictParsingOptions
@@ -62,6 +63,15 @@ export class ParseCoordinator {
   private config: Required<ParseCoordinatorConfig>;
   private operationCount = 0;
   private lastOptimization = 0;
+
+  /**
+   * Returns the internal ParseEngine instance.
+   * Intended for trusted internal consumers to avoid `as any` casts.
+   * @internal
+   */
+  getParseEngine(): ParseEngine {
+    return this.parseEngine;
+  }
 
   constructor(config: ParseCoordinatorConfig = {}) {
     this.config = {
@@ -363,7 +373,7 @@ export class ParseCoordinator {
     switch (this.config.fallbackBehavior) {
       case 'null':
         // Return epoch as fallback
-        return Temporal.Instant.fromEpochMilliseconds(0)
+        return TemporalRuntime.Instant.fromEpochMilliseconds(0)
           .toZonedDateTimeISO(context.options.timeZone || 'UTC');
       
       case 'retry':

@@ -55,9 +55,11 @@ describe("Temporal Detection", () => {
     });
 
     it("should return true when native Temporal is properly available", () => {
-      // Mock native Temporal API
+      // Mock native Temporal API — reflects the final ECMAScript 2026 spec (TC39 Stage 4).
+      // Temporal.TimeZone and Temporal.Calendar were REMOVED from the spec in June 2024.
+      // Chrome 144+ and Firefox 139+ do NOT expose those classes natively.
       const mockTemporal = {
-        Now: {},
+        Now: { zonedDateTimeISO: function () {} },
         PlainDate: function () {},
         PlainDateTime: function () {},
         ZonedDateTime: function () {},
@@ -66,8 +68,6 @@ describe("Temporal Detection", () => {
         PlainTime: function () {},
         PlainYearMonth: function () {},
         PlainMonthDay: function () {},
-        TimeZone: function () {},
-        Calendar: function () {},
       };
 
       const originalTemporal = (global as any).Temporal;
@@ -76,6 +76,35 @@ describe("Temporal Detection", () => {
       expect(isNativeTemporalAvailable()).toBe(true);
 
       // Restore original Temporal
+      if (originalTemporal) {
+        (global as any).Temporal = originalTemporal;
+      } else {
+        delete (global as any).Temporal;
+      }
+    });
+
+    it("should return true even when Temporal.TimeZone and Temporal.Calendar are absent (ECMAScript 2026 spec)", () => {
+      // This specifically tests that the detection works correctly with Chrome 144+ / Firefox 139+
+      // native implementations which do NOT expose Temporal.TimeZone or Temporal.Calendar.
+      const modernNativeTemporal = {
+        Now: { zonedDateTimeISO: function () {} },
+        PlainDate: function () {},
+        PlainDateTime: function () {},
+        ZonedDateTime: function () {},
+        Instant: function () {},
+        Duration: function () {},
+        PlainTime: function () {},
+        PlainYearMonth: function () {},
+        PlainMonthDay: function () {},
+        // TimeZone and Calendar are intentionally absent (removed from spec)
+      };
+
+      const originalTemporal = (global as any).Temporal;
+      (global as any).Temporal = modernNativeTemporal;
+
+      expect(isNativeTemporalAvailable()).toBe(true);
+
+      // Restore
       if (originalTemporal) {
         (global as any).Temporal = originalTemporal;
       } else {
@@ -115,9 +144,10 @@ describe("Temporal Detection", () => {
     });
 
     it("should return native Temporal when available", () => {
-      // Mock native Temporal API
+      // Mock native Temporal API — reflects the final ECMAScript 2026 spec.
+      // Temporal.TimeZone and Temporal.Calendar are absent (removed from spec).
       const mockTemporal = {
-        Now: {},
+        Now: { zonedDateTimeISO: function () {} },
         PlainDate: function () {},
         PlainDateTime: function () {},
         ZonedDateTime: function () {},
@@ -126,8 +156,6 @@ describe("Temporal Detection", () => {
         PlainTime: function () {},
         PlainYearMonth: function () {},
         PlainMonthDay: function () {},
-        TimeZone: function () {},
-        Calendar: function () {},
       };
 
       const originalTemporal = (global as any).Temporal;

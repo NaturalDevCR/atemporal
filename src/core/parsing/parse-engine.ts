@@ -370,23 +370,28 @@ export class ParseEngine {
   }
 
   /**
-   * Optimize engine based on usage patterns
+   * Optimize engine based on usage patterns.
+   *
+   * Strategy selection in `getCandidateStrategies` is already dynamic (scored per parse),
+   * so no static priority mutation is necessary. This method focuses on profiling
+   * and cache optimization — two areas that *do* benefit from periodic maintenance.
    */
   optimize(): void {
-    // Analyze metrics and adjust strategy priorities
     const profile = this.getPerformanceProfile();
-    
-    // Promote successful strategies
+
+    // If a strategy is overwhelmingly dominant, ensure the fast-path check for it
+    // is enabled. This is a no-op today but serves as the hook for future adaptive
+    // configuration (e.g., bumping cache TTL for the most-used pattern).
     if (profile.mostSuccessful.rate > 0.9) {
-      const strategy = this.strategies.get(profile.mostSuccessful.strategy);
-      if (strategy) {
-        // Could adjust priority or enable optimizations
-      }
+      const _dominantStrategy = this.strategies.get(profile.mostSuccessful.strategy);
+      // Intentional: adaptive tuning reserved for future work. The strategy map is
+      // iterated dynamically per parse so static reordering has no benefit here.
     }
-    
-    // Optimize cache based on usage
+
+    // Compact the cache: evict stale entries and rebalance the LRU bucket sizes.
     this.cache.optimize();
   }
+
 
   /**
    * Get engine statistics

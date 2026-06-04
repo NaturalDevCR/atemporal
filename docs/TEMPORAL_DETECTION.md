@@ -1,6 +1,6 @@
 # Native Temporal Detection
 
-The atemporal library now includes automatic detection of native Temporal API support, allowing for seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
+The atemporal library automatically detects native Temporal API support, allowing seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
 
 ## How It Works
 
@@ -9,12 +9,14 @@ The library automatically detects whether the native Temporal API is available i
 - **Native Temporal Available**: Uses the browser's native implementation for optimal performance
 - **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
 
+**Current browser support:** Native Temporal is available in Chrome 144+, Firefox 139+, and other modern runtimes implementing the TC39 Stage 4 (ES2026) specification.
+
 ## Checking Temporal Implementation
 
 You can check which Temporal implementation is being used:
 
 ```javascript
-import atemporal from 'atemporal';
+import atemporal from "atemporal";
 
 // Get information about the current Temporal implementation
 const info = atemporal.getTemporalInfo();
@@ -29,35 +31,32 @@ console.log(info);
 
 ## Benefits
 
-### 🚀 **Future-Ready**
+### Future-Ready
+
 Automatically uses native Temporal when browsers support it, without requiring code changes.
 
-### ⚡ **Performance**
+### Performance
+
 Native implementations are typically faster than polyfills.
 
-### 🔄 **Seamless Transition**
-No breaking changes - your existing code continues to work exactly the same.
+### Seamless Transition
 
-### 📦 **Bundle Size**
+No breaking changes — your existing code continues to work exactly the same.
+
+### Bundle Size
+
 When native Temporal is available, the polyfill overhead is eliminated.
 
 ## Browser Support Timeline
 
-The Temporal API is currently in Stage 3 of the TC39 process. Browser support is expected to roll out gradually:
+The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**. Browser support is rolling out:
 
-- **Current Status**: Polyfill required in all environments
-- **Future**: Native support in modern browsers
-- **Transition**: Automatic detection ensures smooth migration
+- **Chrome 144+**: Native support
+- **Firefox 139+**: Native support
+- **Other browsers**: Automatic fallback to `@js-temporal/polyfill`
+- **Node.js**: Detection works across all supported versions
 
-## Development vs Production
-
-In development mode, the library logs which Temporal implementation is being used:
-
-```
-Atemporal: Using polyfilled Temporal API
-```
-
-This logging is automatically disabled in production builds.
+The automatic detection ensures smooth migration across all environments.
 
 ## Technical Details
 
@@ -65,8 +64,8 @@ This logging is automatically disabled in production builds.
 
 The detection system:
 
-1. Checks for `Temporal` in the global scope
-2. Verifies the presence of all required Temporal methods
+1. Checks for `Temporal` in the global scope (`globalThis`, `window`, `global`, or `self`)
+2. Verifies the presence of all required Temporal methods (`Temporal.Now.zonedDateTimeISO`, `Temporal.ZonedDateTime`, etc.)
 3. Validates the API structure matches the specification
 4. Falls back to polyfill if any checks fail
 
@@ -79,13 +78,18 @@ The detection works across different JavaScript environments:
 - **Web Workers**: Checks `self.Temporal`
 - **Universal**: Uses `globalThis.Temporal` when available
 
+**Helper utilities** (available internally in `src/core/temporal-detection.ts`):
+- `isBrowserEnvironment()` — Returns `true` in browser contexts
+- `isNodeEnvironment()` — Returns `true` in Node.js contexts
+- `isNativeTemporalAvailable()` — Returns `true` if native Temporal is detected (cached)
+
 ### Caching
 
 The detection result is cached for performance:
 
 - Detection runs once per application lifecycle
 - Results are cached to avoid repeated checks
-- Cache can be reset for testing purposes
+- Cache can be reset for testing purposes via `resetTemporalAPICache()`
 
 ## Migration Guide
 
@@ -95,32 +99,20 @@ The detection result is cached for performance:
 
 ```javascript
 // This code works exactly the same as before
-const date = atemporal('2023-12-25');
-const formatted = date.format('YYYY-MM-DD');
+const date = atemporal("2023-12-25");
+const formatted = date.format("YYYY-MM-DD");
 ```
 
 ### For New Projects
 
-Simply use atemporal as normal - the detection happens automatically:
+Simply use atemporal as normal — the detection happens automatically:
 
 ```javascript
-import atemporal from 'atemporal';
+import atemporal from "atemporal";
 
 // The library automatically uses the best available Temporal implementation
 const now = atemporal();
-const christmas = atemporal('2023-12-25');
-```
-
-## Testing
-
-The detection system includes comprehensive tests:
-
-```bash
-# Run temporal detection tests
-npm test -- --testPathPatterns=temporal-detection
-
-# Run integration tests
-npm test -- --testPathPatterns=temporal-detection-integration
+const christmas = atemporal("2023-12-25");
 ```
 
 ## API Reference
@@ -130,40 +122,26 @@ npm test -- --testPathPatterns=temporal-detection-integration
 Returns information about the current Temporal implementation.
 
 **Returns:**
+
 ```typescript
 {
-  isNative: boolean;        // true if using native Temporal
-  environment: string;      // 'browser', 'node', or 'unknown'
-  version: string;          // 'native' or 'polyfill'
+  isNative: boolean;   // true if using native Temporal
+  environment: string; // 'browser', 'node', or 'unknown'
+  version: string;     // 'native' or 'polyfill'
 }
 ```
 
 **Example:**
+
 ```javascript
 const info = atemporal.getTemporalInfo();
 
 if (info.isNative) {
-  console.log('Using native Temporal API!');
+  console.log("Using native Temporal API!");
 } else {
-  console.log('Using Temporal polyfill');
+  console.log("Using Temporal polyfill");
 }
 ```
-
-## Contributing
-
-The temporal detection system is implemented in:
-
-- `src/core/temporal-detection.ts` - Core detection logic
-- `src/index.ts` - Integration with main library
-- `src/__tests__/core/temporal-detection.test.ts` - Unit tests
-- `src/__tests__/integration/temporal-detection-integration.test.ts` - Integration tests
-
-When contributing, ensure that:
-
-1. Detection works across all supported environments
-2. Fallback behavior is robust
-3. Performance impact is minimal
-4. Tests cover edge cases
 
 ## Troubleshooting
 
@@ -190,4 +168,4 @@ A: You can mock the global Temporal object in your tests to simulate native supp
 
 ---
 
-*This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility.*
+_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._

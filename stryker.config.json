@@ -1,0 +1,47 @@
+{
+  "$schema": "https://stryker-mutator.io/schema/stryker-schema.json",
+  "_comment": "Mutation testing config for atemporal. Runs via `npm run test:mutation` and on a nightly schedule in CI. See docs/adr/0007-supply-chain-hardening.md for rationale.",
+
+  "packageManager": "npm",
+  "reporters": ["html", "clear-text", "progress", "json"],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "htmlReporter": {
+    "fileName": "reports/mutation/mutation.html"
+  },
+  "clearTextReporter": {
+    "fileName": "reports/mutation/mutation.txt",
+    "allowEmpty": false
+  },
+
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!src/types.ts",
+    "!src/index.ts",
+    "!src/examples/**",
+    "!src/__tests__/**",
+    "!src/**/*.test.ts",
+    "!src/**/*.spec.ts"
+  ],
+
+  "testRunner": "jest",
+  "jest": {
+    "projectType": "custom",
+    "configFile": "jest.config.ts",
+    "enableFindRelatedTests": true
+  },
+
+  "thresholds": {
+    "high": 80,
+    "low": 70,
+    "break": 60
+  },
+
+  "timeoutMS": 60000,
+  "timeoutFactor": 1.5,
+  "concurrency": 4,
+  "coverageAnalysis": "perTest",
+  "ignoreStatic": true
+}

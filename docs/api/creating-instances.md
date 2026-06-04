@@ -35,6 +35,77 @@ const clone = atemporal(original);
 atemporal("2025-01-01T12:00:00", "America/New_York");
 ```
 
+## `atemporal.from()`
+
+`atemporal.from(input, timeZone?)` is an alias for `atemporal(input, timeZone?)`. Both work identically:
+
+```ts
+atemporal.from("2025-07-09T15:30:00");
+atemporal.from([2025, 7, 9], "Europe/London");
+```
+
+## `atemporal.unix()`
+
+Create an instance from a Unix timestamp in seconds:
+
+```ts
+atemporal.unix(1752096000); // => 2025-07-09T00:00:00Z
+```
+
+For millisecond timestamps, use `atemporal(number)`:
+
+```ts
+atemporal(1752096000000); // Same result
+```
+
+## Native Temporal Objects
+
+Atemporal accepts native `Temporal` objects directly:
+
+```ts
+import { Temporal } from "@js-temporal/polyfill";
+
+const zdt = Temporal.ZonedDateTime.from("2025-07-09T15:30:00[UTC]");
+const date = atemporal(zdt);
+
+const plain = Temporal.PlainDateTime.from({ year: 2025, month: 7, day: 9 });
+const date2 = atemporal(plain);
+
+const instant = Temporal.Instant.fromEpochMilliseconds(1752096000000);
+const date3 = atemporal(instant);
+```
+
+## Null and Undefined Handling
+
+When no input is provided, or when `null` or `undefined` is passed, the current date and time is used:
+
+```ts
+atemporal();       // Current time
+atemporal(null);   // Current time
+atemporal(undefined); // Current time
+```
+
+## Error Behavior
+
+Atemporal does **not** throw exceptions for invalid inputs. Instead, an invalid instance is created. Check validity with `.isValid()`:
+
+```ts
+const maybeDate = atemporal("not a valid date");
+console.log(maybeDate.isValid()); // false
+console.log(maybeDate.format("YYYY-MM-DD")); // "Invalid Date"
+```
+
+You can pre-validate inputs before creating instances:
+
+```ts
+if (atemporal.isValid(userInput)) {
+  const date = atemporal(userInput);
+  // Safe to use
+} else {
+  console.error("Invalid date input");
+}
+```
+
 ## Firebase/Firestore Timestamps
 
 Atemporal provides first-class support for Firebase/Firestore timestamp objects, supporting both standard and underscore formats:

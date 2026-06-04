@@ -1,0 +1,4 @@
+{
+  "_comment": "release-please manifest. Pinned to the current version so the next release only includes changes since 1.4.0.",
+  ".": "1.4.1"
+}

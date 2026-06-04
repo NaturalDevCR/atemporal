@@ -111,7 +111,7 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
                 const result = longPast.fromNow();
                 expect(typeof result).toBe('string');
                 expect(result.length).toBeGreaterThan(0);
-                expect(warnSpy).toHaveBeenCalledWith('RelativeTime: Error calculating long-term diff:', expect.any(Error));
+                expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('RelativeTime: Error calculating long-term diff'));
             } finally {
                 longPast.diff = originalDiff;
                 console.warn = originalWarn;
@@ -258,7 +258,7 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
             try {
                 const result = past.fromNow();
                 expect(result).toBe('Invalid Date'); // Should use ultimate fallback
-                expect(warnSpy).toHaveBeenCalledWith('RelativeTime: Unexpected error:', expect.any(Error));
+                expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('RelativeTime: Unexpected error'));
             } finally {
                 past.diff = originalDiff;
                 console.warn = originalWarn;
@@ -440,8 +440,7 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
                 expect(typeof result).toBe('string');
                 expect(result).toContain('day'); // Should fallback to day calculation
                 expect(mockConsoleWarn).toHaveBeenCalledWith(
-                    'RelativeTime: Error calculating long-term diff:',
-                    expect.any(Error)
+                    expect.stringContaining('RelativeTime: Error calculating long-term diff')
                 );
             } finally {
                 longAgo.diff = originalDiff;
@@ -467,8 +466,7 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
                 expect(result).toContain('5'); // Should contain the value in fallback
                 expect(result).toContain('minute'); // Should contain the unit in fallback
                 expect(mockConsoleWarn).toHaveBeenCalledWith(
-                    'RelativeTime: Error formatting number:',
-                    expect.any(Error)
+                    expect.stringContaining('RelativeTime: Error formatting number')
                 );
             } finally {
                 (global as any).Intl.NumberFormat = originalNumberFormat;
@@ -495,8 +493,7 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
                 expect(result).toContain('hour'); // Should contain the unit in fallback
                 expect(result).toContain('in'); // Should contain the prefix in fallback
                 expect(mockConsoleWarn).toHaveBeenCalledWith(
-                    'RelativeTime: Error formatting relative time:',
-                    expect.any(Error)
+                    expect.stringContaining('RelativeTime: Error formatting relative time')
                 );
             } finally {
                 (global as any).Intl.RelativeTimeFormat = originalRelativeTimeFormat;

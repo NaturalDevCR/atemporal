@@ -1,0 +1,24 @@
+[
+  {
+    "name": "atemporal (CJS, raw)",
+    "path": "dist/index.js",
+    "limit": "20 KB"
+  },
+  {
+    "name": "atemporal (ESM, raw)",
+    "path": "dist/index.mjs",
+    "limit": "15 KB"
+  },
+  {
+    "name": "atemporal (CJS, gzip)",
+    "path": "dist/index.js",
+    "gzip": true,
+    "limit": "5 KB"
+  },
+  {
+    "name": "atemporal (ESM, gzip)",
+    "path": "dist/index.mjs",
+    "gzip": true,
+    "limit": "5 KB"
+  }
+]
