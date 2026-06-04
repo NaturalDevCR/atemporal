@@ -110,8 +110,7 @@ Starting with v1.4.0, release tarballs are published with
 which provides SLSA build-level provenance attestation verifiable via
 [Sigstore](https://www.sigstore.dev/). Every GitHub Release also ships:
 
-- an **SPDX SBOM** generated via `npm sbom`, and
-- a **CycloneDX SBOM** generated via `anchore/sbom-action`.
+- **SPDX** and **CycloneDX SBOMs** generated via `npm sbom`.
 
 These let consumers answer "what exactly is in this tarball?" without
 having to ask us.

@@ -106,13 +106,8 @@ jobs:
           mkdir -p sbom
           npm sbom --sbom-format=spdx --json > sbom/atemporal.spdx.json
 
-      - name: Generate CycloneDX SBOM for the GitHub Release asset
-        uses: anchore/sbom-action@v0
-        with:
-          format: cyclonedx-json
-          output-file: sbom/atemporal.cdx.json
-          upload-artifact: false
-          path: .
+      - name: Generate npm SBOM (CycloneDX JSON)
+        run: npm sbom --sbom-format=cyclonedx --json > sbom/atemporal.cdx.json
 
       - name: Upload SBOMs to release
         uses: softprops/action-gh-release@v2

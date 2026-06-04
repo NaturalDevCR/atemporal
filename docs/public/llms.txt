@@ -5358,7 +5358,7 @@ mature, GitHub-native tools that satisfy each requirement:
 | --- | --- | --- |
 | Secret scanning | `gitleaks/gitleaks-action@v2` | `.github/workflows/ci.yml` (`gitleaks` job) |
 | Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
-| SBOM | `npm sbom` (SPDX) + `anchore/sbom-action@v0` (CycloneDX) | `.github/workflows/release.yml` |
+| SBOM | `npm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
 | Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
 | Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | `.github/workflows/ci.yml` (`perf-gate` job) |
@@ -5379,7 +5379,7 @@ mature, GitHub-native tools that satisfy each requirement:
   primary gate, the other is the cross-check.
 - **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the npm
   ecosystem; CycloneDX is what most enterprise SCA tools consume. We emit
-  both and attach the CycloneDX to the GitHub Release.
+  both with `npm sbom` and attach both files to the GitHub Release.
 - **Stryker for mutation.** Stryker integrates with Jest, supports
   TypeScript projects, and is actively maintained. We do not run the
   full mutation suite on every PR or push (too slow for a blocking CI
@@ -5497,7 +5497,6 @@ mature, GitHub-native tools that satisfy each requirement:
 - <https://docs.npmjs.com/generating-provenance-statements>
 - <https://github.com/googleapis/release-please>
 - <https://github.com/stryker-mutator/stryker-js>
-- <https://github.com/anchore/sbom-action>
 - <https://github.com/gitleaks/gitleaks>
 - <https://github.com/lycheeverse/lychee>
 
