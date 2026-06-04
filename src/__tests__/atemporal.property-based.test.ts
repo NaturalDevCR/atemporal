@@ -62,20 +62,13 @@ describe('atemporal: parse/format invariants (property-based)', () => {
   });
 
   it('presets are immutable', () => {
-    fc.assert(
-      fc.property(
-        fc.string(),
-        (key) => {
-          try {
-            (atemporal.presets as any)[key] = 'MUTATED';
-            return false;
-          } catch {
-            return true;
-          }
-        }
-      ),
-      { numRuns: 100 }
-    );
+    // The whole point of the contract: atemporal.presets is frozen.
+    // Property-based mutation tests are a flake source because some
+    // string keys (e.g. '__proto__', 'toString') resolve to inherited
+    // accessors that don't throw on a frozen object in non-strict mode.
+    // The direct, flake-free check is Object.isFrozen().
+    expect(Object.isFrozen(atemporal.presets)).toBe(true);
+    expect(Object.isExtensible(atemporal.presets)).toBe(false);
   });
 });
 

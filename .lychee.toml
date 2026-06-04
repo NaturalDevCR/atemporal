@@ -1,0 +1,50 @@
+# .lychee.toml
+# Configuration for lychee (https://github.com/lycheeverse/lychee) used by CI
+# to verify that all internal links in the docs resolve to actual files.
+#
+# Why a config file: the docs use two patterns that lychee needs help with:
+#
+#   1. Root-relative links: "/api/", "/plugins/", etc. (VitePress resolves
+#      these to the site root).
+#   2. Bare-name links: "[getting-started](getting-started)" (VitePress
+#      auto-resolves to ".md"). lychee needs `fallback_extensions` to
+#      handle these.
+
+# Treat the repo root as a local web root. lychee will then resolve
+# "/api/" relative to it instead of erroring with "Cannot convert path
+# /api/ to a URI".
+root_dir = "."
+
+# Fallback extensions to try when a link has no extension. The docs
+# cross-reference files by bare name (VitePress auto-resolves the .md
+# at build time). Without this, lychee would fail every bare link.
+fallback_extensions = ["md", "html"]
+
+# Remap: root-relative VitePress paths to local file paths. Each
+# entry is "source-prefix destination-prefix" as a single string.
+# When a link starts with the source, lychee resolves it relative
+# to the destination instead of the root.
+remap = [
+  "/api/      docs/api/",
+  "/plugins/  docs/plugins/",
+  "/guide/    docs/guide/",
+  "/cookbook/ docs/cookbook/",
+  "/migration/ docs/migration/",
+  "/security/ docs/security/",
+  "/adr/      docs/adr/",
+]
+
+# Don't check the live docs site — those URLs are validated by the
+# deploy-docs workflow instead.
+exclude = [
+  "https://github.com/NaturalDevCR/atemporal/*",
+  "https://atemporal-*.pages.dev",
+]
+
+# Use the local file system only. We don't want lychee to make
+# network requests in CI.
+offline = true
+
+# Accept these as success codes (VitePress serves 200, plus we
+# tolerate the GitHub-redirect codes).
+accept = [200, 206, 301, 302, 303, 304, 307, 308]
