@@ -176,7 +176,7 @@
     "typescript": "^5.4.5",
     "vite": "^8.0.6",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.28"
+    "vue": "^3.5.35"
   },
   "overrides": {
     "esbuild": "^0.25.0",
