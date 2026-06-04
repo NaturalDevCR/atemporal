@@ -68,7 +68,19 @@ jobs:
       - name: Publish with provenance + OIDC
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance --access public --tag latest
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          if npm view "atemporal@${package_version}" version >/dev/null 2>&1; then
+            echo "atemporal@${package_version} is already published; skipping npm publish."
+            exit 0
+          fi
+
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN is not configured. Add an npm automation token as a repository or environment secret, or configure npm trusted publishing for this repository."
+            exit 1
+          fi
+
+          npm publish --provenance --access public --tag latest
 
   attach-sbom:
     name: Attach SBOM to GitHub Release
@@ -92,7 +104,7 @@ jobs:
       - name: Generate npm SBOM (SPDX JSON)
         run: |
           mkdir -p sbom
-          npm sbom --sbom-format=spdx2 --json > sbom/atemporal.spdx.json
+          npm sbom --sbom-format=spdx --json > sbom/atemporal.spdx.json
 
       - name: Generate CycloneDX SBOM for the GitHub Release asset
         uses: anchore/sbom-action@v0
