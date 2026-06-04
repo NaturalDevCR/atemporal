@@ -39,10 +39,10 @@ mature, GitHub-native tools that satisfy each requirement:
 | Gap | Tool | Where |
 | --- | --- | --- |
 | Secret scanning | `gitleaks/gitleaks-action@v2` | `.github/workflows/ci.yml` (`gitleaks` job) |
-| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v1` | `.github/workflows/ci.yml` (`audit` job) |
-| SBOM | `npm sbom` (SPDX) + `anchore/sbom-action@v0` (CycloneDX) | `.github/workflows/release.yml` |
+| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
+| SBOM | `npm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
 | Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
-| Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (nightly + on-demand) |
+| Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | `.github/workflows/ci.yml` (`perf-gate` job) |
 | Auto versioning | `googleapis/release-please-action@v4` | `.github/workflows/release.yml` |
 | License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
@@ -61,14 +61,14 @@ mature, GitHub-native tools that satisfy each requirement:
   primary gate, the other is the cross-check.
 - **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the npm
   ecosystem; CycloneDX is what most enterprise SCA tools consume. We emit
-  both and attach the CycloneDX to the GitHub Release.
-- **Stryker for mutation.** Stryker is the only JavaScript mutation
-  testing tool that integrates with Jest, has TypeScript checker
-  support, and is actively maintained. We do not run it on every PR
-  (slow + flaky) — only nightly, on-demand, and on every push to `main`.
-  The `thresholds: { high: 80, low: 70, break: 60 }` is a *score* gate;
-  the CI is informational (logs the score) and the team reviews weekly
-  trends via the uploaded reports.
+  both with `npm sbom` and attach both files to the GitHub Release.
+- **Stryker for mutation.** Stryker integrates with Jest, supports
+  TypeScript projects, and is actively maintained. We do not run the
+  full mutation suite on every PR or push (too slow for a blocking CI
+  path). Pushes to `main` run `--dryRunOnly` to catch configuration and
+  test-discovery regressions. Nightly/on-demand runs attempt the full
+  suite as an advisory signal, upload reports when available, and keep
+  `thresholds: { high: 80, low: 70, break: 60 }` for score visibility.
 - **`release-please` over `standard-version`.** `standard-version` requires
   a human to run the CLI and push tags. `release-please` turns the whole
   release flow into a PR review — version bump, CHANGELOG diff, and
@@ -133,8 +133,10 @@ mature, GitHub-native tools that satisfy each requirement:
   like `wip` or `fix stuff` will be classified as `chore: fix stuff`
   and will not trigger a release. The team is briefed; the
   `CONTRIBUTING.md` workflow already requires Conventional Commits.
-- **Stryker reports are large.** Reports are uploaded as artifacts
-  with a 30-day retention; they are NOT committed to the repo.
+- **Stryker reports are large and slow to generate.** Full reports are
+  uploaded as artifacts with a 30-day retention when the nightly/advisory
+  run completes; they are NOT committed to the repo. Push CI uses a
+  Stryker dry-run only.
 - **Dependabot needs a labels workflow.** The `dependencies`,
   `automated`, `ci` labels must exist (they already do, see
   `.github/ISSUE_TEMPLATE/config.yml` — verified, no action needed).
@@ -177,7 +179,6 @@ mature, GitHub-native tools that satisfy each requirement:
 - <https://docs.npmjs.com/generating-provenance-statements>
 - <https://github.com/googleapis/release-please>
 - <https://github.com/stryker-mutator/stryker-js>
-- <https://github.com/anchore/sbom-action>
 - <https://github.com/gitleaks/gitleaks>
 - <https://github.com/lycheeverse/lychee>
 

@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -113,7 +113,7 @@
     "bench:gate": "node scripts/perf-gate.js bench-out.json benchmarks/baseline.json",
     "size": "node scripts/check-bundle-size.js",
     "licenses:check": "node scripts/check-licenses.js",
-    "links:check": "lychee --offline --no-progress --exclude-loopback --exclude-mail 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
+    "links:check": "lychee --config .lychee.toml --no-progress --exclude-loopback 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
     "supply-chain": "npm run licenses:check && npm audit --audit-level=high",
     "docs:dev": "node scripts/generate-llms-txt.js && vitepress dev docs",
     "docs:build": "node scripts/generate-llms-txt.js && vitepress build docs"
@@ -182,7 +182,8 @@
     "esbuild": "^0.25.0",
     "glob": "^10.5.0",
     "diff": "^8.0.3",
-    "vite": "^8.0.6"
+    "vite": "^8.0.6",
+    "tmp": "^0.2.7"
   },
   "engines": {
     "node": ">=18"

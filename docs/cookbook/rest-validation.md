@@ -112,4 +112,4 @@ to map errors to localized messages.
 
 - [`atemporal.validate()`](../api/creating-instances.md#validate)
 - [`atemporal.try()`](../api/creating-instances.md#try)
-- [Threat model](../SECURITY.md#threat-model)
+- [Threat model](/security/threat-model)

@@ -61,10 +61,17 @@ export type {
   OverlapOptions,
 } from "./types";
 export {
+  ATEMPORAL_ERROR_CODES,
+  AtemporalError,
+  FormatMismatchError,
+  InvalidAmPmError,
   InvalidAtemporalInstanceError,
+  InvalidDateComponentsError,
   InvalidDateError,
+  InvalidFormatError,
   InvalidTimeZoneError,
-};
+} from "./errors";
+export type { AtemporalErrorCode } from "./errors";
 
 // Export plugin authoring utilities
 export { markAsPlugin, PLUGIN_SENTINEL };
@@ -399,7 +406,7 @@ atemporal.getTemporalInfo = getTemporalInfo;
  * const a = atemporal.try('2024-01-15');   // TemporalWrapper
  * const b = atemporal.try('not a date');   // null
  * const c = atemporal.try(null);           // null
- * const d = atemporal.try(undefined, 'UTC'); // current time in UTC
+ * const d = atemporal.try(undefined, 'UTC'); // null
  * ```
  */
 atemporal.try = (input?: DateInput, timeZone?: string): TemporalWrapper | null => {
@@ -425,7 +432,7 @@ atemporal.try = (input?: DateInput, timeZone?: string): TemporalWrapper | null =
  *
  * @example
  * ```ts
- * atemporal.iso();                    // '2026-06-03T12:34:56.789Z'
+ * atemporal.iso();                    // null
  * atemporal.iso('2024-01-15');        // '2024-01-15T00:00:00.000Z'
  * atemporal.iso(0);                   // '1970-01-01T00:00:00.000Z'
  * atemporal.iso('garbage');           // null
