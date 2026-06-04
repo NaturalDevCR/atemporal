@@ -75,6 +75,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Download dist artifact (built by `build` job)
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: Run unit + integration + property + fuzz + telemetry tests
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
@@ -173,7 +179,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: OSV-Scanner (recursive, lockfile + source)
-        uses: google/osv-scanner-action@v1
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           scan-args: '--recursive . --no-ignore --config=osv-scanner.toml'
 
@@ -259,14 +265,11 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
-            --offline
             --no-progress
             --exclude-loopback
-            --exclude-mail
-            --exclude 'https://github.com/NaturalDevCR/atemporal/*'
-            --exclude 'https://atemporal-*.pages.dev'
             --max-concurrency 16
             --timeout 20
+            --config .lychee.toml
             'docs/**/*.md'
             'README.md'
             'CHANGELOG.md'
