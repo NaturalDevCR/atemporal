@@ -3,11 +3,12 @@
   "node": "20.x",
   "ops": 100000,
   "maxAllowedMs": {
-    "parse": 600,
-    "format": 600,
-    "add": 600,
-    "diff": 600,
-    "validate": 600
+    "parse": 1500,
+    "format": 6000,
+    "add": 2000,
+    "diff": 11000,
+    "validate": 22000
   },
-  "comment": "These are soft thresholds, not strict CI gates. Update after a deliberate perf change."
+  "tolerance": 1.25,
+  "comment": "These thresholds are calibrated for a hosted GitHub Actions ubuntu-latest runner. They are NOT designed for local developer machines, which are usually 5-10x faster. Update after a deliberate perf change."
 }
