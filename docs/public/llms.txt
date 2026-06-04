@@ -12,9 +12,9 @@
 - **Immutable:** every mutator returns a NEW `TemporalWrapper`. Never use `let` to "update" a date — use `const next = current.add(1, "day");`.
 - **Plugins:** `atemporal.extend(relTime); atemporal.extend(customParseFormat); ...` (sync) or `await atemporal.lazyLoad({...})` (async).
 - **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.
-- **Errors:** throw `atemporal.errors.InvalidDateError` (carries a stable `code` like `ATEMPORAL_INVALID_FORMAT`). Catch on the boundary, not deep in business logic.
+- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.
 - **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.
-- **Bundle:** ~15 KB minified ESM, ~8 KB with tree-shaking. No transitive runtime deps.
+- **Bundle:** ~15 KB minified ESM, ~8 KB with tree-shaking. Runtime dependency: `@js-temporal/polyfill`.
 - **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.
 
 ### Common recipes (1-liners)
@@ -47,7 +47,7 @@ atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")
 | `atemporal(input?, timeZone?)` | `() => TemporalWrapper` | Create an instance. input may be ISO string, Date, Unix ms, Unix s, [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper. |
 | `atemporal.try(input?, timeZone?)` | `() => TemporalWrapper | null` | Same as atemporal(input) but returns null instead of throwing on invalid input. |
 | `atemporal.iso(input?, timeZone?)` | `() => string | null` | Try to parse and return an ISO 8601 string, or null. Does not throw. |
-| `atemporal.validate(input)` | `() => ValidationResult` | Detailed validation: { valid: boolean, error?: string, code?: ATEMPORAL_* }. |
+| `atemporal.validate(input)` | `() => ValidationResult` | Detailed validation: { ok: boolean, iso?: string, confidence?: number, reason?: string, code?: ATEMPORAL_* }. |
 | `atemporal.duration(spec)` | `(spec) => Temporal.Duration` | Build a Temporal.Duration from { years, months, days, hours, minutes, seconds, milliseconds, weeks }. |
 | `atemporal.from(input, timeZone?)` | `(input, tz?) => TemporalWrapper` | Alias of atemporal(input) — kept for API symmetry with Temporal static methods. |
 | `atemporal.unix(seconds)` | `(seconds: number) => TemporalWrapper` | Build from a Unix timestamp in SECONDS (e.g. 1752096000). |
@@ -60,8 +60,8 @@ atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")
 | `atemporal.isValidLocale(loc)` | `(loc: string) => boolean` | True if loc is a valid BCP-47 locale. |
 | `atemporal.isPlugin(x)` | `(x) => boolean` | True if x is a Plugin object (has .name and an install hook). |
 | `atemporal.extend(plugin, options?)` | `(plugin, options?) => void` | Install a plugin synchronously. Options are passed to the plugin.install() hook. |
-| `atemporal.lazyLoad(nameOrMap, timeZone?)` | `async (...) => Promise<TemporalWrapper | Record<string, TemporalWrapper>>` | Lazy-load one or more plugins and the temporal polyfill on demand. Resolves with the instance(s). |
-| `atemporal.lazyLoadMultiple(modules)` | `async (...) => Promise<void>` | Preload a list of plugin modules without creating instances. |
+| `atemporal.lazyLoad(pluginName, options?)` | `async (...) => Promise<void>` | Install one official plugin by name on demand. Resolves after the plugin is applied. |
+| `atemporal.lazyLoadMultiple(pluginNames, options?)` | `async (...) => Promise<void>` | Install several official plugins by name. |
 | `atemporal.isPluginLoaded(name)` | `(name: string) => boolean` | Has the named plugin been installed yet? |
 | `atemporal.getLoadedPlugins()` | `() => string[]` | Names of currently installed plugins. |
 | `atemporal.getAvailablePlugins()` | `() => string[]` | Names of plugins registered with the loader (whether installed or not). |
@@ -2749,7 +2749,7 @@ to map errors to localized messages.
 
 - [`atemporal.validate()`](../api/creating-instances.md#validate)
 - [`atemporal.try()`](../api/creating-instances.md#try)
-- [Threat model](../SECURITY.md#threat-model)
+- [Threat model](/security/threat-model)
 
 
 
@@ -3329,7 +3329,7 @@ emitted it. Build a single dashboard with one widget per code:
 ## See also
 
 - [REST input validation](rest-validation.md)
-- [Threat model](../SECURITY.md#threat-model)
+- [Threat model](/security/threat-model)
 
 
 
@@ -4343,13 +4343,46 @@ exposes them.
 
 
 
+--- FILE: security/index.md (Security — overview) ---
+
+
+# Security
+
+Atemporal treats date/time correctness, parser stability, and predictable
+error handling as part of the public security surface.
+
+## What is covered
+
+- Stable `ATEMPORAL_*` error codes for validation, logging, and i18n.
+- Parser hardening for untrusted strings, numbers, objects, and Firebase
+  timestamp shapes.
+- CI gates for tests, fuzzing, secret scanning, license checks, npm audit,
+  OSV-Scanner, docs links, bundle size, and performance regressions.
+- Release artifacts published with npm provenance starting in v1.4.0.
+
+## Reporting Vulnerabilities
+
+Please report vulnerabilities privately through the repository's
+[security policy](https://github.com/NaturalDevCR/atemporal/blob/main/SECURITY.md).
+
+Do not open a public issue for a suspected vulnerability.
+
+## Reference
+
+- [Threat model](/security/threat-model)
+- [Structured logging](/cookbook/logging)
+- [ADR 0007: Supply chain hardening](/adr/0007-supply-chain-hardening)
+
+
+
 --- FILE: security/threat-model.md (Security — threat model) ---
 
 
 # Threat Model
 
 This document is the canonical threat model for atemporal. It
-complements the disclosure process described in [SECURITY.md](../../SECURITY.md)
+complements the disclosure process described in the
+[security policy](https://github.com/NaturalDevCR/atemporal/blob/main/SECURITY.md)
 and the security best-practices page in the [cookbook](../cookbook/logging.md).
 
 ## Asset inventory
@@ -4514,7 +4547,7 @@ error messages that include user data.
 
 If you find a new attack vector that is not in the list above,
 please open a private security advisory as described in
-[SECURITY.md](../../SECURITY.md#reporting-a-vulnerability).
+the [security policy](https://github.com/NaturalDevCR/atemporal/blob/main/SECURITY.md#reporting-a-vulnerability).
 
 We aim to update this document every time a new threat class is
 discovered or a mitigation lands.
@@ -5324,10 +5357,10 @@ mature, GitHub-native tools that satisfy each requirement:
 | Gap | Tool | Where |
 | --- | --- | --- |
 | Secret scanning | `gitleaks/gitleaks-action@v2` | `.github/workflows/ci.yml` (`gitleaks` job) |
-| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v1` | `.github/workflows/ci.yml` (`audit` job) |
+| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
 | SBOM | `npm sbom` (SPDX) + `anchore/sbom-action@v0` (CycloneDX) | `.github/workflows/release.yml` |
 | Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
-| Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (nightly + on-demand) |
+| Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | `.github/workflows/ci.yml` (`perf-gate` job) |
 | Auto versioning | `googleapis/release-please-action@v4` | `.github/workflows/release.yml` |
 | License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
@@ -5347,13 +5380,13 @@ mature, GitHub-native tools that satisfy each requirement:
 - **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the npm
   ecosystem; CycloneDX is what most enterprise SCA tools consume. We emit
   both and attach the CycloneDX to the GitHub Release.
-- **Stryker for mutation.** Stryker is the only JavaScript mutation
-  testing tool that integrates with Jest, has TypeScript checker
-  support, and is actively maintained. We do not run it on every PR
-  (slow + flaky) — only nightly, on-demand, and on every push to `main`.
-  The `thresholds: { high: 80, low: 70, break: 60 }` is a *score* gate;
-  the CI is informational (logs the score) and the team reviews weekly
-  trends via the uploaded reports.
+- **Stryker for mutation.** Stryker integrates with Jest, supports
+  TypeScript projects, and is actively maintained. We do not run the
+  full mutation suite on every PR or push (too slow for a blocking CI
+  path). Pushes to `main` run `--dryRunOnly` to catch configuration and
+  test-discovery regressions. Nightly/on-demand runs attempt the full
+  suite as an advisory signal, upload reports when available, and keep
+  `thresholds: { high: 80, low: 70, break: 60 }` for score visibility.
 - **`release-please` over `standard-version`.** `standard-version` requires
   a human to run the CLI and push tags. `release-please` turns the whole
   release flow into a PR review — version bump, CHANGELOG diff, and
@@ -5418,8 +5451,10 @@ mature, GitHub-native tools that satisfy each requirement:
   like `wip` or `fix stuff` will be classified as `chore: fix stuff`
   and will not trigger a release. The team is briefed; the
   `CONTRIBUTING.md` workflow already requires Conventional Commits.
-- **Stryker reports are large.** Reports are uploaded as artifacts
-  with a 30-day retention; they are NOT committed to the repo.
+- **Stryker reports are large and slow to generate.** Full reports are
+  uploaded as artifacts with a 30-day retention when the nightly/advisory
+  run completes; they are NOT committed to the repo. Push CI uses a
+  Stryker dry-run only.
 - **Dependabot needs a labels workflow.** The `dependencies`,
   `automated`, `ci` labels must exist (they already do, see
   `.github/ISSUE_TEMPLATE/config.yml` — verified, no action needed).

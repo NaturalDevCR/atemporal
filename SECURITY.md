@@ -129,7 +129,7 @@ to `main` and every pull request:
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Fails on >25% regression on hot paths | `.github/workflows/ci.yml` |
 | Doc link integrity | `lychee` (offline) | Fails on any broken internal link | `.github/workflows/ci.yml` |
 | Coverage trend | Codecov | Informational; no PR gate | `.github/workflows/ci.yml` |
-| Mutation score | Stryker | Informational; nightly trend | `.github/workflows/mutation.yml` |
+| Mutation health | Stryker | Push dry-run gates config/test discovery; full score is nightly/on-demand advisory | `.github/workflows/mutation.yml` |
 | Auto dependency updates | Dependabot | Patch + minor PRs grouped | `.github/dependabot.yml` |
 
 The rationale for each tool is documented in

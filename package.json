@@ -113,7 +113,7 @@
     "bench:gate": "node scripts/perf-gate.js bench-out.json benchmarks/baseline.json",
     "size": "node scripts/check-bundle-size.js",
     "licenses:check": "node scripts/check-licenses.js",
-    "links:check": "lychee --offline --no-progress --exclude-loopback --exclude-mail 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
+    "links:check": "lychee --config .lychee.toml --no-progress --exclude-loopback 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
     "supply-chain": "npm run licenses:check && npm audit --audit-level=high",
     "docs:dev": "node scripts/generate-llms-txt.js && vitepress dev docs",
     "docs:build": "node scripts/generate-llms-txt.js && vitepress build docs"

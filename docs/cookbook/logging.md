@@ -108,4 +108,4 @@ emitted it. Build a single dashboard with one widget per code:
 ## See also
 
 - [REST input validation](rest-validation.md)
-- [Threat model](../../SECURITY.md#threat-model)
+- [Threat model](/security/threat-model)

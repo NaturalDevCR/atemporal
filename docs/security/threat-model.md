@@ -1,7 +1,8 @@
 # Threat Model
 
 This document is the canonical threat model for atemporal. It
-complements the disclosure process described in [SECURITY.md](../../SECURITY.md)
+complements the disclosure process described in the
+[security policy](https://github.com/NaturalDevCR/atemporal/blob/main/SECURITY.md)
 and the security best-practices page in the [cookbook](../cookbook/logging.md).
 
 ## Asset inventory
@@ -166,7 +167,7 @@ error messages that include user data.
 
 If you find a new attack vector that is not in the list above,
 please open a private security advisory as described in
-[SECURITY.md](../../SECURITY.md#reporting-a-vulnerability).
+the [security policy](https://github.com/NaturalDevCR/atemporal/blob/main/SECURITY.md#reporting-a-vulnerability).
 
 We aim to update this document every time a new threat class is
 discovered or a mitigation lands.
