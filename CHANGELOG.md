@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.1](https://github.com/NaturalDevCR/atemporal/compare/v1.4.0...v1.4.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **ci:** stabilize workflows and docs ([15aa796](https://github.com/NaturalDevCR/atemporal/commit/15aa7968fcc56e1ec6bf350b5980c1795175a716))
+
 ## [1.4.0](https://github.com/NaturalDevCR/atemporal/compare/v1.3.7...v1.4.0) (2026-06-03)
 
 
