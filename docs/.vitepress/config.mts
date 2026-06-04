@@ -11,6 +11,7 @@ export default defineConfig({
       { text: 'API', link: '/api/' },
       { text: 'Plugins', link: '/plugins/' },
       { text: 'Migration', link: '/migration/' },
+      { text: 'Security', link: '/security/' },
       { text: 'LLMs', link: '/atemporal/llms.txt', target: '_blank' }
     ],
 
@@ -70,6 +71,15 @@ export default defineConfig({
             { text: 'From Luxon', link: '/migration/luxon' },
             { text: 'From moment.js', link: '/migration/moment' },
             { text: 'From raw Temporal', link: '/migration/temporal' },
+          ]
+        }
+      ],
+      '/security/': [
+        {
+          text: 'Security',
+          items: [
+            { text: 'Overview', link: '/security/' },
+            { text: 'Threat Model', link: '/security/threat-model' },
           ]
         }
       ],

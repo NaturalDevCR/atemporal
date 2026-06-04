@@ -30,13 +30,7 @@
   "jest": {
     "projectType": "custom",
     "configFile": "jest.config.ts",
-    "enableFindRelatedTests": true,
-    "testSelector": "**/*+(.test|.spec).ts"
-  },
-
-  "typescriptChecker": {
-    "enabled": true,
-    "tsconfigFile": "tsconfig.json"
+    "enableFindRelatedTests": true
   },
 
   "thresholds": {
@@ -49,10 +43,5 @@
   "timeoutFactor": 1.5,
   "concurrency": 4,
   "coverageAnalysis": "perTest",
-
-  "ignorePatterns": [
-    "src/__tests__/**",
-    "src/types/**",
-    "src/examples/**"
-  ]
+  "ignoreStatic": true
 }

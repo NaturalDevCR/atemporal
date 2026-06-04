@@ -1,0 +1,40 @@
+# .lychee.toml
+# Configuration for lychee (https://github.com/lycheeverse/lychee) used by CI
+# to verify that all internal links in the docs resolve to actual files.
+#
+# The docs use two patterns that lychee needs help with:
+#   1. Root-relative links: "/api/", "/plugins/", etc. (VitePress resolves
+#      these to the site root, e.g. "/atemporal/api/" in production).
+#   2. Bare-name links: "[getting-started](getting-started)" (VitePress
+#      auto-resolves the .md extension).
+#
+# Earlier iterations used a `remap` table; that caused path doubling
+# because lychee matches the remap src as a substring of the resolved
+# file URL. We avoid remap entirely and rely on:
+#   - root_dir: treats the repo as a local web root.
+#   - fallback_extensions: tries .md / .html for bare links.
+#   - excluding the few links that legitimately point outside the
+#     docs set (e.g. SECURITY.md cross-link from the cookbook).
+
+# Treat the repo root as a local web root. "/api/" then resolves to
+# "<repo>/api/" — but since the docs live in docs/, we also set
+# root_dir to docs/api etc. via per-input globs is too cumbersome.
+# Instead, we walk the docs with explicit root_dir = 'docs' so that
+# "/api/" maps to "docs/api/" naturally.
+root_dir = "docs"
+
+# Try .md and .html extensions for bare-name links.
+fallback_extensions = ["md", "html"]
+
+# Local file system only. No network calls in CI.
+offline = true
+
+# Don't check the live docs site — those URLs are validated by the
+# deploy-docs workflow instead.
+exclude = [
+  "https://github.com/NaturalDevCR/atemporal/*",
+  "https://atemporal-*.pages.dev",
+]
+
+# Accept these as success codes.
+accept = [200, 206, 301, 302, 303, 304, 307, 308]
