@@ -1,8 +1,8 @@
 # Atemporal
 
 ![npm](https://img.shields.io/npm/v/atemporal)
+[![npm downloads](https://img.shields.io/npm/dm/atemporal.svg)](https://www.npmjs.com/package/atemporal)
 ![license](https://img.shields.io/npm/l/atemporal)
-![bundle size](https://img.shields.io/bundlephobia/min/atemporal)
 
 Atemporal is a modern, immutable, and ergonomic date-time library built on top of the new Temporal API (TC39 Stage 4, ES2026) — with support for formatting, localization, plugins, and time zones.
 
