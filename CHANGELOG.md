@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.2](https://github.com/NaturalDevCR/atemporal/compare/v1.4.1...v1.4.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* **package:** install Temporal polyfill as a direct runtime dependency for pnpm consumers
+
 ## [1.4.1](https://github.com/NaturalDevCR/atemporal/compare/v1.4.0...v1.4.1) (2026-06-04)
 
 

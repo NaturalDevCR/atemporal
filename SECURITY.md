@@ -97,7 +97,7 @@ dominated by the parsing pipeline, which accepts arbitrary user input
 
 atemporal has exactly **one runtime dependency**:
 
-- [`@js-temporal/polyfill`](https://www.npmjs.com/package/@js-temporal/polyfill) (peer, optional)
+- [`@js-temporal/polyfill`](https://www.npmjs.com/package/@js-temporal/polyfill) (runtime dependency)
 
 No transitive runtime dependencies are bundled. The dev dependency tree
 includes Jest, TypeScript, tsup, and VitePress — these are not shipped

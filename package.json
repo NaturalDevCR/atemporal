@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -151,14 +151,6 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1"
-  },
-  "peerDependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
-  },
-  "peerDependenciesMeta": {
-    "@js-temporal/polyfill": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@stryker-mutator/core": "^8.3.0",
