@@ -72,7 +72,7 @@ cd atemporal
 npm install
 ```
 
-This installs the one runtime peer dependency (`@js-temporal/polyfill`)
+This installs the one runtime dependency (`@js-temporal/polyfill`)
 plus the dev toolchain (Jest, TypeScript, tsup, VitePress).
 
 ### Verifying the install
