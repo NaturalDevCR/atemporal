@@ -181,6 +181,7 @@ export class TemporalWrapper {
         try {
             wrapper._datetime = dateTime;
             wrapper._isValid = true;
+            wrapper._error = null;
             wrapper._isTemporalWrapper = true;
         } catch (e) {
             wrapper._datetime = null;

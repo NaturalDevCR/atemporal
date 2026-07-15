@@ -12,6 +12,13 @@ import atemporal from '../index';
  */
 describe('TemporalWrapper: Consolidated Coverage Tests', () => {
     describe('Instance Creation and Validation', () => {
+        it('returns null error for a valid instance created through unix()', () => {
+            const result = TemporalWrapper.unix(1_752_096_000);
+
+            expect(result.isValid()).toBe(true);
+            expect(result.error).toBeNull();
+        });
+
         it('should create valid TemporalWrapper instances', () => {
             const date = atemporal('2024-01-01');
             expect(date).toBeInstanceOf(TemporalWrapper);
