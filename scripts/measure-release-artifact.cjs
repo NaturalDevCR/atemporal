@@ -98,6 +98,20 @@ function bundleAttribution(metafile) {
   return attribution;
 }
 
+function resolvedFixturePackageInput(metafile, packageName) {
+  const normalizedPackageName = packageName.split(path.sep).join('/');
+  const marker = `node_modules/${normalizedPackageName}/`;
+  const input = Object.keys(metafile.inputs).find((candidate) => candidate.split(path.sep).join('/').includes(marker));
+  if (!input) throw new Error(`Canonical metafile did not resolve ${packageName}`);
+
+  const normalizedInput = input.split(path.sep).join('/');
+  const packageRoot = path.join(canonicalFixture, normalizedInput.slice(0, normalizedInput.indexOf(marker) + marker.length - 1));
+  return {
+    path: path.join(canonicalFixture, normalizedInput),
+    version: readJson(path.join(packageRoot, 'package.json')).version,
+  };
+}
+
 function ensureCanonicalDependencies() {
   const esbuildPackage = path.join(canonicalFixture, 'node_modules', 'esbuild', 'package.json');
   if (fs.existsSync(esbuildPackage)) return;
@@ -125,6 +139,10 @@ function buildCanonicalBundle(name, entryPoint) {
     minify: true,
     outfile,
     platform: 'browser',
+    preserveSymlinks: true,
+    alias: {
+      '@js-temporal/polyfill': path.join(canonicalFixture, 'node_modules', '@js-temporal', 'polyfill', 'dist', 'index.esm.js'),
+    },
     sourcemap: false,
     target: ['es2020'],
   });
@@ -133,7 +151,14 @@ function buildCanonicalBundle(name, entryPoint) {
     .filter((file) => fs.existsSync(file));
   const total = emittedFiles.reduce((sum, file) => sum + fs.statSync(file).size, 0);
   fs.writeFileSync(`${outfile}.meta.json`, `${JSON.stringify(result.metafile, null, 2)}\n`);
-  return { total, files: emittedFiles.map((file) => path.relative(projectRoot, file)), attribution: bundleAttribution(result.metafile) };
+  return {
+    total,
+    files: emittedFiles.map((file) => path.relative(projectRoot, file)),
+    attribution: bundleAttribution(result.metafile),
+    resolvedInputs: {
+      temporalPolyfill: resolvedFixturePackageInput(result.metafile, '@js-temporal/polyfill'),
+    },
+  };
 }
 
 function buildCanonicalBundles() {
@@ -161,6 +186,12 @@ function canonicalBudgetResults(canonicalBundles, budgets) {
       status: actualBytes <= budget.limitBytes ? 'pass' : 'fail',
     };
   });
+}
+
+function canonicalTemporalPolyfillVersion(canonicalBundles) {
+  const versions = new Set(Object.values(canonicalBundles).map((bundle) => bundle.resolvedInputs.temporalPolyfill.version));
+  if (versions.size !== 1) throw new Error(`Canonical bundles resolved different Temporal polyfill versions: ${[...versions].join(', ')}`);
+  return versions.values().next().value;
 }
 
 function buildSizeReport(input) {
@@ -237,7 +268,7 @@ function measureReleaseArtifact({ write = true } = {}) {
       typescript: packageVersion('typescript'),
       canonicalBundler: readJson(path.join(canonicalFixture, 'node_modules', 'esbuild', 'package.json')).version,
       dayjs: '1.11.21',
-      temporalPolyfill: packageVersion('@js-temporal/polyfill'),
+      temporalPolyfill: canonicalTemporalPolyfillVersion(canonicalBundles),
       atemporal: packageJson.version,
     },
     tarball: { name: artifact.filename, sha512: artifact.sha512, size: artifact.size, unpackedSize: artifact.unpackedSize },
@@ -263,6 +294,7 @@ if (require.main === module) {
 
 module.exports = {
   buildSizeReport,
+  buildCanonicalBundles,
   gzipSize,
   measureReleaseArtifact,
 };

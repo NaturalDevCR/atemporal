@@ -6,23 +6,31 @@
 
 const { measureReleaseArtifact } = require('./measure-release-artifact.cjs');
 
-function main() {
-  const report = measureReleaseArtifact();
-  process.stdout.write('  Bundle                                      actual      limit       status\n');
-  process.stdout.write('  ------------------------------------------  ----------  ----------  ------\n');
+function enforceReport(report, output = process) {
+  output.stdout.write('  Bundle                                      actual      limit       status\n');
+  output.stdout.write('  ------------------------------------------  ----------  ----------  ------\n');
   for (const result of report.results) {
     const status = result.status === 'pass' ? '✓' : '✘';
-    process.stdout.write(`  ${result.name.padEnd(42)}  ${String(result.actualBytes).padStart(10)}  ${String(result.limitBytes).padStart(10)}  ${status}\n`);
+    output.stdout.write(`  ${result.name.padEnd(42)}  ${String(result.actualBytes).padStart(10)}  ${String(result.limitBytes).padStart(10)}  ${status}\n`);
   }
   if (report.status !== 'pass') {
-    process.stderr.write('\nBundle size budget exceeded. Either shrink the bundle or update a reviewed budget deliberately.\n');
+    output.stderr.write('\nBundle size budget exceeded. Either shrink the bundle or update a reviewed budget deliberately.\n');
+    return 1;
+  }
+  return 0;
+}
+
+function main() {
+  return enforceReport(measureReleaseArtifact());
+}
+
+if (require.main === module) {
+  try {
+    process.exitCode = main();
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;
   }
 }
 
-try {
-  main();
-} catch (error) {
-  process.stderr.write(`${error.message}\n`);
-  process.exitCode = 1;
-}
+module.exports = { enforceReport, main };
