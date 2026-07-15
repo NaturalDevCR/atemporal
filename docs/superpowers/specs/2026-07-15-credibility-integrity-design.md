@@ -114,7 +114,7 @@ behaviour, not merely execute lines.
 All integration tests use precisely one package artifact:
 
 ```text
-build → npm pack --json → artifacts/atemporal-{published-version}.tgz
+build → npm pack --json → artifacts/atemporal-{package-version}.tgz
                               ↓
                        every fixture
 ```
@@ -124,13 +124,17 @@ both CJS and ESM output, declarations, exported plugins, README, licence, and
 required package metadata must be present. Fixtures never create their own
 tarball and never import `src/` or use a local package link.
 
-Each fixture begins from a clean install and consumes the shared tarball (the
-placeholder in this shell glob resolves to the single artifact created by the
-parent workflow):
+Contract fixtures begin from clean disposable copies and consume the shared
+tarball. This deliberately tests the dependency resolution a normal consumer
+receives; the report records the effective installed polyfill version. The
+canonical size fixture instead pins the exact polyfill and bundler versions
+(using exact dependencies or `overrides`) so its budget remains reproducible.
+The fixture runner must verify that no versioned fixture file changed after the
+run; installing in a disposable copy is the preferred implementation.
 
 ```bash
 npm ci
-npm install --no-save ../../artifacts/atemporal-*.tgz
+npm install --no-save --package-lock=false ../../artifacts/atemporal-*.tgz
 npm run typecheck
 npm run build
 npm test
@@ -191,7 +195,8 @@ needs separate coverage.
 
 The size workflow produces these reproducible measurements:
 
-1. Distributed core: raw and deterministic gzip size of `dist/index.mjs`.
+1. Distributed core: raw and deterministic gzip sizes of `dist/index.js` and
+   `dist/index.mjs`.
 2. npm tarball: `size` and `unpackedSize` from `npm pack --json`.
 3. Canonical application bundle: production bundle that imports a
    representative core operation.
@@ -221,9 +226,12 @@ Existing blocking core budgets remain:
 | `dist/index.js` (CJS) | 20 KB | 5 KB |
 | `dist/index.mjs` (ESM) | 15 KB | 5 KB |
 
-The initial canonical-bundle budgets are proposed by the first reproducible
-measurement using `measurement + max(5%, 1 KiB)`, then explicitly reviewed and
-committed. They are never accepted or updated automatically.
+There are two independent, blocking canonical-bundle budgets:
+`canonicalCoreBundle.total` and `canonicalRelativeTimeBundle.total`. Their
+initial limits are proposed independently by their first reproducible
+measurements using `measurement + max(5%, 1 KiB)`, then explicitly reviewed
+and committed. They are never accepted or updated automatically; an
+improvement in one bundle cannot compensate for a regression in the other.
 
 Every later budget change records the previous value, new value, absolute and
 percentage delta, cause, and the change reference that justifies it. A
@@ -237,10 +245,13 @@ and `validate`. A path may not regress more than 25% over its committed GitHub
 Actions baseline. A path is evaluated independently; one improvement cannot
 hide another path's regression.
 
-Benchmarks use the same Node release, runner, and operation count as the
-baseline; warm up before measurement; collect multiple samples; compare the
-median after initialization; and record minimum, maximum, and dispersion.
-The baseline and each report identify the environment and methodology.
+Benchmarks run only on `ubuntu-24.04`, `x64`, Node `20.19.0`, with 100,000
+operations per sample, one warm-up per hot path, seven measured samples per
+hot path, and a 15-minute job timeout. They compare the post-warm-up median
+after initialization and record minimum, maximum, median, p95, and median
+absolute deviation. The baseline and each report identify this methodology,
+the GitHub Actions image version, and the full environment; a different
+environment requires a deliberate new baseline.
 
 Performance runs are intentionally outside normal PR latency: the scheduled
 workflow and the release workflow enforce this gate. The release workflow
@@ -264,10 +275,11 @@ checkout → build → npm pack once → unit/coverage → contract fixtures
          → extended fixtures → size → performance → publish that same tarball
 ```
 
-It must not rebuild before publishing. All workflows upload the tarball,
-machine-readable and human-readable reports, bundler metadata, and benchmark
-results even on failure. Weekly artifacts retain for 30 days; release evidence
-is retained longer and associated with the release where GitHub permits.
+It must not rebuild before publishing. Once successfully created, the tarball
+and all available machine-readable and human-readable reports, bundler
+metadata, and benchmark results are uploaded even when a later gate fails.
+Weekly artifacts retain for 30 days; release evidence is retained longer and
+associated with the release where GitHub permits.
 
 ## Report Schema
 
@@ -283,14 +295,17 @@ versioned schema and a matching Markdown summary. Minimum JSON fields include:
     "os": "runner operating-system identifier",
     "architecture": "x64",
     "node": "semantic version",
-    "npm": "semantic version",
-    "typescript": "semantic version",
-    "vite": "semantic version",
-    "webpack": "semantic version",
-    "next": "semantic version",
+    "npm": "semantic version"
+  },
+  "tools": {
+    "typescript": "semantic version or null",
+    "canonicalBundler": "semantic version",
+    "vite": "semantic version or null",
+    "webpack": "semantic version or null",
+    "next": "semantic version or null",
     "dayjs": "1.11.21",
-    "temporalPolyfill": "semantic version",
-    "atemporal": "published package version"
+    "temporalPolyfill": "effective semantic version",
+    "atemporal": "package version"
   },
   "tarball": {
     "name": "generated tarball filename",
@@ -299,6 +314,7 @@ versioned schema and a matching Markdown summary. Minimum JSON fields include:
     "unpackedSize": 0
   },
   "mode": "production",
+  "executedSuites": ["core-size", "canonical-core-bundle", "canonical-plugin-bundle"],
   "budgets": [],
   "results": [],
   "status": "pass"
@@ -324,5 +340,6 @@ a `schemaVersion` increment and documented migration semantics.
   specified TypeScript resolution modes.
 - Weekly and release checks validate Vite, Webpack, and production Next.js
   SSR against that same artifact.
-- Reports and all validation artifacts are retained on success and failure.
+- Once packing succeeds, reports and all available validation artifacts are
+  retained on success and failure.
 - Release publishes the already validated tarball, not a reconstructed one.
