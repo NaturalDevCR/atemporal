@@ -85,3 +85,25 @@ production path bundled and ran successfully. Webpack also emitted its normal
 recommended asset-size warnings because the Temporal polyfill is included in
 the production bundle. Neither warning was suppressed or treated as a passing
 assertion by this fixture task.
+
+## Review remediation: Webpack production-output assertion
+
+The Webpack fixture test now retains the `dist/main.js` existence check and
+then reads that file. It fails unless the bundle contains non-whitespace
+JavaScript, includes the fixture entrypoint marker
+`2026-07-15T10:00:00Z`, and contains no line breaks (the production
+minification signal).
+
+Fresh shared-tarball verification completed with exit code 0:
+
+```sh
+npm run build && npm run pack:artifact && npm run fixtures:extended
+```
+
+The rebuilt disposable Webpack bundle measured 303,876 bytes; the verification
+observed `nonEmpty: true`, `hasEntrypointMarker: true`, and
+`hasLineBreak: false`. The focused follow-up also completed with exit code 0:
+
+```sh
+npm run test --prefix tmp/integration-fixtures/extended/webpack
+```
