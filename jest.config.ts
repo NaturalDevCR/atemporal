@@ -25,9 +25,17 @@ const config: Config = {
     collectCoverageFrom: [
         'src/**/*.ts',
         '!src/types.ts',
-        '!src/index.ts',
         '!src/examples/**'
     ],
+
+    coverageThreshold: {
+        global: {
+            statements: 95,
+            lines: 95,
+            branches: 90,
+            functions: 90,
+        },
+    },
     
     modulePathIgnorePatterns: [
         '<rootDir>/dist/'
