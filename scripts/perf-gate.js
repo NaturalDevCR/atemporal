@@ -1,43 +1,94 @@
 /**
- * @file Performance regression gate.
- *
- * Compares a fresh `benchmarks/bench.ts` run against the committed
- * `benchmarks/baseline.json` and exits non-zero if any hot path
- * regresses by more than the configured tolerance.
+ * @file Performance regression gate for warmed hot-path medians.
  *
  * Usage:
  *   node scripts/perf-gate.js <current-bench.json> <baseline.json>
- *
- * Exits:
- *   0  on success (no regression)
- *   1  on regression
- *   2  on configuration / parse error
  */
 'use strict';
 
 const fs = require('node:fs');
 const path = require('node:path');
 
-/** Allowed regression factor. 1.25 = 25% slower than baseline is OK. */
+/** A median exactly 25% slower than baseline remains acceptable. */
 const TOLERANCE = 1.25;
-
-/**
- * Hot paths the gate cares about. Anything not in this list is reported
- * but does not block CI.
- */
 const GATED = ['parse', 'format', 'add', 'diff', 'validate'];
 
-function readJsonOrDie(p) {
-  const abs = path.resolve(p);
-  if (!fs.existsSync(abs)) {
-    process.stderr.write(`File not found: ${abs}\n`);
-    process.exit(2);
+function readJsonOrDie(filePath) {
+  const absolutePath = path.resolve(filePath);
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`File not found: ${absolutePath}`);
   }
   try {
-    return JSON.parse(fs.readFileSync(abs, 'utf8'));
-  } catch (err) {
-    process.stderr.write(`Invalid JSON in ${abs}: ${err.message}\n`);
-    process.exit(2);
+    return JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+  } catch (error) {
+    throw new Error(`Invalid JSON in ${absolutePath}: ${error.message}`);
+  }
+}
+
+function numberOrNull(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Evaluate every hot path independently against its baseline median.
+ *
+ * @param {Record<string, unknown>} current fresh benchmark report
+ * @param {Record<string, unknown>} baseline reviewed benchmark report
+ * @returns {Record<string, {status: 'PASS' | 'FAIL' | 'SKIP', medianMs: number | null, minMs: number | null, maxMs: number | null, p95Ms: number | null, medianAbsoluteDeviationMs: number | null, baselineMedianMs: number | null, allowedMedianMs: number | null, ratio: number | null}>}
+ */
+function evaluateGate(current, baseline) {
+  const tolerance = typeof baseline.tolerance === 'number' ? baseline.tolerance : TOLERANCE;
+  const rows = {};
+
+  for (const hotPath of GATED) {
+    const currentSummary = current[hotPath] || {};
+    const baselineSummary = baseline[hotPath] || {};
+    const medianMs = numberOrNull(currentSummary.medianMs);
+    const baselineMedianMs = numberOrNull(baselineSummary.medianMs);
+    const ratio = medianMs === null || baselineMedianMs === null || baselineMedianMs <= 0
+      ? null
+      : medianMs / baselineMedianMs;
+
+    rows[hotPath] = {
+      status: ratio === null ? 'SKIP' : ratio > tolerance ? 'FAIL' : 'PASS',
+      medianMs,
+      minMs: numberOrNull(currentSummary.minMs),
+      maxMs: numberOrNull(currentSummary.maxMs),
+      p95Ms: numberOrNull(currentSummary.p95Ms),
+      medianAbsoluteDeviationMs: numberOrNull(currentSummary.medianAbsoluteDeviationMs),
+      baselineMedianMs,
+      allowedMedianMs: baselineMedianMs === null ? null : baselineMedianMs * tolerance,
+      ratio,
+    };
+  }
+
+  return rows;
+}
+
+function formatMs(value) {
+  return value === null ? '-' : value.toFixed(2);
+}
+
+function formatRatio(value) {
+  return value === null ? '-' : `${(value * 100).toFixed(1)}%`;
+}
+
+function printReport(rows, baseline) {
+  const tolerance = typeof baseline.tolerance === 'number' ? baseline.tolerance : TOLERANCE;
+  process.stdout.write(
+    `Performance gate (tolerance: ${(tolerance * 100).toFixed(0)}% of baseline median)\n`,
+  );
+  process.stdout.write(`Baseline schema: ${baseline.schemaVersion || 'unknown'}\n\n`);
+  process.stdout.write(
+    '  hot path         median      min      max      p95      MAD   baseline   allowed    ratio  status\n',
+  );
+  process.stdout.write(
+    '  ---------------  --------  -------  -------  -------  -------  --------  --------  -------  ------\n',
+  );
+  for (const [hotPath, row] of Object.entries(rows)) {
+    process.stdout.write(
+      `  ${hotPath.padEnd(15)}  ${formatMs(row.medianMs).padStart(8)}  ${formatMs(row.minMs).padStart(7)}  ${formatMs(row.maxMs).padStart(7)}  ${formatMs(row.p95Ms).padStart(7)}  ${formatMs(row.medianAbsoluteDeviationMs).padStart(7)}  ${formatMs(row.baselineMedianMs).padStart(8)}  ${formatMs(row.allowedMedianMs).padStart(8)}  ${formatRatio(row.ratio).padStart(7)}  ${row.status}\n`,
+    );
   }
 }
 
@@ -45,64 +96,32 @@ function main() {
   const [, , currentPath, baselinePath] = process.argv;
   if (!currentPath || !baselinePath) {
     process.stderr.write('Usage: node scripts/perf-gate.js <current.json> <baseline.json>\n');
-    process.exit(2);
+    return 2;
   }
 
-  const current = readJsonOrDie(currentPath);
-  const baseline = readJsonOrDie(baselinePath);
+  try {
+    const current = readJsonOrDie(currentPath);
+    const baseline = readJsonOrDie(baselinePath);
+    const rows = evaluateGate(current, baseline);
+    printReport(rows, baseline);
 
-  const baselineMax = baseline.maxAllowedMs || {};
-  const tolerance = typeof baseline.tolerance === 'number' ? baseline.tolerance : TOLERANCE;
-
-  process.stdout.write(
-    `Performance gate (tolerance: ${(tolerance * 100).toFixed(0)}% of baseline)\n`,
-  );
-  process.stdout.write(`Baseline version: ${baseline.version || 'unknown'}\n`);
-  process.stdout.write(`Current  version: ${current.version || 'unversioned'}\n\n`);
-
-  let failed = false;
-  const rows = [];
-
-  for (const key of GATED) {
-    const cur = current[key];
-    const base = baselineMax[key];
-    if (typeof cur !== 'number' || typeof base !== 'number') {
-      rows.push({ key, status: 'SKIP', cur, base });
-      continue;
+    if (Object.values(rows).some((row) => row.status === 'FAIL')) {
+      process.stderr.write(
+        'Performance regression detected. Either fix the regression or update benchmarks/baseline.json deliberately.\n',
+      );
+      return 1;
     }
-    const allowed = base * tolerance;
-    const ratio = cur / base;
-    const status = cur > allowed ? 'FAIL' : 'PASS';
-    if (status === 'FAIL') failed = true;
-    rows.push({ key, status, cur, base, allowed, ratio });
-  }
 
-  process.stdout.write(
-    '  hot path         current (ms)   baseline (ms)   allowed (ms)   ratio   status\n',
-  );
-  process.stdout.write(
-    '  ---------------  -------------  --------------  -------------  ------  ------\n',
-  );
-  for (const r of rows) {
-    if (r.status === 'SKIP') {
-      process.stdout.write(`  ${r.key.padEnd(15)}  -              -               -              -       SKIP\n`);
-      continue;
-    }
-    process.stdout.write(
-      `  ${r.key.padEnd(15)}  ${String(r.cur.toFixed(1)).padStart(13)}  ${String(r.base.toFixed(1)).padStart(14)}  ${String(r.allowed.toFixed(1)).padStart(13)}  ${(r.ratio * 100).toFixed(0).padStart(4)}%   ${r.status}\n`,
-    );
+    process.stdout.write('\nPerformance gate: PASS\n');
+    return 0;
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    return 2;
   }
-
-  process.stdout.write('\n');
-  if (failed) {
-    process.stderr.write(
-      'Performance regression detected. Either fix the regression or update benchmarks/baseline.json deliberately.\n',
-    );
-    process.exit(1);
-  }
-
-  process.stdout.write('Performance gate: PASS\n');
-  process.exit(0);
 }
 
-main();
+module.exports = { evaluateGate };
+
+if (require.main === module) {
+  process.exitCode = main();
+}
