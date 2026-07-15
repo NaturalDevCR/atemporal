@@ -12,7 +12,7 @@
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       },
       "require": {
@@ -22,7 +22,7 @@
     },
     "./plugins/relativeTime": {
       "import": {
-        "types": "./dist/plugins/relativeTime.d.ts",
+        "types": "./dist/plugins/relativeTime.d.mts",
         "default": "./dist/plugins/relativeTime.mjs"
       },
       "require": {
@@ -32,7 +32,7 @@
     },
     "./plugins/customParseFormat": {
       "import": {
-        "types": "./dist/plugins/customParseFormat.d.ts",
+        "types": "./dist/plugins/customParseFormat.d.mts",
         "default": "./dist/plugins/customParseFormat.mjs"
       },
       "require": {
@@ -42,7 +42,7 @@
     },
     "./plugins/advancedFormat": {
       "import": {
-        "types": "./dist/plugins/advancedFormat.d.ts",
+        "types": "./dist/plugins/advancedFormat.d.mts",
         "default": "./dist/plugins/advancedFormat.mjs"
       },
       "require": {
@@ -52,7 +52,7 @@
     },
     "./plugins/durationHumanizer": {
       "import": {
-        "types": "./dist/plugins/durationHumanizer.d.ts",
+        "types": "./dist/plugins/durationHumanizer.d.mts",
         "default": "./dist/plugins/durationHumanizer.mjs"
       },
       "require": {
@@ -62,7 +62,7 @@
     },
     "./plugins/weekDay": {
       "import": {
-        "types": "./dist/plugins/weekDay.d.ts",
+        "types": "./dist/plugins/weekDay.d.mts",
         "default": "./dist/plugins/weekDay.mjs"
       },
       "require": {
@@ -72,7 +72,7 @@
     },
     "./plugins/businessDays": {
       "import": {
-        "types": "./dist/plugins/businessDays.d.ts",
+        "types": "./dist/plugins/businessDays.d.mts",
         "default": "./dist/plugins/businessDays.mjs"
       },
       "require": {
@@ -82,7 +82,7 @@
     },
     "./plugins/timeSlots": {
       "import": {
-        "types": "./dist/plugins/timeSlots.d.ts",
+        "types": "./dist/plugins/timeSlots.d.mts",
         "default": "./dist/plugins/timeSlots.mjs"
       },
       "require": {
@@ -92,7 +92,7 @@
     },
     "./plugins/dateRangeOverlap": {
       "import": {
-        "types": "./dist/plugins/dateRangeOverlap.d.ts",
+        "types": "./dist/plugins/dateRangeOverlap.d.mts",
         "default": "./dist/plugins/dateRangeOverlap.mjs"
       },
       "require": {

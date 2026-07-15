@@ -1,0 +1,13 @@
+{
+  "name": "atemporal-contract-typescript-nodenext",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "node dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}
