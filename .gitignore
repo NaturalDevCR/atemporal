@@ -9,6 +9,7 @@ yarn-error.log*
 # Dependencias y artefactos de build
 /node_modules/
 /dist/
+/artifacts/
 /coverage/
 /coverage-strategies/
 /out-tsc/

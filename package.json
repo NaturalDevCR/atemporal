@@ -103,6 +103,9 @@
   },
   "scripts": {
     "build": "tsup",
+    "pack:artifact": "node scripts/create-package-artifact.cjs",
+    "fixtures:contract": "node scripts/run-fixtures.cjs contract",
+    "fixtures:extended": "node scripts/run-fixtures.cjs extended",
     "test": "jest --coverage",
     "test:performance": "jest --testPathPatterns=performance --coverage=false",
     "test:ci": "jest --coverage --testPathIgnorePatterns=performance",
