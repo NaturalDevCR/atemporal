@@ -8,6 +8,7 @@ import { TemporalWrapper } from "../TemporalWrapper";
 import type { AtemporalFactory, Plugin } from "../types";
 import { LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";
 import { LocaleUtils } from "../core/locale";
+import { markAsPlugin } from '../typeGuards';
 
 // Extend the `atemporal` factory interface to add our new static method.
 declare module "../types" {
@@ -487,7 +488,10 @@ const customParseFormatPlugin: Plugin = (
   }
 };
 
-export default customParseFormatPlugin;
+export default markAsPlugin(customParseFormatPlugin, {
+  name: 'customParseFormat',
+  official: true,
+});
 
 /**
  * Helper function to convert month names to month numbers

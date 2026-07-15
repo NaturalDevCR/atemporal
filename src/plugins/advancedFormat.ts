@@ -10,6 +10,7 @@ import { LocaleUtils } from '../core/locale';
 import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin } from '../types';
 import type { Temporal } from '@js-temporal/polyfill';
+import { markAsPlugin } from '../typeGuards';
 
 // Augment the JSDoc to reflect only the tokens this plugin provides.
 declare module '../TemporalWrapper' {
@@ -311,4 +312,7 @@ function shouldUseNormalizedLocale(locale: any): boolean {
 // Note: validateAndNormalizeLocale function has been moved to LocaleUtils in TemporalUtils
 // for centralized locale handling across all plugins
 
-export default advancedFormatPlugin;
+export default markAsPlugin(advancedFormatPlugin, {
+    name: 'advancedFormat',
+    official: true,
+});

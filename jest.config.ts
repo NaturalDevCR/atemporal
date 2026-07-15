@@ -7,6 +7,14 @@ import type { Config } from 'jest';
  */
 const config: Config = {
     preset: 'ts-jest',
+    transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+            tsconfig: {
+                module: 'CommonJS',
+                moduleResolution: 'Node',
+            },
+        }],
+    },
     testEnvironment: 'node',
     clearMocks: true,
     coverageProvider: 'v8',

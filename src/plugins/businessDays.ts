@@ -7,6 +7,7 @@
 import type { Temporal } from "@js-temporal/polyfill";
 import { TemporalWrapper } from "../TemporalWrapper";
 import type { Plugin, AtemporalFactory } from "../types";
+import { markAsPlugin } from '../typeGuards';
 
 export interface BusinessDaysOptions {
   /**
@@ -182,4 +183,7 @@ declare module "../TemporalWrapper" {
   }
 }
 
-export default businessDaysPlugin;
+export default markAsPlugin(businessDaysPlugin, {
+  name: 'businessDays',
+  official: true,
+});

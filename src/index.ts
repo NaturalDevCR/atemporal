@@ -20,11 +20,14 @@ import {
   isValidLocale,
   isPlugin,
   markAsPlugin,
+  getOfficialPluginMetadata,
   PLUGIN_SENTINEL,
+  OFFICIAL_PLUGIN_METADATA,
 } from "./typeGuards";
 import type {
   DateInput,
   Plugin,
+  OfficialPluginName,
   AtemporalFactory,
   AtemporalFunction,
 } from "./types";
@@ -56,6 +59,7 @@ export type {
   TimeUnit,
   SettableUnit,
   Plugin,
+  OfficialPluginName,
   DateRange,
   OverlapResult,
   OverlapOptions,
@@ -74,7 +78,12 @@ export {
 export type { AtemporalErrorCode } from "./errors";
 
 // Export plugin authoring utilities
-export { markAsPlugin, PLUGIN_SENTINEL };
+export {
+  markAsPlugin,
+  getOfficialPluginMetadata,
+  PLUGIN_SENTINEL,
+  OFFICIAL_PLUGIN_METADATA,
+};
 
 // Export the dateRangeOverlap plugin and related utilities
 export {
@@ -245,6 +254,7 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
  * The function signature is defined by its implementation.
  */
 const appliedPlugins = new Set<Plugin>();
+const loadedPlugins = new Map<OfficialPluginName, Plugin>();
 
   atemporal.extend = (plugin: Plugin, options) => {
     if (!plugin || typeof plugin !== "function") {
@@ -257,6 +267,8 @@ const appliedPlugins = new Set<Plugin>();
     try {
       plugin(TemporalWrapper, atemporal, options);
       appliedPlugins.add(plugin);
+      const metadata = getOfficialPluginMetadata(plugin);
+      if (metadata) loadedPlugins.set(metadata.name, plugin);
     } catch (error) {
       debugLog('error', 'Error applying plugin', String(error));
       throw error;
@@ -268,12 +280,10 @@ const appliedPlugins = new Set<Plugin>();
 /**
  * Tracks which plugins have been loaded
  */
-const loadedPlugins = new Map<string, Plugin>();
-
 /**
  * List of available plugins in the library
  */
-const AVAILABLE_PLUGINS = [
+const AVAILABLE_PLUGINS: readonly OfficialPluginName[] = [
   "relativeTime",
   "customParseFormat",
   "advancedFormat",
@@ -296,12 +306,12 @@ atemporal.lazyLoad = async (
   options?: any
 ): Promise<void> => {
   // Skip if already loaded
-  if (loadedPlugins.has(pluginName)) {
+  if (loadedPlugins.has(pluginName as OfficialPluginName)) {
     return;
   }
 
   // Validate plugin name
-  if (!AVAILABLE_PLUGINS.includes(pluginName)) {
+  if (!AVAILABLE_PLUGINS.includes(pluginName as OfficialPluginName)) {
     throw new Error(
       `Plugin '${pluginName}' not found. Available plugins are: ${AVAILABLE_PLUGINS.join(
         ", "
@@ -315,16 +325,16 @@ atemporal.lazyLoad = async (
     try {
       // First try importing with .ts extension (for development with ts-node)
       const pluginModule = await import(`./plugins/${pluginName}.ts`);
-      plugin = pluginModule.default;
+      plugin = pluginModule.default?.default ?? pluginModule.default;
     } catch (e) {
       try {
         // If that fails, try without extension (for production/npm)
         const pluginModule = await import(`./plugins/${pluginName}`);
-        plugin = pluginModule.default;
+        plugin = pluginModule.default?.default ?? pluginModule.default;
       } catch (e2) {
         // Last attempt: import from root package (for use as npm dependency)
         const pluginModule = await import(`atemporal/plugins/${pluginName}`);
-        plugin = pluginModule.default;
+        plugin = pluginModule.default?.default ?? pluginModule.default;
       }
     }
 
@@ -335,8 +345,10 @@ atemporal.lazyLoad = async (
     // Apply the plugin
     atemporal.extend(plugin, options);
 
-    // Register that the plugin has been loaded
-    loadedPlugins.set(pluginName, plugin);
+    const metadata = getOfficialPluginMetadata(plugin);
+    if (!metadata || metadata.name !== pluginName) {
+      throw new Error(`Invalid metadata for official plugin '${pluginName}'`);
+    }
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error loading plugin '${pluginName}': ${error.message}`, { cause: error });
@@ -366,7 +378,7 @@ atemporal.lazyLoadMultiple = async (
  * @returns true if the plugin has been loaded, false otherwise
  */
 atemporal.isPluginLoaded = (pluginName: string): boolean => {
-  return loadedPlugins.has(pluginName);
+  return loadedPlugins.has(pluginName as OfficialPluginName);
 };
 
 /**
@@ -381,7 +393,7 @@ atemporal.getLoadedPlugins = (): string[] => {
  * Gets the list of all available plugins
  * @returns Array of available plugin names
  */
-atemporal.getAvailablePlugins = (): string[] => {
+atemporal.getAvailablePlugins = (): OfficialPluginName[] => {
   return [...AVAILABLE_PLUGINS];
 };
 
