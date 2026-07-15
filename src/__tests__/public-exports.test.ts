@@ -25,9 +25,19 @@ describe('public entrypoint exports', () => {
   });
 
   it('exports the remaining documented validation errors', () => {
-    expect(new InvalidAmPmError('Invalid meridiem')).toBeInstanceOf(AtemporalError);
+    const amPmError = new InvalidAmPmError('Invalid meridiem', 13, 'pm');
+    const componentsError = new InvalidDateComponentsError('Invalid components', { month: 13 });
+
+    expect(amPmError).toBeInstanceOf(AtemporalError);
+    expect(amPmError.name).toBe('InvalidAmPmError');
+    expect(amPmError.code).toBe(ATEMPORAL_ERROR_CODES.INVALID_AMPM);
+    expect(amPmError.hour12).toBe(13);
+    expect(amPmError.ampm).toBe('pm');
     expect(new InvalidAtemporalInstanceError('Invalid instance')).toBeInstanceOf(AtemporalError);
-    expect(new InvalidDateComponentsError('Invalid components')).toBeInstanceOf(AtemporalError);
+    expect(componentsError).toBeInstanceOf(AtemporalError);
+    expect(componentsError.name).toBe('InvalidDateComponentsError');
+    expect(componentsError.code).toBe(ATEMPORAL_ERROR_CODES.INVALID_DATE_COMPONENTS);
+    expect(componentsError.components).toEqual({ month: 13 });
     expect(new InvalidTimeZoneError('Invalid time zone')).toBeInstanceOf(AtemporalError);
   });
 
