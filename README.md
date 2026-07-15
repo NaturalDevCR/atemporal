@@ -4,7 +4,11 @@
 ![license](https://img.shields.io/npm/l/atemporal)
 ![bundle size](https://img.shields.io/bundlephobia/min/atemporal)
 
-Atemporal is a modern, immutable, and ergonomic date-time library built on top of the new Temporal API (TC39 Stage 4, ES2026) — with support for formatting, localization, plugins, and time zones.
+Atemporal is a modern, Temporal-powered date-time library with a familiar
+Day.js-inspired API. Its principal representation is `Temporal.ZonedDateTime`,
+so the wrapper does not expose the full Temporal model or promise full Day.js
+compatibility. See the [Day.js compatibility matrix](./docs/migration/dayjs-compatibility.md)
+for the reviewed scope.
 
 ## Key Features
 
@@ -34,12 +38,17 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 | Feature | Atemporal | Day.js | Luxon | date-fns |
 |---------|-----------|--------|-------|----------|
 | Built on Temporal | Yes (TC39 Stage 4) | No | No | No |
-| Immutable by default | Yes | No | Yes | Yes |
+| Immutable by default | Yes | Yes | Yes | Yes |
 | Plugin system | 8 official plugins | Extensive | No | No |
 | Firebase timestamps | Yes | No | No | No |
 | Native Temporal fallback | Auto-detected | N/A | N/A | N/A |
 | IANA time zones | Yes | Via plugin | Yes | Yes (v3+) |
-| Bundle (min) | ~15KB | ~2KB | ~60KB | Tree-shakeable |
+| Size measurements | [Generated report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md) | Varies by use | Varies by use | Varies by use |
+
+Core distribution, packed-tarball, and application-bundle sizes are separate
+measurements; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md).
+`@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle
+cost is measured separately rather than inferred from the core distribution.
 
 ## Documentation
 
@@ -108,6 +117,20 @@ const locale = atemporal.getDefaultLocale();
 const info = atemporal.getTemporalInfo();
 // { isNative: boolean, environment: "browser" | "node" | "unknown", version: "native" | "polyfill" }
 ```
+
+## Testing and quality
+
+Jest enforces global minimum coverage of 95% statements, 95% lines, 90%
+branches, and 90% functions. Coverage collection includes public factory logic
+such as `src/index.ts`. Codecov tracks coverage trends and pull-request diffs;
+it does not enforce these thresholds.
+
+Compatibility guaranteed: every pull request continuously tests installation,
+native imports, TypeScript resolution, core operations, formatting, and official
+plugin loading from the packed npm artifact.
+
+Compatibility additionally validated: scheduled and release fixtures verify
+production Vite, Webpack, and Next.js SSR builds.
 
 ---
 

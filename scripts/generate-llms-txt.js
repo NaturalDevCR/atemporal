@@ -90,6 +90,7 @@ const SECTIONS = [
   // ---- MIGRATION -------------------------------------------------
   { file: 'migration/index.md', title: 'Migration — overview' },
   { file: 'migration/dayjs.md', title: 'Migration — from Day.js' },
+  { file: 'migration/dayjs-compatibility.md', title: 'Migration — Day.js compatibility matrix' },
   { file: 'migration/luxon.md', title: 'Migration — from Luxon' },
   { file: 'migration/moment.md', title: 'Migration — from moment.js' },
   { file: 'migration/temporal.md', title: 'Migration — from raw Temporal' },
@@ -249,7 +250,7 @@ function buildTldr() {
     '- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.',
     '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.',
     '- **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.',
-    '- **Bundle:** ~15 KB minified ESM, ~8 KB with tree-shaking. Runtime dependency: `@js-temporal/polyfill`.',
+    '- **Size:** Core, packed-tarball, and application-bundle measurements are reported separately; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md). `@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle cost is measured separately.',
     '- **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.',
     '',
     '### Common recipes (1-liners)',

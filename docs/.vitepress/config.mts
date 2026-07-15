@@ -68,6 +68,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/migration/' },
             { text: 'From Day.js', link: '/migration/dayjs' },
+            { text: 'Day.js compatibility matrix', link: '/migration/dayjs-compatibility' },
             { text: 'From Luxon', link: '/migration/luxon' },
             { text: 'From moment.js', link: '/migration/moment' },
             { text: 'From raw Temporal', link: '/migration/temporal' },
