@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "canonicalBundles": {
+    "canonicalCoreBundle": {
+      "limitBytes": 341936,
+      "baselineBytes": 325653,
+      "rationale": "Initial value reviewed from implementing commit ef275fe88501faff107c973144370b2b2e886bcc."
+    },
+    "canonicalRelativeTimeBundle": {
+      "limitBytes": 341945,
+      "baselineBytes": 325661,
+      "rationale": "Initial value reviewed from implementing commit ef275fe88501faff107c973144370b2b2e886bcc."
+    }
+  },
+  "history": []
+}

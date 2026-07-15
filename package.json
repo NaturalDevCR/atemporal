@@ -115,6 +115,7 @@
     "bench": "node --expose-gc benchmarks/bench.ts",
     "bench:gate": "node scripts/perf-gate.js bench-out.json benchmarks/baseline.json",
     "size": "node scripts/check-bundle-size.js",
+    "size:report": "node scripts/measure-release-artifact.cjs",
     "licenses:check": "node scripts/check-licenses.js",
     "links:check": "lychee --config .lychee.toml --no-progress --exclude-loopback 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
     "supply-chain": "npm run licenses:check && npm audit --audit-level=high",
