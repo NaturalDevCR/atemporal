@@ -18,7 +18,7 @@
       "previousBytes": 325653,
       "nextBytes": 325484,
       "absoluteDeltaBytes": -169,
-      "percentDelta": -0.05189751624743348,
+      "percentDelta": -0.05189572950348991,
       "cause": "Fixture-local esbuild resolution now aliases the exact-pinned Temporal polyfill instead of following the atemporal file symlink to the root dependency.",
       "changeReference": "Task 8 P1 canonical fixture-resolution correction"
     },
@@ -27,7 +27,7 @@
       "previousBytes": 325661,
       "nextBytes": 325492,
       "absoluteDeltaBytes": -169,
-      "percentDelta": -0.05188939906876577,
+      "percentDelta": -0.05189445466297776,
       "cause": "Fixture-local esbuild resolution now aliases the exact-pinned Temporal polyfill instead of following the atemporal file symlink to the root dependency.",
       "changeReference": "Task 8 P1 canonical fixture-resolution correction"
     }

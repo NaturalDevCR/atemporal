@@ -13,6 +13,15 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const budgetFile = path.join(projectRoot, 'size-budgets.json');
 
 describe('release artifact measurement report', () => {
+  test('records canonical budget history deltas from their previous and next byte values', () => {
+    const { history } = JSON.parse(fs.readFileSync(budgetFile, 'utf8'));
+
+    for (const entry of history) {
+      expect(entry.absoluteDeltaBytes).toBe(entry.nextBytes - entry.previousBytes);
+      expect(entry.percentDelta).toBe(((entry.nextBytes - entry.previousBytes) / entry.previousBytes) * 100);
+    }
+  });
+
   test('creates the versioned PR report schema without claiming unexecuted bundlers ran', () => {
     const report = buildSizeReport({
       commitSha: 'a'.repeat(40),
