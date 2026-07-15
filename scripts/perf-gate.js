@@ -29,37 +29,63 @@ function numberOrNull(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+class ConfigurationError extends Error {
+  constructor(errors) {
+    super(errors.join('; '));
+    this.name = 'ConfigurationError';
+  }
+}
+
 /**
  * Evaluate every hot path independently against its baseline median.
  *
  * @param {Record<string, unknown>} current fresh benchmark report
  * @param {Record<string, unknown>} baseline reviewed benchmark report
- * @returns {Record<string, {status: 'PASS' | 'FAIL' | 'SKIP', medianMs: number | null, minMs: number | null, maxMs: number | null, p95Ms: number | null, medianAbsoluteDeviationMs: number | null, baselineMedianMs: number | null, allowedMedianMs: number | null, ratio: number | null}>}
+ * @returns {Record<string, {status: 'PASS' | 'FAIL', medianMs: number, minMs: number | null, maxMs: number | null, p95Ms: number | null, medianAbsoluteDeviationMs: number | null, baselineMedianMs: number, allowedMedianMs: number, ratio: number}>}
  */
 function evaluateGate(current, baseline) {
   const tolerance = typeof baseline.tolerance === 'number' ? baseline.tolerance : TOLERANCE;
   const rows = {};
+  const configurationErrors = [];
+
+  if (!Number.isFinite(tolerance) || tolerance <= 0) {
+    configurationErrors.push('baseline tolerance must be a finite number greater than 0');
+  }
 
   for (const hotPath of GATED) {
-    const currentSummary = current[hotPath] || {};
-    const baselineSummary = baseline[hotPath] || {};
+    const currentSummary = current && typeof current === 'object' ? current[hotPath] || {} : {};
+    const baselineSummary = baseline && typeof baseline === 'object' ? baseline[hotPath] || {} : {};
     const medianMs = numberOrNull(currentSummary.medianMs);
     const baselineMedianMs = numberOrNull(baselineSummary.medianMs);
-    const ratio = medianMs === null || baselineMedianMs === null || baselineMedianMs <= 0
-      ? null
-      : medianMs / baselineMedianMs;
+
+    if (medianMs === null || medianMs <= 0) {
+      configurationErrors.push(`current ${hotPath}.medianMs must be a finite number greater than 0`);
+    }
+    if (baselineMedianMs === null || baselineMedianMs <= 0) {
+      configurationErrors.push(`baseline ${hotPath}.medianMs must be a finite number greater than 0`);
+    }
 
     rows[hotPath] = {
-      status: ratio === null ? 'SKIP' : ratio > tolerance ? 'FAIL' : 'PASS',
+      status: 'PASS',
       medianMs,
       minMs: numberOrNull(currentSummary.minMs),
       maxMs: numberOrNull(currentSummary.maxMs),
       p95Ms: numberOrNull(currentSummary.p95Ms),
       medianAbsoluteDeviationMs: numberOrNull(currentSummary.medianAbsoluteDeviationMs),
       baselineMedianMs,
-      allowedMedianMs: baselineMedianMs === null ? null : baselineMedianMs * tolerance,
-      ratio,
+      allowedMedianMs: null,
+      ratio: null,
     };
+  }
+
+  if (configurationErrors.length > 0) {
+    throw new ConfigurationError(configurationErrors);
+  }
+
+  for (const row of Object.values(rows)) {
+    row.allowedMedianMs = row.baselineMedianMs * tolerance;
+    row.ratio = row.medianMs / row.baselineMedianMs;
+    row.status = row.ratio > tolerance ? 'FAIL' : 'PASS';
   }
 
   return rows;
@@ -115,12 +141,13 @@ function main() {
     process.stdout.write('\nPerformance gate: PASS\n');
     return 0;
   } catch (error) {
-    process.stderr.write(`${error.message}\n`);
+    const prefix = error instanceof ConfigurationError ? 'Configuration error: ' : '';
+    process.stderr.write(`${prefix}${error.message}\n`);
     return 2;
   }
 }
 
-module.exports = { evaluateGate };
+module.exports = { ConfigurationError, evaluateGate };
 
 if (require.main === module) {
   process.exitCode = main();
