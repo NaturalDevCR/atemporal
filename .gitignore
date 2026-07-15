@@ -23,6 +23,7 @@ yarn-error.log*
 
 # Archivos temporales
 /tmp/
+/.worktrees/
 
 # Reports generados por herramientas de CI (Stryker, perf gate, SBOM)
 bench-out.json
