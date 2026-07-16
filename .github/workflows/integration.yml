@@ -1,0 +1,93 @@
+name: Weekly integration validation
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Extended packed-artifact validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+      - run: npm ci
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: npm run build
+      - name: Pack exactly one npm artifact
+        id: pack
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run pack:artifact
+      - name: Unit and coverage gates
+        id: unit
+        continue-on-error: true
+        run: npm run test:ci -- --runInBand
+      - name: Contract fixture gate
+        id: contracts
+        if: always() && steps.pack.outcome == 'success'
+        continue-on-error: true
+        run: npm run fixtures:contract
+      - name: Extended fixture gate
+        id: extended
+        if: always() && steps.pack.outcome == 'success'
+        continue-on-error: true
+        run: npm run fixtures:extended
+      - name: Contractual core and canonical size gates
+        id: size
+        if: always() && steps.pack.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/measure-release-artifact.cjs
+      - name: Capture hosted performance candidate
+        id: benchmark
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 > bench-out.json
+      - name: Gate against the reviewed baseline
+        id: performance
+        if: always() && steps.benchmark.outcome == 'success'
+        continue-on-error: true
+        run: npm run bench:gate
+      - name: Upload packed artifact and all validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-validation-evidence
+          path: |
+            artifacts/
+            reports/
+            reports/bundler-diagnostics/
+            integration/canonical-bundle/dist/*.meta.json
+            bench-out.json
+            coverage/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload explicit reviewed performance baseline-capture artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewed-performance-baseline-capture
+          path: bench-out.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Fail after preserving evidence
+        if: always()
+        run: |
+          test "${{ steps.build.outcome }}" = success
+          test "${{ steps.pack.outcome }}" = success
+          test "${{ steps.unit.outcome }}" = success
+          test "${{ steps.contracts.outcome }}" = success
+          test "${{ steps.extended.outcome }}" = success
+          test "${{ steps.size.outcome }}" = success
+          test "${{ steps.benchmark.outcome }}" = success
+          test "${{ steps.performance.outcome }}" = success

@@ -6,6 +6,7 @@
 import { Temporal } from "../core/temporal-api"; // Use polyfill types for internal logic
 import { TemporalWrapper } from "../TemporalWrapper";
 import type { Plugin, AtemporalFactory, DateInput } from "../types";
+import { markAsPlugin } from '../typeGuards';
 
 export interface TimeSlot {
   start: DateInput;
@@ -151,4 +152,7 @@ declare module "../types" {
   }
 }
 
-export default timeSlotsPlugin;
+export default markAsPlugin(timeSlotsPlugin, {
+  name: 'timeSlots',
+  official: true,
+});

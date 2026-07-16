@@ -9,6 +9,7 @@ import { TemporalUtils, LRUCache, GlobalCacheCoordinator } from '../TemporalUtil
 import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin, DateRange, OverlapResult, OverlapOptions, DateInput } from '../types';
 import { InvalidDateError } from '../errors';
+import { markAsPlugin } from '../typeGuards';
 
 /**
  * Custom error class for date range overlap detection errors.
@@ -345,7 +346,10 @@ const dateRangeOverlapPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) 
     };
 };
 
-export default dateRangeOverlapPlugin;
+export default markAsPlugin(dateRangeOverlapPlugin, {
+    name: 'dateRangeOverlap',
+    official: true,
+});
 
 // Export additional utilities for advanced use cases
 export {

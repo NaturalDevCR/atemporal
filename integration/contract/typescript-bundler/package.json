@@ -1,0 +1,13 @@
+{
+  "name": "atemporal-contract-typescript-bundler",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "node verify.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

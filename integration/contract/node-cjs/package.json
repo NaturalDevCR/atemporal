@@ -1,0 +1,9 @@
+{
+  "name": "atemporal-contract-node-cjs",
+  "private": true,
+  "scripts": {
+    "typecheck": "node -e \"process.exit(0)\"",
+    "build": "node -e \"process.exit(0)\"",
+    "test": "node verify.cjs"
+  }
+}

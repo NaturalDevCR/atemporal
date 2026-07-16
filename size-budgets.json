@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "canonicalBundles": {
+    "canonicalCoreBundle": {
+      "limitBytes": 341759,
+      "baselineBytes": 325484,
+      "rationale": "Corrected to the fixture-local canonical measurement after Task 8 P1 review; replaces the initial root-resolved value from implementing commit ef275fe88501faff107c973144370b2b2e886bcc."
+    },
+    "canonicalRelativeTimeBundle": {
+      "limitBytes": 341767,
+      "baselineBytes": 325492,
+      "rationale": "Corrected to the fixture-local canonical measurement after Task 8 P1 review; replaces the initial root-resolved value from implementing commit ef275fe88501faff107c973144370b2b2e886bcc."
+    }
+  },
+  "history": [
+    {
+      "bundle": "canonicalCoreBundle",
+      "previousBytes": 325653,
+      "nextBytes": 325484,
+      "absoluteDeltaBytes": -169,
+      "percentDelta": -0.05189572950348991,
+      "cause": "Fixture-local esbuild resolution now aliases the exact-pinned Temporal polyfill instead of following the atemporal file symlink to the root dependency.",
+      "changeReference": "Task 8 P1 canonical fixture-resolution correction"
+    },
+    {
+      "bundle": "canonicalRelativeTimeBundle",
+      "previousBytes": 325661,
+      "nextBytes": 325492,
+      "absoluteDeltaBytes": -169,
+      "percentDelta": -0.05189445466297776,
+      "cause": "Fixture-local esbuild resolution now aliases the exact-pinned Temporal polyfill instead of following the atemporal file symlink to the root dependency.",
+      "changeReference": "Task 8 P1 canonical fixture-resolution correction"
+    }
+  ]
+}

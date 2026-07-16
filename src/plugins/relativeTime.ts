@@ -9,6 +9,7 @@ import { IntlCache, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
 import { LocaleUtils } from '../core/locale';
 import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin, TimeUnit } from '../types';
+import { markAsPlugin } from '../typeGuards';
 
 /**
  * Cache for relative time calculations to improve performance.
@@ -279,4 +280,7 @@ declare module '../types' {
     }
 }
 
-export default relativeTimePlugin;
+export default markAsPlugin(relativeTimePlugin, {
+    name: 'relativeTime',
+    official: true,
+});

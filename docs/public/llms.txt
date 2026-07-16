@@ -14,7 +14,7 @@
 - **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.
 - **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.
 - **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.
-- **Bundle:** ~15 KB minified ESM, ~8 KB with tree-shaking. Runtime dependency: `@js-temporal/polyfill`.
+- **Size:** Core, packed-tarball, and application-bundle measurements are reported separately; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md). `@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle cost is measured separately.
 - **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.
 
 ### Common recipes (1-liners)
@@ -3758,18 +3758,20 @@ locales.
 
 # Migrating to atemporal
 
-atemporal aims to be the easiest possible migration target for
-existing date/time libraries — and a friendlier layer on top of the
-raw TC39 Temporal API.
+A modern, Temporal-powered date-time library with a familiar Day.js-inspired
+API. Atemporal is an ergonomic wrapper whose principal representation is
+`Temporal.ZonedDateTime`; it is not a promise of full Temporal-model exposure
+or full compatibility with each source library.
 
 ## Guides by source library
 
 - **[Migrating from Day.js](dayjs.md)** — most teams are here; format
-  tokens and API are nearly identical.
+  tokens and common APIs are familiar. See the
+  [Day.js compatibility matrix](dayjs-compatibility.md) for reviewed scope.
 - **[Migrating from Luxon](luxon.md)** — both libraries are immutable
   and IANA-aware; the surface maps cleanly.
-- **[Migrating from moment.js](moment.md)** — moment is in maintenance
-  mode; atemporal is a drop-in for 90% of usage.
+- **[Migrating from moment.js](moment.md)** — review the documented mappings
+  before migration.
 - **[Migrating from raw TC39 Temporal](temporal.md)** — atemporal is
   a friendly layer on top, not a replacement.
 
@@ -3777,31 +3779,17 @@ raw TC39 Temporal API.
 
 | Reason                    | Details                                                  |
 | ------------------------- | -------------------------------------------------------- |
-| **Smaller bundle**        | atemporal is ~15 KB gzipped (vs moment ~70 KB).          |
-| **Future-proof**          | Built on the standardized TC39 Temporal Stage 4 API.     |
-| **Auto polyfill**         | Uses native Temporal when available, polyfill otherwise. |
-| **Type-safe by default**  | Zero `any` in the public API surface.                    |
-| **Fluent & immutable**    | Always returns new instances.                            |
-| **Error codes**           | `ATEMPORAL_*` codes for i18n and dashboards.             |
-| **Strict mode**           | Optional, opt-in warnings for ambiguous operations.      |
+| **Measured size evidence** | See the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md); core, tarball, and application-bundle measurements differ. |
+| **Temporal runtime**      | `@js-temporal/polyfill` is a direct runtime dependency; its application-bundle cost is measured separately. |
+| **Migration scope**       | The versioned compatibility matrix identifies supported mappings and semantic differences. |
 
-## What you do *not* lose
+## Review compatibility before migration
 
-- moment-compatible format tokens.
-- Immutable `.add()` / `.subtract()` semantics.
-- IANA timezone support.
-- Plugin ecosystem.
-- Locale-aware formatting.
-
-## What you gain
-
-- All of the above, plus first-class Temporal-native features
-  (`PlainDate`, `PlainDateTime`, `ZonedDateTime`, `Instant`).
-- A `validate()` helper that returns structured results instead of
-  throwing.
-- A `try()` helper that returns `null` instead of throwing.
-- A `presets` object with 12 battle-tested format strings.
-- Strict mode for catching timezone bugs in tests.
+Shared method names do not establish equivalent semantics. Review construction,
+time zones, formatting tokens, duration values, locale behavior, plugins, and
+raw `Date` conversions in the source-library guide. The Day.js matrix labels
+each reviewed item as compatible, semantically different, plugin-required,
+unsupported, or better served by a different approach.
 
 ## Migration tools
 
@@ -3836,9 +3824,12 @@ enough that a manual search-and-replace is usually sufficient.
 
 # Migrating from Day.js
 
-This guide shows the one-to-one translation between common Day.js idioms
-and atemporal idioms. The atemporal API surface is intentionally
-familiar to Day.js users — most of the conversion is mechanical.
+This guide covers common Day.js idioms and their atemporal equivalents. The API
+is intentionally familiar to Day.js users, but the libraries are not fully
+interchangeable. Atemporal's principal representation is
+`Temporal.ZonedDateTime`; it does not expose the full Temporal model or promise
+full Day.js compatibility. Consult the [versioned compatibility matrix](dayjs-compatibility.md)
+for the reviewed scope.
 
 ## Importing
 
@@ -3856,7 +3847,7 @@ dayjs.extend(timezone);
 import atemporal from 'atemporal';
 ```
 
-## Construction
+## Construction and representation
 
 | Day.js                                  | atemporal                                          |
 | --------------------------------------- | -------------------------------------------------- |
@@ -3868,13 +3859,14 @@ import atemporal from 'atemporal';
 | `dayjs.utc('2024-01-15')`               | `atemporal('2024-01-15', 'UTC')`                   |
 | `dayjs.unix(1640995200)`                | `atemporal.unix(1640995200)` *(see below)*         |
 
-`atemporal` does not currently ship a `unix(seconds)` shortcut. Use
-`atemporal(seconds * 1000)` (milliseconds) or the `X` format token
-(`atemporal(seconds * 1000).format('X')`).
+`atemporal.unix(seconds)` is available and creates an instance from Unix
+seconds.
 
-## Formatting
+## Formatting and locales
 
-The format tokens are compatible with Day.js and moment.js.
+Common format tokens are familiar to Day.js users. Use the documented token
+set for either library; advanced tokens and locale data are not a blanket
+compatibility promise.
 
 | Day.js               | atemporal                                  |
 | -------------------- | ------------------------------------------ |
@@ -3882,18 +3874,18 @@ The format tokens are compatible with Day.js and moment.js.
 | `d.format('YYYY-MM-DD')` | `d.format('YYYY-MM-DD')` *(same)*      |
 | `d.format('hh:mm A')` | `d.format('hh:mm A')` *(same)*            |
 
-## Adding and subtracting
+## Adding, subtracting, and comparisons
 
-Day.js's `.add()` mutates the instance. atemporal's `.add()` returns a
-new instance (immutable).
+Both Day.js and atemporal are immutable: `.add()` returns a new instance.
+Use the returned value in either library. Calendar arithmetic in atemporal is
+performed by its `Temporal.ZonedDateTime` representation, so review behavior
+that depends on time zones or calendar units.
 
 | Day.js               | atemporal                                  |
 | -------------------- | ------------------------------------------ |
 | `d.add(1, 'day')`    | `d.add(1, 'day')`                          |
 | `d.subtract(2, 'hour')` | `d.subtract(2, 'hour')`                 |
 | `d.add(3, 'month')`  | `d.add(3, 'month')`                        |
-
-## Comparison
 
 | Day.js                       | atemporal                                |
 | ---------------------------- | ---------------------------------------- |
@@ -3902,28 +3894,38 @@ new instance (immutable).
 | `a.isAfter(b)`               | `a.isAfter(b)`                           |
 | `a.isBetween(b, c)`          | `a.isBetween(b, c)`                      |
 
-## Differences
+## Time zones
 
-1. **Immutability.** atemporal never mutates. Use `const d2 = d.add(1, 'day');`
-   instead of `d.add(1, 'day')` and expecting `d` to change.
-2. **No plugins needed.** atemporal ships with first-class time zones,
-   ISO formatting, and custom parsing — no `dayjs.extend()` calls.
-3. **Stricter input validation.** `atemporal('not a date')` returns an
-   *invalid* wrapper (use `.isValid()` to check) instead of returning
-   a NaN-laden Day.js object. Use `atemporal.try()` for a null-returning
-   variant.
-4. **Error codes.** atemporal errors carry a stable `code` field
-   (`ATEMPORAL_INVALID_DATE`, etc.) for i18n and dashboards.
-5. **Native Temporal under the hood.** atemporal auto-uses the TC39
-   Temporal proposal when available (Chrome 144+, Firefox 139+) and
-   otherwise falls back to the polyfill.
+Day.js timezone use is plugin-based. Atemporal accepts an IANA time zone when
+constructing an instance and retains zone context in its
+`Temporal.ZonedDateTime` representation. Migrations should review parsing and
+conversion behavior instead of treating the APIs as aliases.
 
-## What Day.js has that atemporal does not (yet)
+## Durations
 
-- `dayjs.duration(...)` — partial; use `atemporal.duration(...)` which
-  returns a `Temporal.Duration` (a different type).
-- Locale-aware relative time formatting — atemporal has a separate
-  `relativeTime` plugin with comparable functionality.
+`atemporal.duration(...)` returns a `Temporal.Duration`, rather than a Day.js
+duration object. Use it when the application needs a Temporal duration; do not
+assume the Day.js duration API is reproduced.
+
+## Plugins and relative time
+
+Atemporal's official plugins are installed with `atemporal.extend(...)`.
+Relative-time output requires the `relativeTime` plugin. Day.js custom plugins
+do not have a publicly guaranteed adapter, so migrate them as independent
+extensions rather than loading them unchanged.
+
+## Raw `Date` interop
+
+Both libraries accept a JavaScript `Date` as construction input. Atemporal
+returns its wrapper around `Temporal.ZonedDateTime`, not the original `Date`;
+use `.toDate()` when an API requires a raw `Date`.
+
+## Scope not covered by a one-to-one translation
+
+- Day.js plugin interfaces are not a compatibility layer for arbitrary custom
+  plugins.
+- Duration and locale behavior should be reviewed against the matrix rather
+  than inferred from method names.
 
 ## Automatic migration
 
@@ -3936,6 +3938,50 @@ npx jscodeshift -t atemporal-codemod.js src/
 The official codemod is published as `@atemporal/codemod`. See the
 [codemod repo](https://github.com/NaturalDevCR/atemporal-codemod) for
 details.
+
+
+
+--- FILE: migration/dayjs-compatibility.md (Migration — Day.js compatibility matrix) ---
+
+
+# Day.js compatibility matrix
+
+Reviewed against Day.js 1.11.21.
+
+This is a scoped migration guide, not a claim that Day.js and atemporal are
+interchangeable. Atemporal's principal representation is
+`Temporal.ZonedDateTime`; use the linked guidance when a row identifies a
+semantic difference.
+
+## Categories
+
+| Category | Meaning |
+| --- | --- |
+| Compatible | The call and semantic result are equivalent. |
+| Equivalent with semantic differences | Migration is mechanical, but temporal zone, parsing, unit, indexing, or returned type differs. |
+| Plugin required | The capability is available after installing and extending the stated plugin. |
+| Not supported | No publicly guaranteed equivalent exists. |
+| Different recommended approach | Atemporal handles the use case, but imitating Day.js would be conceptually incorrect. |
+
+## Reviewed API areas
+
+| Area | Day.js 1.11.21 | Atemporal | Category | Migration note |
+| --- | --- | --- | --- | --- |
+| Construction | `dayjs(input)` | `atemporal(input)` | Equivalent with semantic differences | Both construct a date-time wrapper, but atemporal uses `Temporal.ZonedDateTime`; review [construction and representation](dayjs.md#construction-and-representation). |
+| Unix seconds | `dayjs.unix(seconds)` | `atemporal.unix(seconds)` | Equivalent with semantic differences | Both accept Unix seconds; atemporal returns its Temporal-backed wrapper. See [construction and representation](dayjs.md#construction-and-representation). |
+| Immutable add / subtract | `date.add()` / `date.subtract()` | `date.add()` / `date.subtract()` | Equivalent with semantic differences | Both return a new instance; review Temporal-backed calendar and time-zone behavior in [adding, subtracting, and comparisons](dayjs.md#adding-subtracting-and-comparisons). |
+| Formatting tokens | `date.format(tokens)` | `date.format(tokens)` | Equivalent with semantic differences | Common tokens are familiar, but advanced tokens and locale data are not a blanket compatibility promise; see [formatting and locales](dayjs.md#formatting-and-locales). |
+| Comparisons | `isBefore`, `isSame`, `isAfter`, `isBetween` | `isBefore`, `isSame`, `isAfter`, `isBetween` | Equivalent with semantic differences | Review unit, range, and zone-sensitive behavior in [adding, subtracting, and comparisons](dayjs.md#adding-subtracting-and-comparisons). |
+| Time zones | `utc` and `timezone` plugins | IANA zones in the core API | Different recommended approach | Do not translate plugin setup mechanically; see [time zones](dayjs.md#time-zones). |
+| Duration | `dayjs.duration(...)` with the Duration plugin | `atemporal.duration(...)` returning `Temporal.Duration` | Different recommended approach | The duration value and API are different; see [durations](dayjs.md#durations). |
+| Locales | Day.js locale configuration | `Intl`-backed locale configuration | Equivalent with semantic differences | Locale data and formatting behavior differ; see [formatting and locales](dayjs.md#formatting-and-locales). |
+| Relative time | Relative Time plugin | `relativeTime` plugin | Plugin required | Install and extend atemporal's official plugin; see [plugins and relative time](dayjs.md#plugins-and-relative-time). |
+| Arbitrary custom plugins | `dayjs.extend(customPlugin)` | No adapter for Day.js plugin interfaces | Not supported | Migrate custom behavior as an independent atemporal extension; see [plugins and relative time](dayjs.md#plugins-and-relative-time). |
+| Raw `Date` interop | `dayjs(new Date())` | `atemporal(new Date())` | Equivalent with semantic differences | Both accept `Date` input, but atemporal returns a Temporal-backed wrapper; see [raw `Date` interop](dayjs.md#raw-date-interop). |
+
+For a migration inventory, record the Day.js version, plugins, custom tokens,
+time-zone use, locale configuration, and raw `Date` boundaries before applying
+these mappings.
 
 
 
@@ -5361,7 +5407,7 @@ mature, GitHub-native tools that satisfy each requirement:
 | SBOM | `npm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
 | Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
 | Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
-| Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | `.github/workflows/ci.yml` (`perf-gate` job) |
+| Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Weekly integration validation and release validation |
 | Auto versioning | `googleapis/release-please-action@v4` | `.github/workflows/release.yml` |
 | License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
 | Doc link check | `lycheeverse/lychee-action@v2` | `.github/workflows/ci.yml` (`doc-links` job) |
@@ -5415,8 +5461,9 @@ mature, GitHub-native tools that satisfy each requirement:
 - **Audit:** fails on `high` or `critical`. `moderate` and `low` are
   reported but do not block. This matches the policy in
   `SECURITY.md` ("Run `npm audit` in CI").
-- **Performance gate:** 25% regression on any gated hot path fails the
-  build. The tolerance is a property of the gate, not the baseline.
+- **Performance gate:** 25% regression on any gated hot path fails weekly
+  integration validation and release validation. It is deliberately not a PR
+  CI gate. The tolerance is a property of the gate, not the baseline.
   To change it, edit `scripts/perf-gate.js` (deliberate, reviewed).
 - **License gate:** any forbidden license (GPL family, AGPL, SSPL,
   BUSL, Elastic, Commons-Clause) fails the build. Unknown licenses
@@ -5438,15 +5485,14 @@ mature, GitHub-native tools that satisfy each requirement:
   section.
 - Releases are boring and PR-shaped; the only manual step is "merge the
   Release PR".
-- Performance regressions are caught at PR time, not at the next release
-  retrospective.
+- Performance regressions are caught by weekly integration validation and
+  release validation, rather than discovered in a release retrospective.
 
 ### Harder
 
-- **CI minutes go up.** We estimate the new jobs add ~5 min per PR
-  (lychee, license-check, audit, gitleaks, perf-gate). We mitigate with
-  `concurrency.cancel-in-progress: true` so a push that supersedes a
-  PR build cancels the in-flight one.
+- **Scheduled and release validation minutes go up.** The extended fixture,
+  size, and performance gates run weekly and again before release. PR CI
+  remains focused on the smaller contractual matrix.
 - **`release-please` requires Conventional Commits discipline.** Commits
   like `wip` or `fix stuff` will be classified as `chore: fix stuff`
   and will not trigger a release. The team is briefed; the

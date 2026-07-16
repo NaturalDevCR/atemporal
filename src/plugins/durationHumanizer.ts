@@ -11,6 +11,7 @@ import { IntlCache, LRUCache, GlobalCacheCoordinator } from "../TemporalUtils";
 import { LocaleUtils } from "../core/locale";
 import { debugLog } from "../core/debug";
 import type { Plugin, AtemporalFactory } from "../types";
+import { markAsPlugin } from '../typeGuards';
 
 /**
  * Cache for duration formatting results to improve performance.
@@ -463,4 +464,7 @@ declare module "../types" {
   }
 }
 
-export default durationHumanizer;
+export default markAsPlugin(durationHumanizer, {
+  name: 'durationHumanizer',
+  official: true,
+});

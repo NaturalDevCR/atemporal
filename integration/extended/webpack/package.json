@@ -1,0 +1,14 @@
+{
+  "name": "atemporal-extended-webpack",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit --target ES2020 --module ESNext --moduleResolution bundler --strict --skipLibCheck src/index.ts",
+    "build": "webpack --config webpack.config.cjs",
+    "test": "node -e \"const fs = require('node:fs'); const bundlePath = 'dist/main.js'; if (!fs.existsSync(bundlePath)) throw new Error('Expected the minified production bundle at ' + bundlePath); const bundle = fs.readFileSync(bundlePath, 'utf8'); if (bundle.trim().length === 0) throw new Error('Expected the production bundle to contain JavaScript'); if (!bundle.includes('2026-07-15T10:00:00Z')) throw new Error('Expected the production bundle to contain the fixture entrypoint marker'); if (/\\r?\\n/.test(bundle)) throw new Error('Expected the production bundle to be minified to one line');\""
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "webpack": "5.108.4",
+    "webpack-cli": "7.2.1"
+  }
+}

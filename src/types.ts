@@ -266,7 +266,7 @@ export interface AtemporalFactory {
   /**
    * Gets the list of all available plugins.
    */
-  getAvailablePlugins: () => string[];
+  getAvailablePlugins: () => OfficialPluginName[];
 
   /**
    * Gets information about the current Temporal implementation being used.
@@ -358,3 +358,7 @@ export type Plugin = (
   atemporal: AtemporalFactory,
   options?: any
 ) => void;
+
+export type OfficialPluginName =
+  | 'relativeTime' | 'customParseFormat' | 'advancedFormat' | 'durationHumanizer'
+  | 'weekDay' | 'dateRangeOverlap' | 'businessDays' | 'timeSlots';

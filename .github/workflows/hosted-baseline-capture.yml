@@ -1,0 +1,33 @@
+name: Capture hosted performance baseline candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Capture proposed hosted baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Generate the proposed schema baseline
+        run: |
+          mkdir -p artifacts
+          node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 > artifacts/proposed-performance-baseline.json
+      - name: Upload proposed hosted performance baseline for human review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposed-hosted-performance-baseline
+          path: artifacts/proposed-performance-baseline.json
+          if-no-files-found: error
+          retention-days: 90

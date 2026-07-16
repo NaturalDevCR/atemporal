@@ -1,0 +1,14 @@
+{
+  "name": "atemporal-extended-vite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit --target ES2020 --module ESNext --moduleResolution bundler --strict --skipLibCheck src/main.ts",
+    "build": "vite build",
+    "test": "node -e \"const fs = require('node:fs'); const path = require('node:path'); const assets = path.join('dist', 'assets'); if (!fs.existsSync(assets) || !fs.readdirSync(assets).some((file) => file.endsWith('.js'))) throw new Error('Expected a JavaScript production asset in dist/assets');\""
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.0.16"
+  }
+}

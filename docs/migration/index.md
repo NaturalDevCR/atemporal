@@ -1,17 +1,19 @@
 # Migrating to atemporal
 
-atemporal aims to be the easiest possible migration target for
-existing date/time libraries — and a friendlier layer on top of the
-raw TC39 Temporal API.
+A modern, Temporal-powered date-time library with a familiar Day.js-inspired
+API. Atemporal is an ergonomic wrapper whose principal representation is
+`Temporal.ZonedDateTime`; it is not a promise of full Temporal-model exposure
+or full compatibility with each source library.
 
 ## Guides by source library
 
 - **[Migrating from Day.js](dayjs.md)** — most teams are here; format
-  tokens and API are nearly identical.
+  tokens and common APIs are familiar. See the
+  [Day.js compatibility matrix](dayjs-compatibility.md) for reviewed scope.
 - **[Migrating from Luxon](luxon.md)** — both libraries are immutable
   and IANA-aware; the surface maps cleanly.
-- **[Migrating from moment.js](moment.md)** — moment is in maintenance
-  mode; atemporal is a drop-in for 90% of usage.
+- **[Migrating from moment.js](moment.md)** — review the documented mappings
+  before migration.
 - **[Migrating from raw TC39 Temporal](temporal.md)** — atemporal is
   a friendly layer on top, not a replacement.
 
@@ -19,31 +21,17 @@ raw TC39 Temporal API.
 
 | Reason                    | Details                                                  |
 | ------------------------- | -------------------------------------------------------- |
-| **Smaller bundle**        | atemporal is ~15 KB gzipped (vs moment ~70 KB).          |
-| **Future-proof**          | Built on the standardized TC39 Temporal Stage 4 API.     |
-| **Auto polyfill**         | Uses native Temporal when available, polyfill otherwise. |
-| **Type-safe by default**  | Zero `any` in the public API surface.                    |
-| **Fluent & immutable**    | Always returns new instances.                            |
-| **Error codes**           | `ATEMPORAL_*` codes for i18n and dashboards.             |
-| **Strict mode**           | Optional, opt-in warnings for ambiguous operations.      |
+| **Measured size evidence** | See the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md); core, tarball, and application-bundle measurements differ. |
+| **Temporal runtime**      | `@js-temporal/polyfill` is a direct runtime dependency; its application-bundle cost is measured separately. |
+| **Migration scope**       | The versioned compatibility matrix identifies supported mappings and semantic differences. |
 
-## What you do *not* lose
+## Review compatibility before migration
 
-- moment-compatible format tokens.
-- Immutable `.add()` / `.subtract()` semantics.
-- IANA timezone support.
-- Plugin ecosystem.
-- Locale-aware formatting.
-
-## What you gain
-
-- All of the above, plus first-class Temporal-native features
-  (`PlainDate`, `PlainDateTime`, `ZonedDateTime`, `Instant`).
-- A `validate()` helper that returns structured results instead of
-  throwing.
-- A `try()` helper that returns `null` instead of throwing.
-- A `presets` object with 12 battle-tested format strings.
-- Strict mode for catching timezone bugs in tests.
+Shared method names do not establish equivalent semantics. Review construction,
+time zones, formatting tokens, duration values, locale behavior, plugins, and
+raw `Date` conversions in the source-library guide. The Day.js matrix labels
+each reviewed item as compatible, semantically different, plugin-required,
+unsupported, or better served by a different approach.
 
 ## Migration tools
 

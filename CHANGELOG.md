@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.3](https://github.com/NaturalDevCR/atemporal/compare/v1.4.2...v1.4.3) (2026-07-15)
+
+### Bug Fixes
+
+* **core:** preserve explicit `null` errors on the validated-wrapper fast path
+* **plugins:** use explicit official-plugin metadata for direct extensions and lazy loading
+* **package:** validate the packed tarball, CJS and ESM declarations, and public plugin exports
+
+### Documentation
+
+* clarify the Day.js-inspired compatibility contract and its semantic differences
+
+### Build System
+
+* enforce coverage, package-size, canonical bundle, integration, and release-artifact contracts
+
 ## [1.4.2](https://github.com/NaturalDevCR/atemporal/compare/v1.4.1...v1.4.2) (2026-06-04)
 
 

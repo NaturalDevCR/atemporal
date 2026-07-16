@@ -8,6 +8,7 @@ import { TemporalUtils, LRUCache, GlobalCacheCoordinator } from '../TemporalUtil
 import { LocaleUtils } from '../core/locale';
 import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin } from '../types';
+import { markAsPlugin } from '../typeGuards';
 
 /**
  * Cache for week-related calculations to improve performance.
@@ -312,4 +313,7 @@ declare module '../types' {
     }
 }
 
-export default weekDayPlugin;
+export default markAsPlugin(weekDayPlugin, {
+    name: 'weekDay',
+    official: true,
+});
