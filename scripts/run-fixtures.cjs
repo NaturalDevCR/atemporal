@@ -61,6 +61,15 @@ function fixtureNames(group) {
     .sort();
 }
 
+function fixtureTypeScriptVersion() {
+  const version = process.env.FIXTURE_TYPESCRIPT_VERSION;
+  if (!version) return null;
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+    throw new Error('FIXTURE_TYPESCRIPT_VERSION must be an exact TypeScript version.');
+  }
+  return version;
+}
+
 function runFixtures(group) {
   if (!['contract', 'extended'].includes(group)) {
     throw new Error(`Unsupported fixture group: ${group}`);
@@ -75,6 +84,7 @@ function runFixtures(group) {
     group,
   );
   const reportRoot = path.join(projectRoot, 'reports', 'fixtures');
+  const typeScriptVersion = fixtureTypeScriptVersion();
 
   fs.rmSync(disposableGroupRoot, { recursive: true, force: true });
   fs.mkdirSync(disposableGroupRoot, { recursive: true });
@@ -88,6 +98,14 @@ function runFixtures(group) {
       filter: (entry) => !['node_modules', 'dist'].includes(path.basename(entry)),
     });
 
+    if (group === 'contract' && name.startsWith('typescript-') && typeScriptVersion) {
+      // The copied fixture owns this generated lockfile. Never rewrite a committed fixture lock.
+      run(
+        npmCommand,
+        ['install', '--save-dev', '--package-lock-only', '--ignore-scripts', `typescript@${typeScriptVersion}`],
+        fixture,
+      );
+    }
     run(npmCommand, ['ci'], fixture);
     run(
       npmCommand,
@@ -118,6 +136,7 @@ if (require.main === module) {
 
 module.exports = {
   fixtureNames,
+  fixtureTypeScriptVersion,
   readArtifactPath,
   readPolyfillVersion,
   runFixtures,

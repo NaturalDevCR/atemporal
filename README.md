@@ -125,12 +125,21 @@ branches, and 90% functions. Coverage collection includes public factory logic
 such as `src/index.ts`. Codecov tracks coverage trends and pull-request diffs;
 it does not enforce these thresholds.
 
-Compatibility guaranteed: every pull request continuously tests installation,
-native imports, TypeScript resolution, core operations, formatting, and official
-plugin loading from the packed npm artifact.
+Compatibility guaranteed: every pull request continuously tests installation, native imports, TypeScript resolution, core operations, formatting, and official plugin loading from the packed npm artifact.
 
-Compatibility additionally validated: scheduled and release fixtures verify
-production Vite, Webpack, and Next.js SSR builds.
+Compatibility additionally validated: scheduled and release fixtures verify production Vite, Webpack, and Next.js SSR builds.
+
+Pull requests block on all four coverage thresholds: 95% statements, 95% lines,
+90% branches, and 90% functions. Core distribution and canonical application
+bundle size budgets are contractual gates; packed-tarball and other application
+bundle measurements are diagnostic context in the generated size report.
+
+The performance regression gate runs in the weekly hosted Ubuntu 24.04/x64,
+Node 20.19.0 validation job and again before a release. It compares hot-path
+medians to a reviewed baseline. The manual hosted-baseline capture workflow
+uploads a proposed schema baseline for human review; CI never writes or commits
+a baseline. Every release publishes the exact tarball that its release-validation
+job tested, rather than rebuilding a package in the publish job.
 
 ---
 
