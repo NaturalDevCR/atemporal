@@ -93,6 +93,13 @@ describe('release artifact measurement report', () => {
     expect(gzipSize(bytes)).toBe(gzipSize(bytes));
   });
 
+  test('installs canonical bundle dependencies with its pinned pnpm lockfile', () => {
+    const source = fs.readFileSync(path.join(projectRoot, 'scripts', 'measure-release-artifact.cjs'), 'utf8');
+
+    expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts']");
+    expect(source).not.toContain("['ci', '--ignore-scripts']");
+  });
+
   test('builds through the fixture-pinned Temporal polyfill and reports its resolved version without rewriting budgets', () => {
     const before = fs.readFileSync(budgetFile, 'utf8');
     const bundles = buildCanonicalBundles();

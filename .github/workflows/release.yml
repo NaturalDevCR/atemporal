@@ -40,31 +40,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.19.0'
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Build
         id: build
         continue-on-error: true
-        run: npm run build
+        run: pnpm run build
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: npm run pack:artifact
+        run: pnpm run pack:artifact
       - name: Unit and coverage gates
         id: unit
         continue-on-error: true
-        run: npm run test:ci -- --runInBand
+        run: pnpm run test:ci -- --runInBand
       - name: Contract fixture gate
         id: contracts
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:contract
+        run: pnpm run fixtures:contract
       - name: Extended fixture gate
         id: extended
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:extended
+        run: pnpm run fixtures:extended
       - name: Contractual core and canonical size gates
         id: size
         if: always() && steps.pack.outcome == 'success'
@@ -79,7 +80,7 @@ jobs:
         id: performance
         if: always() && steps.benchmark.outcome == 'success'
         continue-on-error: true
-        run: npm run bench:gate
+        run: pnpm run bench:gate
       - name: Upload release package artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -135,7 +136,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.19.0'
+          node-version: '24.12.0'
           registry-url: https://registry.npmjs.org
       - name: Download the validated package artifact
         uses: actions/download-artifact@v4
@@ -144,20 +145,14 @@ jobs:
           path: artifacts
       - name: Verify validated artifact metadata
         run: node -e "const path = require('./artifacts/package-artifact.json').path; if (!path || !path.startsWith('./artifacts/')) process.exit(1)"
-      - name: Publish the validated tarball with provenance + OIDC
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish the validated tarball through npm trusted publishing
         run: |
           package_version="$(node -p "require('./package.json').version")"
           if npm view "atemporal@${package_version}" version >/dev/null 2>&1; then
             echo "atemporal@${package_version} is already published; skipping npm publish."
             exit 0
           fi
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN is not configured. Add an npm automation token as a repository or environment secret, or configure npm trusted publishing for this repository."
-            exit 1
-          fi
-          npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --provenance --access public --tag latest
+          npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --access public --tag latest
 
   attach-sbom:
     name: Attach SBOM to GitHub Release
@@ -171,10 +166,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: mkdir -p sbom && npm sbom --sbom-format=spdx --json > sbom/atemporal.spdx.json
-      - run: npm sbom --sbom-format=cyclonedx --json > sbom/atemporal.cdx.json
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: mkdir -p sbom && pnpm sbom --sbom-format=spdx --lockfile-only --out sbom/atemporal.spdx.json
+      - run: pnpm sbom --sbom-format=cyclonedx --lockfile-only --out sbom/atemporal.cdx.json
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}

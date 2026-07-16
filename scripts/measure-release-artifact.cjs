@@ -115,8 +115,8 @@ function resolvedFixturePackageInput(metafile, packageName) {
 function ensureCanonicalDependencies() {
   const esbuildPackage = path.join(canonicalFixture, 'node_modules', 'esbuild', 'package.json');
   if (fs.existsSync(esbuildPackage)) return;
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = childProcess.spawnSync(npm, ['ci', '--ignore-scripts'], {
+  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  const result = childProcess.spawnSync(pnpm, ['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts'], {
     cwd: canonicalFixture,
     encoding: 'utf8',
   });

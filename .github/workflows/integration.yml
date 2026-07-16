@@ -18,31 +18,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20.19.0'
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Build
         id: build
         continue-on-error: true
-        run: npm run build
+        run: pnpm run build
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: npm run pack:artifact
+        run: pnpm run pack:artifact
       - name: Unit and coverage gates
         id: unit
         continue-on-error: true
-        run: npm run test:ci -- --runInBand
+        run: pnpm run test:ci -- --runInBand
       - name: Contract fixture gate
         id: contracts
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:contract
+        run: pnpm run fixtures:contract
       - name: Extended fixture gate
         id: extended
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:extended
+        run: pnpm run fixtures:extended
       - name: Contractual core and canonical size gates
         id: size
         if: always() && steps.pack.outcome == 'success'
@@ -57,7 +58,7 @@ jobs:
         id: performance
         if: always() && steps.benchmark.outcome == 'success'
         continue-on-error: true
-        run: npm run bench:gate
+        run: pnpm run bench:gate
       - name: Upload packed artifact and all validation evidence
         if: always()
         uses: actions/upload-artifact@v4
