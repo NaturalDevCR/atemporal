@@ -27,23 +27,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          version: 11.13.1
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
 
       - name: Run Stryker smoke check
         if: github.event_name == 'push'
         env:
           NODE_OPTIONS: '--max-old-space-size=6144'
           TZ: 'UTC'
-        run: npm run test:mutation -- --dryRunOnly
+        run: pnpm run test:mutation --dryRunOnly
 
       - name: Run full Stryker mutation suite
         id: stryker_full
@@ -53,7 +59,7 @@ jobs:
         env:
           NODE_OPTIONS: '--max-old-space-size=6144'
           TZ: 'UTC'
-        run: npm run test:mutation
+        run: pnpm run test:mutation
 
       - name: Surface advisory mutation failure
         if: github.event_name != 'push' && steps.stryker_full.outcome == 'failure'
@@ -62,7 +68,7 @@ jobs:
 
       - name: Upload Stryker reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: stryker-reports
           path: reports/mutation
@@ -70,7 +76,7 @@ jobs:
 
       - name: Write mutation score summary
         if: always() && github.event_name != 'push'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('node:fs');

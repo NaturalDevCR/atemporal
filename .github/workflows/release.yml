@@ -3,6 +3,12 @@ name: Release (release-please)
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Version from package.json to validate and publish through trusted publishing
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -19,11 +25,24 @@ jobs:
     name: Release PR
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      release_created: ${{ steps.manual.outputs.release_created || steps.release.outputs.release_created }}
+      tag_name: ${{ steps.manual.outputs.tag_name || steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: actions/checkout@v6
+        if: github.event_name == 'workflow_dispatch'
+      - name: Validate the manually requested package version
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          release_version="${{ inputs.release_version }}"
+          package_version="$(node -p "require('./package.json').version")"
+          test -n "$release_version"
+          test "$release_version" = "$package_version"
+          echo "release_created=true" >> "$GITHUB_OUTPUT"
+          echo "tag_name=v${package_version}" >> "$GITHUB_OUTPUT"
+      - uses: googleapis/release-please-action@v5
         id: release
+        if: github.event_name == 'push'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
@@ -36,35 +55,39 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '20.19.0'
-          cache: npm
-      - run: npm ci
+          version: 11.13.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.12.0'
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Build
         id: build
         continue-on-error: true
-        run: npm run build
+        run: pnpm run build
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: npm run pack:artifact
+        run: pnpm run pack:artifact
       - name: Unit and coverage gates
         id: unit
         continue-on-error: true
-        run: npm run test:ci -- --runInBand
+        run: pnpm run test:ci --runInBand
       - name: Contract fixture gate
         id: contracts
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:contract
+        run: pnpm run fixtures:contract
       - name: Extended fixture gate
         id: extended
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: npm run fixtures:extended
+        run: pnpm run fixtures:extended
       - name: Contractual core and canonical size gates
         id: size
         if: always() && steps.pack.outcome == 'success'
@@ -79,10 +102,10 @@ jobs:
         id: performance
         if: always() && steps.benchmark.outcome == 'success'
         continue-on-error: true
-        run: npm run bench:gate
+        run: pnpm run bench:gate
       - name: Upload release package artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-package-artifact
           path: |
@@ -92,7 +115,7 @@ jobs:
           retention-days: 90
       - name: Upload release validation evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-validation-evidence
           path: |
@@ -105,7 +128,7 @@ jobs:
           retention-days: 90
       - name: Upload explicit reviewed performance baseline-capture artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reviewed-performance-baseline-capture
           path: bench-out.json
@@ -130,54 +153,56 @@ jobs:
     runs-on: ubuntu-24.04
     environment: npm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '20.19.0'
+          version: 11.13.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.12.0'
           registry-url: https://registry.npmjs.org
       - name: Download the validated package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-package-artifact
           path: artifacts
       - name: Verify validated artifact metadata
         run: node -e "const path = require('./artifacts/package-artifact.json').path; if (!path || !path.startsWith('./artifacts/')) process.exit(1)"
-      - name: Publish the validated tarball with provenance + OIDC
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish the validated tarball through npm trusted publishing
         run: |
           package_version="$(node -p "require('./package.json').version")"
           if npm view "atemporal@${package_version}" version >/dev/null 2>&1; then
             echo "atemporal@${package_version} is already published; skipping npm publish."
             exit 0
           fi
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN is not configured. Add an npm automation token as a repository or environment secret, or configure npm trusted publishing for this repository."
-            exit 1
-          fi
-          npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --provenance --access public --tag latest
+          npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --access public --tag latest
 
   attach-sbom:
-    name: Attach SBOM to GitHub Release
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    name: Finalize GitHub Release and attach SBOM
+    needs: [release-please, publish-npm]
+    if: ${{ needs.release-please.outputs.release_created == 'true' && needs.publish-npm.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: '20.x'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: mkdir -p sbom && npm sbom --sbom-format=spdx --json > sbom/atemporal.spdx.json
-      - run: npm sbom --sbom-format=cyclonedx --json > sbom/atemporal.cdx.json
-      - uses: softprops/action-gh-release@v2
+          version: 11.13.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.12.0'
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: mkdir -p sbom && pnpm sbom --sbom-format=spdx --lockfile-only --out sbom/atemporal.spdx.json
+      - run: pnpm sbom --sbom-format=cyclonedx --lockfile-only --out sbom/atemporal.cdx.json
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
+          generate_release_notes: ${{ github.event_name == 'workflow_dispatch' }}
           files: |
             sbom/atemporal.spdx.json
             sbom/atemporal.cdx.json

@@ -2,16 +2,17 @@
   "compilerOptions": {
     "target": "ES2020",
     "isolatedModules": true,
+    "ignoreDeprecations": "6.0",
     "module": "NodeNext",
     "lib": ["ES2022", "DOM"],
+    "types": ["node", "jest"],
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true,
-    "downlevelIteration": true
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]

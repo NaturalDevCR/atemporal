@@ -25,7 +25,7 @@ atemporal('…').format('…');
 ## Environment
 
 - atemporal version: `1.x.y` (run `npm ls atemporal`)
-- Node.js version: `18.x` / `20.x` / `22.x`
+- Node.js version: `22.x` / `24.x` / `26.x`
 - Browser (if applicable): `Chrome 144+` / `Firefox 139+` / `Safari 18+`
 - `@js-temporal/polyfill` version (if installed): `0.x.y`
 - Operating system: `macOS 14` / `Ubuntu 22.04` / `Windows 11`

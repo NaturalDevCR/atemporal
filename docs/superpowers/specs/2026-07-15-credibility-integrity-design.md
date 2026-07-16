@@ -245,7 +245,7 @@ and `validate`. A path may not regress more than 25% over its committed GitHub
 Actions baseline. A path is evaluated independently; one improvement cannot
 hide another path's regression.
 
-Benchmarks run only on `ubuntu-24.04`, `x64`, Node `20.19.0`, with 100,000
+Benchmarks run only on `ubuntu-24.04`, `x64`, Node `24.12.0`, with 100,000
 operations per sample, one warm-up per hot path, seven measured samples per
 hot path, and a 15-minute job timeout. They compare the post-warm-up median
 after initialization and record minimum, maximum, median, p95, and median

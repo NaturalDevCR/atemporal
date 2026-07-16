@@ -93,6 +93,21 @@ describe('release artifact measurement report', () => {
     expect(gzipSize(bytes)).toBe(gzipSize(bytes));
   });
 
+  test('installs canonical bundle dependencies with its pinned pnpm lockfile', () => {
+    const source = fs.readFileSync(path.join(projectRoot, 'scripts', 'measure-release-artifact.cjs'), 'utf8');
+    const fixturePackage = JSON.parse(fs.readFileSync(path.join(projectRoot, 'integration', 'canonical-bundle', 'package.json'), 'utf8'));
+
+    expect(fixturePackage.dependencies).toMatchObject({
+      '@js-temporal/polyfill': '0.5.1',
+      esbuild: '0.25.12',
+      jsbi: '4.3.2',
+    });
+    expect(fixturePackage.packageManager).toBe('pnpm@11.13.1');
+    expect(source).toContain('atemporalPackage');
+    expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force']");
+    expect(source).not.toContain("['ci', '--ignore-scripts']");
+  });
+
   test('builds through the fixture-pinned Temporal polyfill and reports its resolved version without rewriting budgets', () => {
     const before = fs.readFileSync(budgetFile, 'utf8');
     const bundles = buildCanonicalBundles();

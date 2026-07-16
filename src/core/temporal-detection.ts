@@ -51,7 +51,7 @@ export function isNativeTemporalAvailable(): boolean {
       // NOTE: We do NOT check for Temporal.TimeZone or Temporal.Calendar —
       // both were removed from the final ECMAScript 2026 spec (TC39 Stage 4).
       // Native implementations in Chrome 144+ and Firefox 139+ do not expose them.
-      return (
+      return Boolean(
         temporal &&
         typeof temporal === "object" &&
         typeof temporal.Now === "object" &&

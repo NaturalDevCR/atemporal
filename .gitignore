@@ -8,6 +8,7 @@ yarn-error.log*
 
 # Dependencias y artefactos de build
 /node_modules/
+/.pnpm-store/
 /dist/
 /artifacts/
 /coverage/

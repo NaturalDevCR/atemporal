@@ -114,9 +114,12 @@ function resolvedFixturePackageInput(metafile, packageName) {
 
 function ensureCanonicalDependencies() {
   const esbuildPackage = path.join(canonicalFixture, 'node_modules', 'esbuild', 'package.json');
-  if (fs.existsSync(esbuildPackage)) return;
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = childProcess.spawnSync(npm, ['ci', '--ignore-scripts'], {
+  const polyfillPackage = path.join(canonicalFixture, 'node_modules', '@js-temporal', 'polyfill', 'package.json');
+  const jsbiPackage = path.join(canonicalFixture, 'node_modules', 'jsbi', 'package.json');
+  const atemporalPackage = path.join(canonicalFixture, 'node_modules', 'atemporal', 'package.json');
+  if ([esbuildPackage, polyfillPackage, jsbiPackage, atemporalPackage].every(fs.existsSync)) return;
+  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  const result = childProcess.spawnSync(pnpm, ['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force'], {
     cwd: canonicalFixture,
     encoding: 'utf8',
   });

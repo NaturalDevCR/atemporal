@@ -15,33 +15,37 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION_DEFAULT: '20.x'
+  NODE_VERSION_DEFAULT: '24.x'
 
 jobs:
   build:
     name: Build and pack the validation artifact
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Type-check
         id: typecheck
         continue-on-error: true
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
       - name: Build
         id: build
         if: always() && steps.typecheck.outcome == 'success'
         continue-on-error: true
-        run: npm run build
+        run: pnpm run build
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: npm run pack:artifact
+        run: pnpm run pack:artifact
       - name: Measure contractual core and canonical bundle budgets
         id: size
         if: always() && steps.pack.outcome == 'success'
@@ -49,7 +53,7 @@ jobs:
         run: node scripts/measure-release-artifact.cjs
       - name: Upload complete package artifact directory
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-artifact
           path: artifacts/
@@ -57,7 +61,7 @@ jobs:
           retention-days: 7
       - name: Upload size reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: package-artifact-reports
           path: |
@@ -80,20 +84,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [22.x, 24.x, 26.x]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - name: Run unit, integration, property, fuzz, and telemetry tests
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           TZ: UTC
           CI: 'true'
-        run: npm run test:ci -- --verbose
+        run: pnpm run test:ci --verbose
+      - name: Verify native Temporal against the production artifact
+        if: matrix.node-version == '26.x'
+        env:
+          TZ: UTC
+        run: node scripts/check-native-temporal.cjs
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})
@@ -104,14 +118,18 @@ jobs:
       matrix:
         typescript-version: ['5.4.5', '7.0.2']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Download the packed validation artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: package-artifact
           path: artifacts
@@ -120,10 +138,10 @@ jobs:
         continue-on-error: true
         env:
           FIXTURE_TYPESCRIPT_VERSION: ${{ matrix.typescript-version }}
-        run: npm run fixtures:contract
+        run: pnpm run fixtures:contract
       - name: Upload contract fixture evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: contract-fixtures-typescript-${{ matrix.typescript-version }}
           path: reports/fixtures/
@@ -139,20 +157,25 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - name: Run tests with all four coverage thresholds
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
           TZ: UTC
           CI: 'true'
-        run: npm run test:ci
+        run: pnpm run test:ci
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
@@ -164,10 +187,10 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'true'
@@ -176,13 +199,17 @@ jobs:
     name: Dependency audit (npm + OSV)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm audit --audit-level=high
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm audit --audit-level=high
       - uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           scan-args: '--recursive . --no-ignore --config=osv-scanner.toml'
@@ -191,19 +218,23 @@ jobs:
     name: License compliance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
-          cache: npm
-      - run: npm ci --ignore-scripts
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: node scripts/check-licenses.js
 
   doc-links:
     name: Doc link check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: lycheeverse/lychee-action@v2

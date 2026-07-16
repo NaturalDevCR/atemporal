@@ -1,8 +1,12 @@
 {
   "$schema": "https://stryker-mutator.io/schema/stryker-schema.json",
-  "_comment": "Mutation testing config for atemporal. Runs via `npm run test:mutation` and on a nightly schedule in CI. See docs/adr/0007-supply-chain-hardening.md for rationale.",
+  "_comment": "Mutation testing config for atemporal. Runs via `pnpm run test:mutation` and on a nightly schedule in CI. See docs/adr/0007-supply-chain-hardening.md for rationale.",
 
-  "packageManager": "npm",
+  "packageManager": "pnpm",
+  "plugins": [
+    "@stryker-mutator/jest-runner",
+    "@stryker-mutator/typescript-checker"
+  ],
   "reporters": ["html", "clear-text", "progress", "json"],
   "jsonReporter": {
     "fileName": "reports/mutation/mutation.json"

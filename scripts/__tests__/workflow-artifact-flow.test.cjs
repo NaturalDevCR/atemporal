@@ -25,10 +25,79 @@ function jobBlock(workflowText, jobName) {
 }
 
 describe('release artifact workflow contracts', () => {
+  test('repository workflows install root dependencies through pnpm', () => {
+    for (const name of ['ci.yml', 'integration.yml', 'hosted-baseline-capture.yml', 'mutation.yml', 'deploy-docs.yml']) {
+      const source = workflow(name);
+
+      expect(source).toContain('corepack enable');
+      expect(source).toContain('cache: pnpm');
+      expect(source).toContain('pnpm install --frozen-lockfile');
+      expect(source).not.toMatch(/^\s*- run: npm ci/m);
+    }
+  });
+
+  test('pnpm is installed before setup-node initializes a pnpm cache', () => {
+    const workflows = fs.readdirSync(path.join(root, '.github', 'workflows'))
+      .filter((name) => name.endsWith('.yml'))
+      .map(workflow)
+      .join('\n');
+
+    const cacheUses = matches(workflows, /cache: pnpm/g);
+
+    expect(cacheUses.length).toBeGreaterThan(0);
+    expect(matches(workflows, /pnpm\/action-setup@v4[\s\S]{0,350}?cache: pnpm/g)).toHaveLength(cacheUses.length);
+  });
+
+  test('repository workflows use the reviewed GitHub Actions major versions', () => {
+    const workflows = fs.readdirSync(path.join(root, '.github', 'workflows'))
+      .filter((name) => name.endsWith('.yml'))
+      .map(workflow)
+      .join('\n');
+
+    for (const action of [
+      'actions/checkout@v6',
+      'actions/setup-node@v6',
+      'pnpm/action-setup@v4',
+      'actions/upload-artifact@v7',
+      'actions/download-artifact@v8',
+      'codecov/codecov-action@v6',
+      'gitleaks/gitleaks-action@v3',
+      'actions/github-script@v9',
+      'googleapis/release-please-action@v5',
+      'softprops/action-gh-release@v3',
+    ]) {
+      expect(workflows).toContain(action);
+    }
+  });
+
+  test('mutation smoke check passes Stryker flags directly through pnpm', () => {
+    const mutation = workflow('mutation.yml');
+
+    expect(mutation).toContain('pnpm run test:mutation --dryRunOnly');
+    expect(mutation).not.toContain('pnpm run test:mutation -- --dryRunOnly');
+  });
+
+  test('Jest flags pass directly through pnpm scripts', () => {
+    const workflows = ['ci.yml', 'integration.yml', 'release.yml'].map(workflow).join('\n');
+
+    expect(workflows).not.toContain('pnpm run test:ci -- --');
+  });
+
+  test('Node 26 validates both the polyfill test environment and native Temporal runtime', () => {
+    const ci = workflow('ci.yml');
+    const jestConfig = fs.readFileSync(path.join(root, 'jest.config.ts'), 'utf8');
+
+    expect(jestConfig).toContain("setupFiles: ['<rootDir>/jest.temporal-test.setup.ts']");
+    expect(ci).toContain('- run: pnpm run build\n      - name: Run unit, integration, property, fuzz, and telemetry tests');
+    expect(jobBlock(ci, 'coverage')).toContain('- run: pnpm run build');
+    expect(ci).toContain('node scripts/check-native-temporal.cjs');
+    expect(ci).toContain("if: matrix.node-version == '26.x'");
+  });
+
   test('release validates and publishes its single packed artifact', () => {
     const release = workflow('release.yml');
 
-    expect(matches(release, /npm run pack:artifact/g)).toHaveLength(1);
+    expect(matches(release, /pnpm run pack:artifact/g)).toHaveLength(1);
     expect(release).toContain("require('./artifacts/package-artifact.json').path");
     expect(release).toContain('npm publish "$(node -p');
     expect(release.indexOf("require('./artifacts/package-artifact.json').path")).toBeLessThan(
@@ -36,14 +105,45 @@ describe('release artifact workflow contracts', () => {
     );
   });
 
+  test('a manual release can publish only the checked-in package version', () => {
+    const release = workflow('release.yml');
+
+    expect(release).toContain('workflow_dispatch:');
+    expect(release).toContain('release_version:');
+    expect(release).toContain("test \"$release_version\" = \"$package_version\"");
+    expect(release).toContain('steps.manual.outputs.release_created || steps.release.outputs.release_created');
+  });
+
   test('publish job only publishes the metadata-selected local tarball', () => {
     const publish = jobBlock(workflow('release.yml'), 'publish-npm');
 
-    expect(publish).not.toMatch(/npm run build|npm pack/);
+    expect(publish).not.toMatch(/pnpm run build|npm pack/);
     expect(publish).toContain(
-      'npm publish "$(node -p "require(\'./artifacts/package-artifact.json\').path")" --provenance --access public --tag latest',
+      'npm publish "$(node -p "require(\'./artifacts/package-artifact.json\').path")" --access public --tag latest',
     );
     expect(matches(publish, /npm publish /g)).toHaveLength(1);
+    expect(publish).toContain("node-version: '24.12.0'");
+    expect(publish).not.toContain('NODE_AUTH_TOKEN');
+    expect(publish).not.toContain('--provenance');
+  });
+
+  test('release validation and SBOM generation install through pnpm', () => {
+    const release = workflow('release.yml');
+
+    for (const name of ['release-validation', 'attach-sbom']) {
+      const job = jobBlock(release, name);
+      expect(job).toContain('cache: pnpm');
+      expect(job).toContain('corepack enable');
+      expect(job).toContain('pnpm install --frozen-lockfile');
+      expect(job).not.toMatch(/^\s*- run: npm ci/m);
+    }
+  });
+
+  test('release publication succeeds before GitHub release finalization and SBOM upload', () => {
+    const attachSbom = jobBlock(workflow('release.yml'), 'attach-sbom');
+
+    expect(attachSbom).toContain('needs: [release-please, publish-npm]');
+    expect(attachSbom).toContain("needs.publish-npm.result == 'success'");
   });
 
   test('package metadata emits an npm-valid local artifact path', () => {
@@ -56,7 +156,7 @@ describe('release artifact workflow contracts', () => {
     const ci = workflow('ci.yml');
 
     expect(ci).toContain('contract-fixtures:');
-    expect(ci).toContain('npm run fixtures:contract');
+    expect(ci).toContain('pnpm run fixtures:contract');
     expect(ci).toContain('FIXTURE_TYPESCRIPT_VERSION: ${{ matrix.typescript-version }}');
     expect(ci).not.toContain('npm install --prefix "${fixture}"');
     expect(ci).not.toContain('bench:gate');
@@ -74,7 +174,7 @@ describe('release artifact workflow contracts', () => {
     const integration = workflow('integration.yml');
 
     expect(integration).toContain("cron: '0 6 * * 1'");
-    expect(integration).toContain('npm run bench:gate');
+    expect(integration).toContain('pnpm run bench:gate');
     expect(integration).toContain('reviewed-performance-baseline');
     expect(integration).not.toMatch(/(?:cp|mv|tee)\s+.*benchmarks\/baseline\.json/);
     expect(integration).toMatch(/set -o pipefail|>\s*bench-out\.json/);
@@ -86,7 +186,7 @@ describe('release artifact workflow contracts', () => {
 
     expect(capture).toContain('workflow_dispatch:');
     expect(capture).toContain('runs-on: ubuntu-24.04');
-    expect(capture).toContain("node-version: '20.19.0'");
+    expect(capture).toContain("node-version: '24.12.0'");
     expect(capture).toContain('timeout-minutes: 15');
     expect(capture).toContain('artifacts/proposed-performance-baseline.json');
     expect(capture).toContain('proposed-hosted-performance-baseline');
