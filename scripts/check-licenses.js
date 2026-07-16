@@ -2,8 +2,8 @@
  * @file License compliance check for production dependencies.
  *
  * Fails CI if any direct or transitive runtime dependency is released
- * under a license that is not on the allow-list. Dev-only dependencies
- * are reported but not gated.
+ * under a license that is not on the allow-list. The check walks the installed
+ * production dependency closure, so it works with pnpm's isolated layout.
  *
  * The allow-list is derived from typical enterprise open-source policies
  * (OSI-approved permissive + weak copyleft + public domain). Copyleft
@@ -23,7 +23,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = process.cwd();
-const NODE_MODULES = path.join(ROOT, 'node_modules');
 
 const ALLOWED_LICENSES = new Set([
   'MIT', 'MIT-X11', 'MIT-0',
@@ -105,76 +104,86 @@ function readProdDeps() {
   return set;
 }
 
-function readLockfilePackages() {
-  const lockPath = path.join(ROOT, 'package-lock.json');
-  if (!fs.existsSync(lockPath)) return null;
-  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-  const out = new Map();
-  const pkgs = lock.packages || {};
-  for (const pkgPath of Object.keys(pkgs)) {
-    if (!pkgPath.startsWith('node_modules/')) continue;
-    if (pkgPath === 'node_modules') continue;
-    const parts = pkgPath.split('node_modules/');
-    const tail = parts[parts.length - 1];
-    if (!tail) continue;
-    const atIdx = tail.lastIndexOf('@');
-    let name;
-    if (tail.startsWith('@') && atIdx > 0) {
-      name = tail;
-    } else if (atIdx > 0) {
-      name = tail.slice(0, atIdx);
-    } else {
-      name = tail;
-    }
-    const version = pkgs[pkgPath].version || '?';
-    if (!out.has(name)) out.set(name, version);
-  }
-  return out;
-}
+function readRuntimeDependencyClosure() {
+  const queue = [...readProdDeps()].map((name) => ({ name, from: ROOT }));
+  const packages = new Map();
 
-function readInstalledLicense(name) {
-  const pkgJsonPath = path.join(NODE_MODULES, name, 'package.json');
-  if (!fs.existsSync(pkgJsonPath)) return null;
-  try {
-    const meta = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
-    return meta.license || meta.licenses || null;
-  } catch {
-    return null;
+  while (queue.length > 0) {
+    const { name, from } = queue.pop();
+    let packageJsonPath;
+
+    try {
+      const entryPath = require.resolve(name, { paths: [from] });
+      let packageDir = path.dirname(entryPath);
+
+      while (packageDir !== path.dirname(packageDir)) {
+        const candidate = path.join(packageDir, 'package.json');
+        if (fs.existsSync(candidate)) {
+          packageJsonPath = candidate;
+          break;
+        }
+        packageDir = path.dirname(packageDir);
+      }
+
+      if (!packageJsonPath) {
+        throw new Error(`Could not locate package metadata for ${name}`);
+      }
+    } catch {
+      throw new Error(`Could not resolve installed runtime dependency ${name} from ${from}`);
+    }
+
+    if (packages.has(packageJsonPath)) continue;
+
+    const meta = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    packages.set(packageJsonPath, {
+      license: meta.license || meta.licenses || null,
+      name: meta.name || name,
+      version: meta.version || '?',
+    });
+
+    const packageDir = path.dirname(packageJsonPath);
+    for (const dependencyName of Object.keys({
+      ...(meta.dependencies || {}),
+      ...(meta.optionalDependencies || {}),
+    })) {
+      queue.push({ name: dependencyName, from: packageDir });
+    }
   }
+
+  return packages;
 }
 
 function main() {
   const projectName = getProjectName();
-  const prodSet = readProdDeps();
-  const allInstalled = readLockfilePackages();
+  let allInstalled;
 
   process.stdout.write('Scanning licenses of production dependencies (direct + transitive)...\n');
-  if (!allInstalled || allInstalled.size === 0) {
-    process.stderr.write("Could not read package-lock.json. Run 'npm install' first.\n");
+  try {
+    allInstalled = readRuntimeDependencyClosure();
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(2);
+  }
+
+  if (allInstalled.size === 0) {
+    process.stderr.write('Could not resolve any installed production dependencies. Run pnpm install first.\n');
     process.exit(2);
   }
 
   const issues = [];
   let totalProd = 0;
-  let totalDev = 0;
 
-  for (const [name, version] of allInstalled) {
+  for (const { name, version, license } of allInstalled.values()) {
     if (name === projectName) continue;
-    const license = readInstalledLicense(name);
-    if (license === null) continue;
-    const scope = prodSet.has(name) ? 'prod' : 'dev';
     const classification = classify(license);
-    if (scope === 'prod') totalProd += 1;
-    else totalDev += 1;
+    totalProd += 1;
     if (classification === 'forbidden' || classification === 'unknown') {
-      if (scope === 'prod' || process.env.CHECK_DEV_LICENSES === 'true') {
-        issues.push({ name, version, license, classification, scope });
-      }
+      issues.push({ name, version, license, classification, scope: 'prod' });
     }
   }
 
   process.stdout.write('\nProduction deps scanned: ' + totalProd + '\n');
-  process.stdout.write('Dev deps scanned:       ' + totalDev + '\n\n');
+  process.stdout.write('\n');
 
   if (issues.length === 0) {
     process.stdout.write('License compliance: PASS\n');

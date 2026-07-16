@@ -45,7 +45,7 @@ mature, GitHub-native tools that satisfy each requirement:
 | Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Weekly integration validation and release validation |
 | Auto versioning | `googleapis/release-please-action@v5` | `.github/workflows/release.yml` |
-| License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
+| License compliance | `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
 | Doc link check | `lycheeverse/lychee-action@v2` | `.github/workflows/ci.yml` (`doc-links` job) |
 | Auto dependency updates | `.github/dependabot.yml` (Dependabot) | GitHub-native |
 | Coverage trend | `codecov/codecov-action@v6` | `.github/workflows/ci.yml` (`coverage` job) |

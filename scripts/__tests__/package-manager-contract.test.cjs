@@ -25,6 +25,20 @@ test('workflow pnpm setup stays compatible with the supported Node 22+ matrix', 
   expect(workflows).toContain('node-version: [22.x, 24.x, 26.x]');
 });
 
+test('pnpm manifest declares strict test types and audited transitive overrides', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
+
+  expect(manifest.devDependencies['@jest/globals']).toBe('^30.4.1');
+  expect(manifest.devDependencies.esbuild).toBe('^0.28.1');
+  expect(manifest.devDependencies['license-checker']).toBeUndefined();
+  expect(workspace).toContain('packageExtensions:');
+  expect(workspace).toContain('vite@6.4.3:');
+  expect(workspace).toContain('esbuild: 0.25.12');
+  expect(workspace).toContain('tsup>esbuild: 0.28.1');
+  expect(workspace).toContain('qs: 6.15.2');
+});
+
 test('pnpm permits only the reviewed dependency build scripts', () => {
   const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
 
