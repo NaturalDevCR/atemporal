@@ -52,18 +52,23 @@ await atemporal.lazyLoadMultiple(["weekDay", "customParseFormat"], {
 
 ## Plugin Utilities
 
-You can query the state of plugins at runtime using the following utilities:
+You can query the state of official plugins at runtime using the following
+utilities:
 
 ```ts
 // Check if a specific plugin is loaded
 const hasRelativeTime = atemporal.isPluginLoaded("relativeTime");
 
-// View an array of all currently loaded plugins
+// View an array of currently loaded official plugins
 const loaded = atemporal.getLoadedPlugins();
 
-// View all available plugins that can be lazy-loaded
+// View official plugins that can be lazy-loaded
 const available = atemporal.getAvailablePlugins();
 ```
+
+Third-party plugins can be installed with `extend()`, but they do not appear
+in `getLoadedPlugins()` or `getAvailablePlugins()`. Those APIs are reserved for
+the stable official-plugin registry.
 
 ## Available Plugins
 

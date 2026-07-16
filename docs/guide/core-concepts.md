@@ -43,7 +43,7 @@ atemporal().subtract(5, "minutes").fromNow(); // "5 minutes ago"
 
 ### Lazy Loading
 
-To reduce initial bundle size, plugins can be loaded on demand:
+To reduce initial bundle size, official bundled plugins can be loaded on demand:
 
 ```ts
 // Load a plugin only when needed
@@ -57,9 +57,13 @@ await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
 
 ```ts
 atemporal.isPluginLoaded("relativeTime");   // Check if a plugin is loaded
-atemporal.getLoadedPlugins();                // List all loaded plugins
-atemporal.getAvailablePlugins();             // List all plugins available for lazy loading
+atemporal.getLoadedPlugins();                // List loaded official plugins only
+atemporal.getAvailablePlugins();             // List official plugins available for lazy loading
 ```
+
+`extend()` also accepts third-party plugins. They are applied normally, but
+they are intentionally not included in `getLoadedPlugins()` because that API
+tracks stable official plugin names only.
 
 ### Creating Your Own Plugin
 

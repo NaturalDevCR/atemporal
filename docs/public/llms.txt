@@ -6,12 +6,16 @@
 
 ## TL;DR for coding agents
 
-- **Install:** `npm install atemporal` (pulls `@js-temporal/polyfill` automatically).
-- **Import:** `import atemporal from "atemporal";` (default export, callable).
+- **Install:** prefer `pnpm add atemporal`; `npm install atemporal` is equivalent for consumers. `@js-temporal/polyfill` is a direct runtime dependency and is installed automatically.
+- **Import (ESM):** `import atemporal from "atemporal";` (default export, callable).
+- **Import (CommonJS):** `const { default: atemporal } = require('atemporal');`.
 - **Construct:** `atemporal()` (now) / `atemporal(input, tz?)` / `atemporal.unix(s)` / `atemporal.validate(x)`.
+- **Model and compatibility:** the principal representation is `Temporal.ZonedDateTime`. The API is Day.js-inspired but does not promise full Day.js compatibility; check the compatibility matrix before a migration.
 - **Immutable:** every mutator returns a NEW `TemporalWrapper`. Never use `let` to "update" a date — use `const next = current.add(1, "day");`.
-- **Plugins:** `atemporal.extend(relTime); atemporal.extend(customParseFormat); ...` (sync) or `await atemporal.lazyLoad({...})` (async).
+- **Plugins:** synchronously install any plugin with `atemporal.extend(plugin)`. Lazy loading accepts an official plugin name: `await atemporal.lazyLoad("relativeTime")`. `getLoadedPlugins()` reports only official plugins; third-party extensions are applied but not listed there.
 - **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.
+- **Temporal runtime:** call `atemporal.getTemporalInfo()` to observe the selected native or polyfill implementation. CI verifies the native path on Node 26; do not infer native support from an arbitrary runtime version. The polyfill is statically imported, so native runtime selection does not by itself remove it from an application bundle.
+- **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.
 - **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.
 - **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.
 - **Size:** Core, packed-tarball, and application-bundle measurements are reported separately; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md). `@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle cost is measured separately.
@@ -44,10 +48,10 @@ atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")
 
 | Method | Signature | Notes |
 | --- | --- | --- |
-| `atemporal(input?, timeZone?)` | `() => TemporalWrapper` | Create an instance. input may be ISO string, Date, Unix ms, Unix s, [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper. |
-| `atemporal.try(input?, timeZone?)` | `() => TemporalWrapper | null` | Same as atemporal(input) but returns null instead of throwing on invalid input. |
-| `atemporal.iso(input?, timeZone?)` | `() => string | null` | Try to parse and return an ISO 8601 string, or null. Does not throw. |
-| `atemporal.validate(input)` | `() => ValidationResult` | Detailed validation: { ok: boolean, iso?: string, confidence?: number, reason?: string, code?: ATEMPORAL_* }. |
+| `atemporal(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper` | Create an instance. input may be ISO string, Date, Unix ms, Unix s, [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper. |
+| `atemporal.try(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper | null` | Same as atemporal(input) but returns null instead of throwing on invalid input. |
+| `atemporal.iso(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => string | null` | Try to parse and return an ISO 8601 string, or null. Does not throw. |
+| `atemporal.validate(input)` | `(input: unknown) => ValidationResult` | Detailed validation: { ok: boolean, iso?: string, confidence?: number, reason?: string, code?: ATEMPORAL_* }. |
 | `atemporal.duration(spec)` | `(spec) => Temporal.Duration` | Build a Temporal.Duration from { years, months, days, hours, minutes, seconds, milliseconds, weeks }. |
 | `atemporal.from(input, timeZone?)` | `(input, tz?) => TemporalWrapper` | Alias of atemporal(input) — kept for API symmetry with Temporal static methods. |
 | `atemporal.unix(seconds)` | `(seconds: number) => TemporalWrapper` | Build from a Unix timestamp in SECONDS (e.g. 1752096000). |
@@ -62,9 +66,9 @@ atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")
 | `atemporal.extend(plugin, options?)` | `(plugin, options?) => void` | Install a plugin synchronously. Options are passed to the plugin.install() hook. |
 | `atemporal.lazyLoad(pluginName, options?)` | `async (...) => Promise<void>` | Install one official plugin by name on demand. Resolves after the plugin is applied. |
 | `atemporal.lazyLoadMultiple(pluginNames, options?)` | `async (...) => Promise<void>` | Install several official plugins by name. |
-| `atemporal.isPluginLoaded(name)` | `(name: string) => boolean` | Has the named plugin been installed yet? |
-| `atemporal.getLoadedPlugins()` | `() => string[]` | Names of currently installed plugins. |
-| `atemporal.getAvailablePlugins()` | `() => string[]` | Names of plugins registered with the loader (whether installed or not). |
+| `atemporal.isPluginLoaded(name)` | `(name: string) => boolean` | Has the named official plugin been installed yet? |
+| `atemporal.getLoadedPlugins()` | `() => string[]` | Names of currently installed official plugins. Third-party extensions are not listed. |
+| `atemporal.getAvailablePlugins()` | `() => string[]` | Names of official plugins registered with the loader (whether installed or not). |
 | `atemporal.getTemporalInfo()` | `() => { isNative: boolean, environment: "browser"|"node"|"unknown", version: "native"|"polyfill" }` | Diagnostic info about which Temporal implementation is in use. |
 | `atemporal.setDefaultLocale(loc)` | `(loc: string) => void` | Set the global default locale (BCP-47). |
 | `atemporal.setDefaultTimeZone(tz)` | `(tz: string) => void` | Set the global default IANA time zone. Pass "system" to reset to the host TZ. |
@@ -217,13 +221,19 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 
 ## Installation
 
-To install `atemporal`, run:
+Install `atemporal` with your package manager:
 
 ```bash
+# Preferred
+pnpm add atemporal
+
+# Also supported
 npm install atemporal
 ```
 
-> You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
+> You don't need to install `@js-temporal/polyfill` separately. It is a direct
+> runtime dependency of `atemporal`, so your package manager installs it with
+> the package. It is not a separate plugin or peer dependency.
 
 Atemporal ships with full TypeScript declarations. Autocompletion and type checking work out of the box.
 
@@ -255,6 +265,17 @@ if (future.isAfter(now)) {
 const past = now.subtract(5, "minutes");
 console.log(past.fromNow());
 // => "5 minutes ago"
+```
+
+### CommonJS
+
+When consuming the CommonJS export, read the default export explicitly:
+
+```js
+const { default: atemporal } = require("atemporal");
+const { default: relativeTime } = require("atemporal/plugins/relativeTime");
+
+atemporal.extend(relativeTime);
 ```
 
 ## Basic Operations
@@ -409,7 +430,7 @@ atemporal().subtract(5, "minutes").fromNow(); // "5 minutes ago"
 
 ### Lazy Loading
 
-To reduce initial bundle size, plugins can be loaded on demand:
+To reduce initial bundle size, official bundled plugins can be loaded on demand:
 
 ```ts
 // Load a plugin only when needed
@@ -423,9 +444,13 @@ await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
 
 ```ts
 atemporal.isPluginLoaded("relativeTime");   // Check if a plugin is loaded
-atemporal.getLoadedPlugins();                // List all loaded plugins
-atemporal.getAvailablePlugins();             // List all plugins available for lazy loading
+atemporal.getLoadedPlugins();                // List loaded official plugins only
+atemporal.getAvailablePlugins();             // List official plugins available for lazy loading
 ```
+
+`extend()` also accepts third-party plugins. They are applied normally, but
+they are intentionally not included in `getLoadedPlugins()` because that API
+tracks stable official plugin names only.
 
 ### Creating Your Own Plugin
 
@@ -754,10 +779,16 @@ Atemporal automatically detects whether the native Temporal API is available in 
 
 ## How It Works
 
-- **Native Temporal Available**: Uses the browser's native implementation (Chrome 144+, Firefox 139+) for optimal performance
-- **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
+- **Native Temporal Available**: Uses the runtime's native implementation.
+- **Native Temporal Not Available**: Falls back to `@js-temporal/polyfill`
+  automatically.
 
 The detection runs once and is cached for the lifetime of your application. It searches for `Temporal` in `globalThis`, `window`, `global`, and `self` in that order.
+
+Native availability is a runtime capability, not a version promise in this
+guide. Check it with `atemporal.getTemporalInfo()` in the environment you
+deploy. CI validates the native path on Node 26 and validates the polyfill path
+across the supported Node matrix.
 
 ## Checking the Implementation
 
@@ -777,20 +808,17 @@ console.log(info);
 
 - **No code changes required**: Your existing atemporal code works identically whether native or polyfill
 - **Automatic performance**: Native Temporal is faster than the polyfill, and you get it for free
-- **Bundle size reduction**: When native Temporal is available, the polyfill overhead is eliminated at runtime
+- **Stable fallback**: Native and polyfill selection happens at runtime. The
+  polyfill remains a direct dependency, so native availability alone does not
+  guarantee that a bundler removes it from an application bundle.
 - **Seamless migration**: As more browsers adopt Temporal, your app automatically benefits
 
-## Browser Support
+## Runtime Support
 
-The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**.
-
-| Browser/Env | Temporal Support |
-|-------------|-----------------|
-| Chrome 144+ | Native |
-| Firefox 139+ | Native |
-| Other browsers | Polyfill (automatic) |
-| Node.js 18+ | Polyfill (automatic) |
-| Older runtimes | Polyfill (automatic) |
+Temporal implementation status changes independently by runtime and release.
+Do not branch application behavior on a guessed browser or Node version. Use
+`getTemporalInfo()` when diagnostics or observability need to distinguish the
+native and polyfill paths.
 
 ## Migration
 
@@ -963,11 +991,11 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | Method | Description |
 |--------|-------------|
 | `atemporal.extend(plugin, options?)` | Register and apply a plugin |
-| `atemporal.lazyLoad(name, options?)` | Lazy-load a plugin on demand (async) |
-| `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load multiple plugins (async) |
-| `atemporal.isPluginLoaded(name)` | Check if a plugin has been loaded |
-| `atemporal.getLoadedPlugins()` | Get list of loaded plugin names |
-| `atemporal.getAvailablePlugins()` | Get list of all plugins available for lazy loading |
+| `atemporal.lazyLoad(name, options?)` | Lazy-load one official plugin by name (async) |
+| `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load official plugins by name (async) |
+| `atemporal.isPluginLoaded(name)` | Check if an official plugin has been loaded |
+| `atemporal.getLoadedPlugins()` | Get loaded official plugin names; third-party extensions are not listed |
+| `atemporal.getAvailablePlugins()` | Get official plugins available for lazy loading |
 
 ## Plugins
 
@@ -1681,18 +1709,23 @@ await atemporal.lazyLoadMultiple(["weekDay", "customParseFormat"], {
 
 ## Plugin Utilities
 
-You can query the state of plugins at runtime using the following utilities:
+You can query the state of official plugins at runtime using the following
+utilities:
 
 ```ts
 // Check if a specific plugin is loaded
 const hasRelativeTime = atemporal.isPluginLoaded("relativeTime");
 
-// View an array of all currently loaded plugins
+// View an array of currently loaded official plugins
 const loaded = atemporal.getLoadedPlugins();
 
-// View all available plugins that can be lazy-loaded
+// View official plugins that can be lazy-loaded
 const available = atemporal.getAvailablePlugins();
 ```
+
+Third-party plugins can be installed with `extend()`, but they do not appear
+in `getLoadedPlugins()` or `getAvailablePlugins()`. Those APIs are reserved for
+the stable official-plugin registry.
 
 ## Available Plugins
 
@@ -4307,19 +4340,37 @@ atemporal(Temporal.PlainDate.from('2024-01-15'));
 // Wrap a Temporal.Duration:
 atemporal.duration({ days: 1 });
 
-// Or just call Temporal directly — atemporal and raw Temporal coexist
-// without conflicts because they share the same global `Temporal` object.
+// Native runtime: use the native global only after confirming it is available.
+const zdt = globalThis.Temporal.ZonedDateTime.from('2024-01-15T00:00:00[UTC]');
+const wrapped = atemporal(zdt);
+```
+
+Do not assume `globalThis.Temporal` exists. When `getTemporalInfo().isNative`
+is `false` and your application needs raw Temporal values, declare
+`@js-temporal/polyfill` in the application and import `Temporal` from it:
+
+```ts
+import { Temporal } from "@js-temporal/polyfill";
+
 const zdt = Temporal.ZonedDateTime.from('2024-01-15T00:00:00[UTC]');
 const wrapped = atemporal(zdt);
 ```
 
+The polyfill is already an atemporal runtime dependency, but an application
+that imports it directly should declare it explicitly rather than relying on
+transitive dependency layout.
+
 ## Performance: native vs polyfill
 
-atemporal automatically uses the **native** Temporal implementation
-when available (Chrome 144+, Firefox 139+, Node 22+ when unflagged)
-and falls back to `@js-temporal/polyfill` otherwise. The performance
-gap is significant for the polyfill path, but the API surface is
-identical.
+atemporal automatically uses the **native** Temporal implementation when the
+runtime exposes the required Temporal surface and falls back to
+`@js-temporal/polyfill` otherwise. Use `getTemporalInfo()` in the actual
+deployment rather than assuming native availability from a browser or Node
+version. CI validates the native path on Node 26.
+
+The polyfill is statically imported as a direct runtime dependency. Native
+selection changes the implementation used at runtime; it does not, by itself,
+guarantee that a bundler removes the polyfill from an application bundle.
 
 You can check which one is in use:
 
@@ -4618,7 +4669,9 @@ The library automatically detects whether the native Temporal API is available i
 - **Native Temporal Available**: Uses the browser's native implementation for optimal performance
 - **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
 
-**Current browser support:** Native Temporal is available in Chrome 144+, Firefox 139+, and other modern runtimes implementing the TC39 Stage 4 (ES2026) specification.
+Native availability is determined from the actual runtime surface. Use
+`atemporal.getTemporalInfo()` in the environment you deploy rather than relying
+on a browser or Node version table. CI validates the native path on Node 26.
 
 ## Checking Temporal Implementation
 
@@ -4654,18 +4707,16 @@ No breaking changes — your existing code continues to work exactly the same.
 
 ### Bundle Size
 
-When native Temporal is available, the polyfill overhead is eliminated.
+The polyfill is a direct runtime dependency and is statically imported. Native
+selection changes which implementation runs, but does not by itself guarantee
+that a bundler removes polyfill code from an application bundle.
 
-## Browser Support Timeline
+## Runtime Support
 
-The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**. Browser support is rolling out:
-
-- **Chrome 144+**: Native support
-- **Firefox 139+**: Native support
-- **Other browsers**: Automatic fallback to `@js-temporal/polyfill`
-- **Node.js**: Detection works across all supported versions
-
-The automatic detection ensures smooth migration across all environments.
+The Temporal API has reached **Stage 4** and implementations continue to roll
+out independently. Detection works in browsers, Node.js, workers, and other
+supported JavaScript environments. The automatic fallback keeps the API
+available when a native implementation is absent.
 
 ## Technical Details
 
@@ -4872,12 +4923,11 @@ values). Third-party libraries (moment, Day.js, Luxon, date-fns)
 work around these issues but each has its own opinions on API
 ergonomics and bundle size.
 
-In 2024, the TC39 Temporal proposal reached Stage 3 (and shortly
-after, Stage 4). It standardizes a rich set of date/time types
+The TC39 Temporal proposal reached Stage 4 and standardizes a rich set of date/time types
 (`PlainDate`, `PlainDateTime`, `ZonedDateTime`, `Instant`, `Duration`)
-that address the `Date` object's pain points. Browsers are starting
-to ship it natively (Chrome 144+, Firefox 139+), and a polyfill
-exists for older environments.
+that address the `Date` object's pain points. Native availability varies by
+the runtime actually executing the code, and the polyfill supplies the
+fallback path where native Temporal is unavailable.
 
 ## Decision
 
