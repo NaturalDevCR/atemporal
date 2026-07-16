@@ -66,6 +66,8 @@ jobs:
           path: |
             artifacts/
             reports/
+            reports/bundler-diagnostics/
+            integration/canonical-bundle/dist/*.meta.json
             bench-out.json
             coverage/
           if-no-files-found: warn

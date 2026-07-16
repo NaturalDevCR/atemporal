@@ -4,6 +4,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..', '..');
 const workflow = (name) => fs.readFileSync(path.join(root, '.github', 'workflows', name), 'utf8');
 const script = (name) => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
+const fixture = (...segments) => fs.readFileSync(path.join(root, 'integration', ...segments), 'utf8');
 
 function matches(text, expression) {
   return text.match(expression) || [];
@@ -83,5 +84,26 @@ describe('release artifact workflow contracts', () => {
     expect(capture).toContain('artifacts/proposed-performance-baseline.json');
     expect(capture).toContain('proposed-hosted-performance-baseline');
     expect(capture).not.toMatch(/(?:git\s+(?:add|commit|push)|benchmarks\/baseline\.json)/);
+  });
+
+  test('weekly and release evidence retain canonical and extended-bundler diagnostics', () => {
+    for (const name of ['integration.yml', 'release.yml']) {
+      const contents = workflow(name);
+
+      expect(contents).toContain('integration/canonical-bundle/dist/*.meta.json');
+      expect(contents).toContain('reports/bundler-diagnostics/');
+      expect(contents).toContain('if: always()');
+    }
+
+    expect(fixture('extended', 'vite', 'vite.config.ts')).toContain('ATEMPORAL_DIAGNOSTICS_DIR');
+    expect(fixture('extended', 'webpack', 'webpack.config.cjs')).toContain('ATEMPORAL_DIAGNOSTICS_DIR');
+    expect(script('run-fixtures.cjs')).toContain("'reports', 'bundler-diagnostics'");
+  });
+
+  test('supply-chain ADR describes performance validation as weekly and release-only', () => {
+    const adr = fs.readFileSync(path.join(root, 'docs', 'adr', '0007-supply-chain-hardening.md'), 'utf8');
+
+    expect(adr).toMatch(/weekly\s+integration validation and release validation/);
+    expect(adr).not.toContain('Performance regressions are caught at PR time');
   });
 });

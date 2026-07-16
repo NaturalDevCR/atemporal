@@ -97,6 +97,8 @@ jobs:
           name: release-validation-evidence
           path: |
             reports/
+            reports/bundler-diagnostics/
+            integration/canonical-bundle/dist/*.meta.json
             coverage/
             bench-out.json
           if-no-files-found: warn

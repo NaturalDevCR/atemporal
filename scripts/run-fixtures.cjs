@@ -5,14 +5,44 @@ const { spawnSync } = require('node:child_process');
 const projectRoot = path.resolve(__dirname, '..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
-function run(command, args, cwd) {
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit' });
+function run(command, args, cwd, env) {
+  const result = spawnSync(command, args, {
+    cwd,
+    env: { ...process.env, ...env },
+    stdio: 'inherit',
+  });
 
   if (result.error) {
     throw result.error;
   }
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} failed in ${cwd}`);
+  }
+}
+
+function collectNextBuildMetadata(fixture, diagnosticsDirectory) {
+  const nextDirectory = path.join(fixture, '.next');
+  if (!fs.existsSync(nextDirectory)) return;
+
+  try {
+    const directories = [nextDirectory];
+    while (directories.length > 0) {
+      const directory = directories.pop();
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const source = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+          directories.push(source);
+          continue;
+        }
+        if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+        const relative = path.relative(nextDirectory, source);
+        const destination = path.join(diagnosticsDirectory, 'nextjs', relative);
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.copyFileSync(source, destination);
+      }
+    }
+  } catch (error) {
+    console.warn(`Could not preserve informational Next.js diagnostics: ${error.message}`);
   }
 }
 
@@ -87,7 +117,9 @@ function runFixtures(group) {
     group,
   );
   const reportRoot = path.join(projectRoot, 'reports', 'fixtures');
+  const diagnosticsDirectory = path.join(projectRoot, 'reports', 'bundler-diagnostics');
   const typeScriptVersion = fixtureTypeScriptVersion();
+  const fixtureEnvironment = { ATEMPORAL_DIAGNOSTICS_DIR: diagnosticsDirectory };
 
   fs.rmSync(disposableGroupRoot, { recursive: true, force: true });
   fs.mkdirSync(disposableGroupRoot, { recursive: true });
@@ -122,8 +154,11 @@ function runFixtures(group) {
       `${JSON.stringify({ group, name, polyfillVersion }, null, 2)}\n`,
     );
 
-    run(npmCommand, ['run', 'typecheck'], fixture);
-    run(npmCommand, ['run', 'build'], fixture);
+    run(npmCommand, ['run', 'typecheck'], fixture, fixtureEnvironment);
+    run(npmCommand, ['run', 'build'], fixture, fixtureEnvironment);
+    if (group === 'extended' && name === 'nextjs') {
+      collectNextBuildMetadata(fixture, diagnosticsDirectory);
+    }
     run(npmCommand, ['test'], fixture);
   }
 }
