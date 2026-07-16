@@ -4,13 +4,13 @@
 
 **Goal:** Make pnpm the root and CI package manager, preserve npm-consumer tarball contracts, publish through npm OIDC, and resolve dependency PRs only after their own gates pass.
 
-**Architecture:** Corepack activates pinned pnpm 11.13.1 for repository installs, scripts, and CI caches. npm remains scoped to registry operations and npm-consumer fixtures. A Node 24 OIDC publish job releases only the tarball validated by the release workflow.
+**Architecture:** Corepack activates pinned pnpm 10.34.5 for repository installs, scripts, and CI caches. npm remains scoped to registry operations and npm-consumer fixtures. A Node 24 OIDC publish job releases only the tarball validated by the release workflow.
 
-**Tech Stack:** pnpm 11.13.1, Corepack, Node 18/20/22/24, npm CLI 11, GitHub Actions OIDC, Jest 30.
+**Tech Stack:** pnpm 10.34.5, Corepack, Node 18/20/22/24, npm CLI 11, GitHub Actions OIDC, Jest 30.
 
 ## Global Constraints
 
-- Root development uses `pnpm install --frozen-lockfile`, `"packageManager": "pnpm@11.13.1"`, and `pnpm-lock.yaml`.
+- Root development uses `pnpm install --frozen-lockfile`, `"packageManager": "pnpm@10.34.5"`, and `pnpm-lock.yaml`.
 - Root `package-lock.json` is removed. npm lockfiles inside contract fixtures remain because they intentionally validate npm consumers.
 - `npm pack`, `npm view`, and `npm publish` are allowed only as npm-registry operations.
 - Publishing uses `release.yml`, GitHub environment `npm`, Node 24, and `id-token: write`; no `NPM_TOKEN` or `NODE_AUTH_TOKEN` fallback exists.
@@ -38,7 +38,7 @@ const root = path.resolve(__dirname, '..', '..');
 
 test('root development is pinned to pnpm', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-  expect(manifest.packageManager).toBe('pnpm@11.13.1');
+  expect(manifest.packageManager).toBe('pnpm@10.34.5');
   expect(fs.existsSync(path.join(root, 'pnpm-lock.yaml'))).toBe(true);
   expect(fs.existsSync(path.join(root, 'package-lock.json'))).toBe(false);
 });
@@ -52,7 +52,7 @@ Expected: FAIL because npm is currently the root manager.
 
 - [ ] **Step 3: Add the exact manifest property and lockfile**
 
-Add `"packageManager": "pnpm@11.13.1"` next to the package version, then run `corepack enable`, `corepack prepare pnpm@11.13.1 --activate`, and `pnpm install --lockfile-only`. Remove only root `package-lock.json` and add `.pnpm-store/` to `.gitignore` if required.
+Add `"packageManager": "pnpm@10.34.5"` next to the package version, then run `corepack enable`, `corepack prepare pnpm@10.34.5 --activate`, and `pnpm install --lockfile-only`. Remove only root `package-lock.json` and add `.pnpm-store/` to `.gitignore` if required.
 
 - [ ] **Step 4: Verify and commit**
 
