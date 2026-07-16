@@ -96,6 +96,7 @@ jobs:
           cache: pnpm
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - name: Run unit, integration, property, fuzz, and telemetry tests
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
@@ -106,9 +107,7 @@ jobs:
         if: matrix.node-version == '26.x'
         env:
           TZ: UTC
-        run: |
-          pnpm run build
-          node scripts/check-native-temporal.cjs
+        run: node scripts/check-native-temporal.cjs
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})

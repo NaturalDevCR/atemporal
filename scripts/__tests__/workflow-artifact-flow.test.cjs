@@ -88,6 +88,7 @@ describe('release artifact workflow contracts', () => {
     const jestConfig = fs.readFileSync(path.join(root, 'jest.config.ts'), 'utf8');
 
     expect(jestConfig).toContain("setupFiles: ['<rootDir>/jest.temporal-test.setup.ts']");
+    expect(ci).toContain('- run: pnpm run build\n      - name: Run unit, integration, property, fuzz, and telemetry tests');
     expect(ci).toContain('node scripts/check-native-temporal.cjs');
     expect(ci).toContain("if: matrix.node-version == '26.x'");
   });
