@@ -167,6 +167,7 @@ jobs:
           cache: pnpm
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - name: Run tests with all four coverage thresholds
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
