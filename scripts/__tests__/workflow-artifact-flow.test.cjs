@@ -63,6 +63,13 @@ describe('release artifact workflow contracts', () => {
     expect(ci).not.toContain('perf-gate:');
   });
 
+  test('PR build evidence retains canonical metafiles even after a later failure', () => {
+    const build = jobBlock(workflow('ci.yml'), 'build');
+
+    expect(build).toContain('integration/canonical-bundle/dist/*.meta.json');
+    expect(build).toMatch(/Upload size reports[\s\S]*?if: always\(\)/);
+  });
+
   test('scheduled validation retains benchmark evidence without creating a baseline', () => {
     const integration = workflow('integration.yml');
 

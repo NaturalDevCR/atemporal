@@ -60,7 +60,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: package-artifact-reports
-          path: reports/
+          path: |
+            reports/
+            integration/canonical-bundle/dist/*.meta.json
           if-no-files-found: warn
           retention-days: 7
       - name: Fail after preserving build evidence
