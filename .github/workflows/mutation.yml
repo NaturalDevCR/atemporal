@@ -47,7 +47,7 @@ jobs:
       - name: Run Stryker smoke check
         if: github.event_name == 'push'
         env:
-          NODE_OPTIONS: '--max-old-space-size=6144'
+          NODE_OPTIONS: '--experimental-vm-modules --max-old-space-size=6144'
           TZ: 'UTC'
         run: pnpm run test:mutation --dryRunOnly
 
@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 55
         env:
-          NODE_OPTIONS: '--max-old-space-size=6144'
+          NODE_OPTIONS: '--experimental-vm-modules --max-old-space-size=6144'
           TZ: 'UTC'
         run: pnpm run test:mutation
 
