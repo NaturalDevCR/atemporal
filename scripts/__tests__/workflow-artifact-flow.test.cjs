@@ -45,7 +45,7 @@ describe('release artifact workflow contracts', () => {
     const cacheUses = matches(workflows, /cache: pnpm/g);
 
     expect(cacheUses.length).toBeGreaterThan(0);
-    expect(matches(workflows, /pnpm\/action-setup@v4/g)).toHaveLength(cacheUses.length);
+    expect(matches(workflows, /pnpm\/action-setup@v4[\s\S]{0,350}?cache: pnpm/g)).toHaveLength(cacheUses.length);
   });
 
   test('repository workflows use the reviewed GitHub Actions major versions', () => {
