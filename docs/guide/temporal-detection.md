@@ -4,10 +4,16 @@ Atemporal automatically detects whether the native Temporal API is available in 
 
 ## How It Works
 
-- **Native Temporal Available**: Uses the browser's native implementation (Chrome 144+, Firefox 139+) for optimal performance
-- **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
+- **Native Temporal Available**: Uses the runtime's native implementation.
+- **Native Temporal Not Available**: Falls back to `@js-temporal/polyfill`
+  automatically.
 
 The detection runs once and is cached for the lifetime of your application. It searches for `Temporal` in `globalThis`, `window`, `global`, and `self` in that order.
+
+Native availability is a runtime capability, not a version promise in this
+guide. Check it with `atemporal.getTemporalInfo()` in the environment you
+deploy. CI validates the native path on Node 26 and validates the polyfill path
+across the supported Node matrix.
 
 ## Checking the Implementation
 
@@ -27,20 +33,17 @@ console.log(info);
 
 - **No code changes required**: Your existing atemporal code works identically whether native or polyfill
 - **Automatic performance**: Native Temporal is faster than the polyfill, and you get it for free
-- **Bundle size reduction**: When native Temporal is available, the polyfill overhead is eliminated at runtime
+- **Stable fallback**: Native and polyfill selection happens at runtime. The
+  polyfill remains a direct dependency, so native availability alone does not
+  guarantee that a bundler removes it from an application bundle.
 - **Seamless migration**: As more browsers adopt Temporal, your app automatically benefits
 
-## Browser Support
+## Runtime Support
 
-The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**.
-
-| Browser/Env | Temporal Support |
-|-------------|-----------------|
-| Chrome 144+ | Native |
-| Firefox 139+ | Native |
-| Other browsers | Polyfill (automatic) |
-| Node.js 18+ | Polyfill (automatic) |
-| Older runtimes | Polyfill (automatic) |
+Temporal implementation status changes independently by runtime and release.
+Do not branch application behavior on a guessed browser or Node version. Use
+`getTemporalInfo()` when diagnostics or observability need to distinguish the
+native and polyfill paths.
 
 ## Migration
 

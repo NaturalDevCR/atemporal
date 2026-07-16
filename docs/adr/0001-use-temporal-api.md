@@ -13,12 +13,11 @@ values). Third-party libraries (moment, Day.js, Luxon, date-fns)
 work around these issues but each has its own opinions on API
 ergonomics and bundle size.
 
-In 2024, the TC39 Temporal proposal reached Stage 3 (and shortly
-after, Stage 4). It standardizes a rich set of date/time types
+The TC39 Temporal proposal reached Stage 4 and standardizes a rich set of date/time types
 (`PlainDate`, `PlainDateTime`, `ZonedDateTime`, `Instant`, `Duration`)
-that address the `Date` object's pain points. Browsers are starting
-to ship it natively (Chrome 144+, Firefox 139+), and a polyfill
-exists for older environments.
+that address the `Date` object's pain points. Native availability varies by
+the runtime actually executing the code, and the polyfill supplies the
+fallback path where native Temporal is unavailable.
 
 ## Decision
 

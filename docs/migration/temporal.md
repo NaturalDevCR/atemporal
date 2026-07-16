@@ -63,19 +63,37 @@ atemporal(Temporal.PlainDate.from('2024-01-15'));
 // Wrap a Temporal.Duration:
 atemporal.duration({ days: 1 });
 
-// Or just call Temporal directly — atemporal and raw Temporal coexist
-// without conflicts because they share the same global `Temporal` object.
+// Native runtime: use the native global only after confirming it is available.
+const zdt = globalThis.Temporal.ZonedDateTime.from('2024-01-15T00:00:00[UTC]');
+const wrapped = atemporal(zdt);
+```
+
+Do not assume `globalThis.Temporal` exists. When `getTemporalInfo().isNative`
+is `false` and your application needs raw Temporal values, declare
+`@js-temporal/polyfill` in the application and import `Temporal` from it:
+
+```ts
+import { Temporal } from "@js-temporal/polyfill";
+
 const zdt = Temporal.ZonedDateTime.from('2024-01-15T00:00:00[UTC]');
 const wrapped = atemporal(zdt);
 ```
 
+The polyfill is already an atemporal runtime dependency, but an application
+that imports it directly should declare it explicitly rather than relying on
+transitive dependency layout.
+
 ## Performance: native vs polyfill
 
-atemporal automatically uses the **native** Temporal implementation
-when available (Chrome 144+, Firefox 139+, Node 22+ when unflagged)
-and falls back to `@js-temporal/polyfill` otherwise. The performance
-gap is significant for the polyfill path, but the API surface is
-identical.
+atemporal automatically uses the **native** Temporal implementation when the
+runtime exposes the required Temporal surface and falls back to
+`@js-temporal/polyfill` otherwise. Use `getTemporalInfo()` in the actual
+deployment rather than assuming native availability from a browser or Node
+version. CI validates the native path on Node 26.
+
+The polyfill is statically imported as a direct runtime dependency. Native
+selection changes the implementation used at runtime; it does not, by itself,
+guarantee that a bundler removes the polyfill from an application bundle.
 
 You can check which one is in use:
 

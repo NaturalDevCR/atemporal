@@ -38,3 +38,21 @@ test('committed LLM guide is the exact deterministic generator output', () => {
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
+
+test('LLM guide states the consumer integration contract', () => {
+  const guide = fs.readFileSync(sourceOutput, 'utf8');
+
+  expect(guide).toContain('pnpm add atemporal');
+  expect(guide).toContain("const { default: atemporal } = require('atemporal');");
+  expect(guide).toContain('await atemporal.lazyLoad("relativeTime")');
+  expect(guide).not.toContain('await atemporal.lazyLoad({...})');
+  expect(guide).toContain('only official plugins');
+  expect(guide).toContain('does not promise full Day.js compatibility');
+  expect(guide).toContain('Temporal.ZonedDateTime');
+  expect(guide).toContain('getTemporalInfo()');
+  expect(guide).toContain('direct runtime dependency');
+  expect(guide).toContain('does not by itself remove it from an application bundle');
+  expect(guide).toContain('Do not assume `globalThis.Temporal` exists.');
+  expect(guide).toContain('**Compatibility contract:**');
+  expect(guide).toContain('Node 22, 24, and 26');
+});

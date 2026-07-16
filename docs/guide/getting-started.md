@@ -6,13 +6,19 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 
 ## Installation
 
-To install `atemporal`, run:
+Install `atemporal` with your package manager:
 
 ```bash
+# Preferred
+pnpm add atemporal
+
+# Also supported
 npm install atemporal
 ```
 
-> You don't need to install `@js-temporal/polyfill` separately — it's already bundled and applied automatically.
+> You don't need to install `@js-temporal/polyfill` separately. It is a direct
+> runtime dependency of `atemporal`, so your package manager installs it with
+> the package. It is not a separate plugin or peer dependency.
 
 Atemporal ships with full TypeScript declarations. Autocompletion and type checking work out of the box.
 
@@ -44,6 +50,17 @@ if (future.isAfter(now)) {
 const past = now.subtract(5, "minutes");
 console.log(past.fromNow());
 // => "5 minutes ago"
+```
+
+### CommonJS
+
+When consuming the CommonJS export, read the default export explicitly:
+
+```js
+const { default: atemporal } = require("atemporal");
+const { default: relativeTime } = require("atemporal/plugins/relativeTime");
+
+atemporal.extend(relativeTime);
 ```
 
 ## Basic Operations

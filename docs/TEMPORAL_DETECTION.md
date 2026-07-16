@@ -9,7 +9,9 @@ The library automatically detects whether the native Temporal API is available i
 - **Native Temporal Available**: Uses the browser's native implementation for optimal performance
 - **Native Temporal Not Available**: Falls back to the `@js-temporal/polyfill` automatically
 
-**Current browser support:** Native Temporal is available in Chrome 144+, Firefox 139+, and other modern runtimes implementing the TC39 Stage 4 (ES2026) specification.
+Native availability is determined from the actual runtime surface. Use
+`atemporal.getTemporalInfo()` in the environment you deploy rather than relying
+on a browser or Node version table. CI validates the native path on Node 26.
 
 ## Checking Temporal Implementation
 
@@ -45,18 +47,16 @@ No breaking changes — your existing code continues to work exactly the same.
 
 ### Bundle Size
 
-When native Temporal is available, the polyfill overhead is eliminated.
+The polyfill is a direct runtime dependency and is statically imported. Native
+selection changes which implementation runs, but does not by itself guarantee
+that a bundler removes polyfill code from an application bundle.
 
-## Browser Support Timeline
+## Runtime Support
 
-The Temporal API has reached **Stage 4** of the TC39 process and is included in **ECMAScript 2026**. Browser support is rolling out:
-
-- **Chrome 144+**: Native support
-- **Firefox 139+**: Native support
-- **Other browsers**: Automatic fallback to `@js-temporal/polyfill`
-- **Node.js**: Detection works across all supported versions
-
-The automatic detection ensures smooth migration across all environments.
+The Temporal API has reached **Stage 4** and implementations continue to roll
+out independently. Detection works in browsers, Node.js, workers, and other
+supported JavaScript environments. The automatic fallback keeps the API
+available when a native implementation is absent.
 
 ## Technical Details
 

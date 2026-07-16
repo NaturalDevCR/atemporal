@@ -57,11 +57,11 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | Method | Description |
 |--------|-------------|
 | `atemporal.extend(plugin, options?)` | Register and apply a plugin |
-| `atemporal.lazyLoad(name, options?)` | Lazy-load a plugin on demand (async) |
-| `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load multiple plugins (async) |
-| `atemporal.isPluginLoaded(name)` | Check if a plugin has been loaded |
-| `atemporal.getLoadedPlugins()` | Get list of loaded plugin names |
-| `atemporal.getAvailablePlugins()` | Get list of all plugins available for lazy loading |
+| `atemporal.lazyLoad(name, options?)` | Lazy-load one official plugin by name (async) |
+| `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load official plugins by name (async) |
+| `atemporal.isPluginLoaded(name)` | Check if an official plugin has been loaded |
+| `atemporal.getLoadedPlugins()` | Get loaded official plugin names; third-party extensions are not listed |
+| `atemporal.getAvailablePlugins()` | Get official plugins available for lazy loading |
 
 ## Plugins
 
