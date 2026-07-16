@@ -103,6 +103,7 @@ describe('release artifact measurement report', () => {
       jsbi: '4.3.2',
     });
     expect(fixturePackage.packageManager).toBe('pnpm@11.13.1');
+    expect(source).toContain('atemporalPackage');
     expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force']");
     expect(source).not.toContain("['ci', '--ignore-scripts']");
   });

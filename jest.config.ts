@@ -18,6 +18,10 @@ const config: Config = {
     testEnvironment: 'node',
     clearMocks: true,
     coverageProvider: 'v8',
+
+    // Unit tests exercise the packaged polyfill consistently on every supported Node line.
+    // Native Temporal receives its own production-artifact smoke check in CI.
+    setupFiles: ['<rootDir>/jest.temporal-test.setup.ts'],
     
     // Add timezone consistency
     setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

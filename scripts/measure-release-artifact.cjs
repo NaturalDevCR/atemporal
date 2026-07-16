@@ -116,7 +116,8 @@ function ensureCanonicalDependencies() {
   const esbuildPackage = path.join(canonicalFixture, 'node_modules', 'esbuild', 'package.json');
   const polyfillPackage = path.join(canonicalFixture, 'node_modules', '@js-temporal', 'polyfill', 'package.json');
   const jsbiPackage = path.join(canonicalFixture, 'node_modules', 'jsbi', 'package.json');
-  if ([esbuildPackage, polyfillPackage, jsbiPackage].every(fs.existsSync)) return;
+  const atemporalPackage = path.join(canonicalFixture, 'node_modules', 'atemporal', 'package.json');
+  if ([esbuildPackage, polyfillPackage, jsbiPackage, atemporalPackage].every(fs.existsSync)) return;
   const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
   const result = childProcess.spawnSync(pnpm, ['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force'], {
     cwd: canonicalFixture,

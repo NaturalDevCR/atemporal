@@ -83,6 +83,15 @@ describe('release artifact workflow contracts', () => {
     expect(workflows).not.toContain('pnpm run test:ci -- --');
   });
 
+  test('Node 26 validates both the polyfill test environment and native Temporal runtime', () => {
+    const ci = workflow('ci.yml');
+    const jestConfig = fs.readFileSync(path.join(root, 'jest.config.ts'), 'utf8');
+
+    expect(jestConfig).toContain("setupFiles: ['<rootDir>/jest.temporal-test.setup.ts']");
+    expect(ci).toContain('node scripts/check-native-temporal.cjs');
+    expect(ci).toContain("if: matrix.node-version == '26.x'");
+  });
+
   test('release validates and publishes its single packed artifact', () => {
     const release = workflow('release.yml');
 

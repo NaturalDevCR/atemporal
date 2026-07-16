@@ -102,6 +102,13 @@ jobs:
           TZ: UTC
           CI: 'true'
         run: pnpm run test:ci --verbose
+      - name: Verify native Temporal against the production artifact
+        if: matrix.node-version == '26.x'
+        env:
+          TZ: UTC
+        run: |
+          pnpm run build
+          node scripts/check-native-temporal.cjs
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})
