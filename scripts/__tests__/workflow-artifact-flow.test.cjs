@@ -94,6 +94,15 @@ describe('release artifact workflow contracts', () => {
     );
   });
 
+  test('a manual release can publish only the checked-in package version', () => {
+    const release = workflow('release.yml');
+
+    expect(release).toContain('workflow_dispatch:');
+    expect(release).toContain('release_version:');
+    expect(release).toContain("test \"$release_version\" = \"$package_version\"");
+    expect(release).toContain('steps.manual.outputs.release_created || steps.release.outputs.release_created');
+  });
+
   test('publish job only publishes the metadata-selected local tarball', () => {
     const publish = jobBlock(workflow('release.yml'), 'publish-npm');
 
@@ -117,6 +126,13 @@ describe('release artifact workflow contracts', () => {
       expect(job).toContain('pnpm install --frozen-lockfile');
       expect(job).not.toMatch(/^\s*- run: npm ci/m);
     }
+  });
+
+  test('release publication succeeds before GitHub release finalization and SBOM upload', () => {
+    const attachSbom = jobBlock(workflow('release.yml'), 'attach-sbom');
+
+    expect(attachSbom).toContain('needs: [release-please, publish-npm]');
+    expect(attachSbom).toContain("needs.publish-npm.result == 'success'");
   });
 
   test('package metadata emits an npm-valid local artifact path', () => {

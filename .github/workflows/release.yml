@@ -3,6 +3,12 @@ name: Release (release-please)
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Version from package.json to validate and publish through trusted publishing
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -19,11 +25,24 @@ jobs:
     name: Release PR
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      release_created: ${{ steps.manual.outputs.release_created || steps.release.outputs.release_created }}
+      tag_name: ${{ steps.manual.outputs.tag_name || steps.release.outputs.tag_name }}
     steps:
+      - uses: actions/checkout@v6
+        if: github.event_name == 'workflow_dispatch'
+      - name: Validate the manually requested package version
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          release_version="${{ inputs.release_version }}"
+          package_version="$(node -p "require('./package.json').version")"
+          test -n "$release_version"
+          test "$release_version" = "$package_version"
+          echo "release_created=true" >> "$GITHUB_OUTPUT"
+          echo "tag_name=v${package_version}" >> "$GITHUB_OUTPUT"
       - uses: googleapis/release-please-action@v5
         id: release
+        if: github.event_name == 'push'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
@@ -161,9 +180,9 @@ jobs:
           npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --access public --tag latest
 
   attach-sbom:
-    name: Attach SBOM to GitHub Release
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    name: Finalize GitHub Release and attach SBOM
+    needs: [release-please, publish-npm]
+    if: ${{ needs.release-please.outputs.release_created == 'true' && needs.publish-npm.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -183,6 +202,7 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
+          generate_release_notes: ${{ github.event_name == 'workflow_dispatch' }}
           files: |
             sbom/atemporal.spdx.json
             sbom/atemporal.cdx.json
