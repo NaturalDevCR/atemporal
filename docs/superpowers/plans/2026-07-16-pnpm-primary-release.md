@@ -193,7 +193,43 @@ Expected: every command passes; all six budgets pass.
 
 Commit: `git add README.md CONTRIBUTING.md docs/guide/contributing.md docs/adr/0007-supply-chain-hardening.md docs/public/llms.txt scripts/__tests__/pnpm-documentation.test.cjs && git commit -m "docs: make pnpm and trusted publishing primary"`
 
-### Task 5: Triage, test, and resolve all open PRs
+### Task 5: Remediate all open Dependabot alerts without weakening fixtures
+
+**Files:**
+- Modify: `pnpm-lock.yaml` when the root advisory is resolved.
+- Modify: `integration/extended/nextjs/package-lock.json` when the PostCSS advisory is resolved.
+- Modify: `package.json` only if an exact `overrides` entry is necessary and supported by the resolved graph.
+- Test: `scripts/__tests__/package-manager-contract.test.cjs`, packed artifact contracts, extended fixtures, and `pnpm audit --audit-level=high`.
+
+**Interfaces:** Consumes Dependabot alerts #40 (`@babel/core`, low, development), #42 (`js-yaml`, moderate, development), and #43 (`postcss`, moderate, Next fixture). Produces locks whose advisory paths are resolved while the fixture still uses its intended package manager.
+
+- [ ] **Step 1: Capture the authoritative advisory chains**
+
+Run: `gh api --paginate repos/NaturalDevCR/atemporal/dependabot/alerts --jq '.[] | select(.state == "open") | {number,dependency:.dependency.package.name,manifest_path,scope,severity:.security_advisory.severity,ghsa:.security_advisory.ghsa_id}'`
+
+Expected: exactly three open rows matching alerts #40, #42, and #43, including the manifest path from the screenshot.
+
+- [ ] **Step 2: Prove each vulnerable dependency path before changing it**
+
+Run: `pnpm why @babel/core && pnpm why js-yaml && npm --prefix integration/extended/nextjs ls postcss --all`
+
+Expected: root paths explain `@babel/core` and `js-yaml`; the Next fixture path explains PostCSS. Do not use an override until the parent path is known.
+
+- [ ] **Step 3: Apply the narrowest patched resolution**
+
+Regenerate the root lock with `pnpm update @babel/core js-yaml --latest` only if the parent semver ranges permit the patched versions. Regenerate the Next fixture lock with `npm --prefix integration/extended/nextjs update postcss --package-lock-only --ignore-scripts`. If a parent range blocks the patched version, update that direct parent or add a documented root pnpm override with the exact non-vulnerable version; never edit integrity hashes manually.
+
+- [ ] **Step 4: Verify the security and compatibility result**
+
+Run: `pnpm install --frozen-lockfile && pnpm audit --audit-level=high && npm --prefix integration/extended/nextjs ci --ignore-scripts && npm --prefix integration/extended/nextjs audit --audit-level=high && pnpm run pack:artifact && pnpm run fixtures:contract && pnpm run fixtures:extended`
+
+Expected: no open alert dependency remains in the affected lockfiles and all tarball/Next production contracts pass.
+
+- [ ] **Step 5: Commit alert remediation separately**
+
+Commit: `git add package.json pnpm-lock.yaml integration/extended/nextjs/package-lock.json && git commit -m "fix: resolve open dependency advisories"`
+
+### Task 6: Triage, test, and resolve all open PRs
 
 **Files:**
 - Verify: PRs #7, #9, #10, #11, #13, #15, #16, #17, #21, #22, #23
