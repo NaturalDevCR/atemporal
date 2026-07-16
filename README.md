@@ -1,8 +1,8 @@
 # Atemporal
 
 ![npm](https://img.shields.io/npm/v/atemporal)
+[![npm downloads](https://img.shields.io/npm/dm/atemporal.svg)](https://www.npmjs.com/package/atemporal)
 ![license](https://img.shields.io/npm/l/atemporal)
-![bundle size](https://img.shields.io/bundlephobia/min/atemporal)
 
 Atemporal is a modern, Temporal-powered date-time library with a familiar
 Day.js-inspired API. Its principal representation is `Temporal.ZonedDateTime`,
