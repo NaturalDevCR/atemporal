@@ -31,6 +31,14 @@ test('Stryker resolves plugins through pnpm', () => {
   ]);
 });
 
+test('Jest scripts enable the Node VM modules required by lazy plugin imports', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+  for (const scriptName of ['test', 'test:ci', 'test:performance']) {
+    expect(manifest.scripts[scriptName]).toMatch(/^node --experimental-vm-modules \.\/node_modules\/jest\/bin\/jest\.js /);
+  }
+});
+
 test('lockfiles contain the patched versions for the open Dependabot advisories', () => {
   const rootLock = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
