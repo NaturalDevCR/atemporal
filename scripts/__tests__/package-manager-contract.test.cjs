@@ -8,20 +8,21 @@ const root = path.resolve(__dirname, '..', '..');
 test('root development is pinned to pnpm', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-  expect(manifest.packageManager).toBe('pnpm@10.34.5');
+  expect(manifest.packageManager).toBe('pnpm@11.13.1');
   expect(fs.existsSync(path.join(root, 'pnpm-lock.yaml'))).toBe(true);
   expect(fs.existsSync(path.join(root, 'package-lock.json'))).toBe(false);
 });
 
-test('workflow pnpm setup stays compatible with the Node 18 support matrix', () => {
+test('workflow pnpm setup stays compatible with the supported Node 22+ matrix', () => {
   const workflowRoot = path.join(root, '.github', 'workflows');
   const workflows = fs.readdirSync(workflowRoot)
     .filter((name) => name.endsWith('.yml'))
     .map((name) => fs.readFileSync(path.join(workflowRoot, name), 'utf8'))
     .join('\n');
 
-  expect(workflows).not.toContain('version: 11.13.1');
-  expect((workflows.match(/version: 10\.34\.5/g) || []).length).toBeGreaterThan(0);
+  expect(workflows).not.toContain('version: 10.34.5');
+  expect((workflows.match(/version: 11\.13\.1/g) || []).length).toBeGreaterThan(0);
+  expect(workflows).toContain('node-version: [22.x, 24.x, 26.x]');
 });
 
 test('pnpm permits only the reviewed dependency build scripts', () => {

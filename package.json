@@ -1,7 +1,7 @@
 {
   "name": "atemporal",
   "version": "1.4.3",
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@11.13.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

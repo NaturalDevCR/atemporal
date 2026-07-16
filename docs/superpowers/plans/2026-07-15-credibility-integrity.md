@@ -6,7 +6,7 @@
 
 **Architecture:** Official plugins carry explicit symbol metadata that the factory reads after `extend()`, so direct and lazy installation share one authoritative state. A single packed tarball flows from build through every fixture, size report, benchmark, and release publication. PR CI runs the small contractual matrix, while scheduled and release workflows rerun extended bundler/SSR and performance validation on a freshly packed artifact.
 
-**Tech Stack:** TypeScript 5.4.5 and 7.0.2 compatibility checks, Jest 30 with ts-jest, tsup 8, Node 18/20/22, npm pack, esbuild canonical bundle metafiles, Vite 8, Webpack 5, Next.js 16, GitHub Actions, VitePress.
+**Tech Stack:** TypeScript 5.4.5 and 7.0.2 compatibility checks, Jest 30 with ts-jest, tsup 8, Node 22/24/26, npm pack, esbuild canonical bundle metafiles, Vite 8, Webpack 5, Next.js 16, GitHub Actions, VitePress.
 
 ## Global Constraints
 
@@ -695,7 +695,7 @@ In `benchmarks/bench.ts`, run each named operation once as warm-up, then run it 
 
 - [ ] **Step 4: Evaluate each path independently**
 
-Refactor `perf-gate.js` so `evaluateGate(current, baseline)` computes `current[path].medianMs / baseline[path].medianMs`. Use `ratio > 1.25` as failure; a ratio exactly `1.25` passes. Preserve table output but print median, min, max, p95, median absolute deviation, baseline median, allowed median, ratio, and status. Recreate `benchmarks/baseline.json` from a seven-sample run on `ubuntu-24.04`, `x64`, Node `20.19.0`, 100,000 operations per sample, one warm-up per path, and a 15-minute job timeout. Preserve all of those fields, the image version, schema version, and tolerance metadata.
+Refactor `perf-gate.js` so `evaluateGate(current, baseline)` computes `current[path].medianMs / baseline[path].medianMs`. Use `ratio > 1.25` as failure; a ratio exactly `1.25` passes. Preserve table output but print median, min, max, p95, median absolute deviation, baseline median, allowed median, ratio, and status. Recreate `benchmarks/baseline.json` from a seven-sample run on `ubuntu-24.04`, `x64`, Node `24.12.0`, 100,000 operations per sample, one warm-up per path, and a 15-minute job timeout. Preserve all of those fields, the image version, schema version, and tolerance metadata.
 
 - [ ] **Step 5: Verify per-path regression and a real benchmark**
 

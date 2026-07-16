@@ -137,7 +137,7 @@ bundle size budgets are contractual gates; packed-tarball and other application
 bundle measurements are diagnostic context in the generated size report.
 
 The performance regression gate runs in the weekly hosted Ubuntu 24.04/x64,
-Node 20.19.0 validation job and again before a release. It compares hot-path
+Node 24.12.0 validation job and again before a release. It compares hot-path
 medians to a reviewed baseline. The manual hosted-baseline capture workflow
 uploads a proposed schema baseline for human review; CI never writes or commits
 a baseline. Every release publishes the exact tarball that its release-validation

@@ -175,7 +175,7 @@ describe('release artifact workflow contracts', () => {
 
     expect(capture).toContain('workflow_dispatch:');
     expect(capture).toContain('runs-on: ubuntu-24.04');
-    expect(capture).toContain("node-version: '20.19.0'");
+    expect(capture).toContain("node-version: '24.12.0'");
     expect(capture).toContain('timeout-minutes: 15');
     expect(capture).toContain('artifacts/proposed-performance-baseline.json');
     expect(capture).toContain('proposed-hosted-performance-baseline');

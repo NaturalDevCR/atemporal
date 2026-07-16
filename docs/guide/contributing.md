@@ -34,7 +34,7 @@ and canonical application-bundle budgets. Packed-tarball and other
 application-bundle values in the size report are diagnostic measurements, not
 additional release budgets.
 
-The weekly Ubuntu 24.04/x64 Node 20.19.0 validation job runs the performance
+The weekly Ubuntu 24.04/x64 Node 24.12.0 validation job runs the performance
 gate. When a maintainer needs a new baseline, the manual
 `hosted-baseline-capture.yml` workflow creates and uploads a proposed schema
 baseline on that same host for human review. No workflow automatically writes

@@ -60,7 +60,7 @@ atemporal/
 
 ### Prerequisites
 
-- **Node.js** 18.x or later (CI tests Node 18, 20, and 22)
+- **Node.js** 22.13 or later for development (CI tests Node 22, 24, and 26)
 - **Corepack** (included with supported Node releases) to activate the pinned pnpm version
 - A POSIX-compliant shell (macOS, Linux, WSL)
 
