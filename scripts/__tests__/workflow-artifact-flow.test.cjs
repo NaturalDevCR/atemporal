@@ -64,6 +64,12 @@ describe('release artifact workflow contracts', () => {
     expect(mutation).not.toContain('pnpm run test:mutation -- --dryRunOnly');
   });
 
+  test('Jest flags pass directly through pnpm scripts', () => {
+    const workflows = ['ci.yml', 'integration.yml', 'release.yml'].map(workflow).join('\n');
+
+    expect(workflows).not.toContain('pnpm run test:ci -- --');
+  });
+
   test('release validates and publishes its single packed artifact', () => {
     const release = workflow('release.yml');
 

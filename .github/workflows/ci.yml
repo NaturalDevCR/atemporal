@@ -95,7 +95,7 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=4096'
           TZ: UTC
           CI: 'true'
-        run: pnpm run test:ci -- --verbose
+        run: pnpm run test:ci --verbose
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})

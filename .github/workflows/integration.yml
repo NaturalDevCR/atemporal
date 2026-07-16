@@ -33,7 +33,7 @@ jobs:
       - name: Unit and coverage gates
         id: unit
         continue-on-error: true
-        run: pnpm run test:ci -- --runInBand
+        run: pnpm run test:ci --runInBand
       - name: Contract fixture gate
         id: contracts
         if: always() && steps.pack.outcome == 'success'
