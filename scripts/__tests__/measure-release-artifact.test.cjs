@@ -95,8 +95,14 @@ describe('release artifact measurement report', () => {
 
   test('installs canonical bundle dependencies with its pinned pnpm lockfile', () => {
     const source = fs.readFileSync(path.join(projectRoot, 'scripts', 'measure-release-artifact.cjs'), 'utf8');
+    const fixturePackage = JSON.parse(fs.readFileSync(path.join(projectRoot, 'integration', 'canonical-bundle', 'package.json'), 'utf8'));
 
-    expect(source).toContain('jsbiPackage');
+    expect(fixturePackage.dependencies).toMatchObject({
+      '@js-temporal/polyfill': '0.5.1',
+      esbuild: '0.25.12',
+      jsbi: '4.3.2',
+    });
+    expect(fixturePackage.packageManager).toBe('pnpm@11.13.1');
     expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force']");
     expect(source).not.toContain("['ci', '--ignore-scripts']");
   });

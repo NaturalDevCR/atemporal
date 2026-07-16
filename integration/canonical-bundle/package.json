@@ -2,10 +2,12 @@
   "name": "atemporal-canonical-bundle-fixture",
   "private": true,
   "version": "1.0.0",
+  "packageManager": "pnpm@11.13.1",
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",
     "atemporal": "link:../..",
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "jsbi": "4.3.2"
   },
   "overrides": {
     "@js-temporal/polyfill": "0.5.1"

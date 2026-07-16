@@ -17,6 +17,9 @@ importers:
       esbuild:
         specifier: 0.25.12
         version: 0.25.12
+      jsbi:
+        specifier: 4.3.2
+        version: 4.3.2
 
 packages:
 
