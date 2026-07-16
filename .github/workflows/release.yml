@@ -74,7 +74,7 @@ jobs:
         id: benchmark
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 | tee bench-out.json
+        run: node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 > bench-out.json
       - name: Gate against the reviewed baseline
         id: performance
         if: always() && steps.benchmark.outcome == 'success'
@@ -141,7 +141,7 @@ jobs:
           name: release-package-artifact
           path: artifacts
       - name: Verify validated artifact metadata
-        run: node -e "const path = require('./artifacts/package-artifact.json').path; if (!path || !path.startsWith('artifacts/')) process.exit(1)"
+        run: node -e "const path = require('./artifacts/package-artifact.json').path; if (!path || !path.startsWith('./artifacts/')) process.exit(1)"
       - name: Publish the validated tarball with provenance + OIDC
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

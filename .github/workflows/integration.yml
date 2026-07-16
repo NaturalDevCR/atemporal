@@ -52,7 +52,7 @@ jobs:
         id: benchmark
         if: always() && steps.build.outcome == 'success'
         continue-on-error: true
-        run: node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 | tee bench-out.json
+        run: node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 > bench-out.json
       - name: Gate against the reviewed baseline
         id: performance
         if: always() && steps.benchmark.outcome == 'success'

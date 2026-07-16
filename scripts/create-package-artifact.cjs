@@ -111,7 +111,7 @@ function createPackageArtifact() {
 
   const artifact = {
     filename: packRecord.filename,
-    path: path.relative(projectRoot, tarballPath),
+    path: `./${path.relative(projectRoot, tarballPath)}`,
     sha512: sha512(tarballPath),
     size: packRecord.size,
     unpackedSize: packRecord.unpackedSize,

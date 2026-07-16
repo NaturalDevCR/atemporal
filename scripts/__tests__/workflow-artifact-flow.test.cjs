@@ -3,9 +3,24 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..', '..');
 const workflow = (name) => fs.readFileSync(path.join(root, '.github', 'workflows', name), 'utf8');
+const script = (name) => fs.readFileSync(path.join(root, 'scripts', name), 'utf8');
 
 function matches(text, expression) {
   return text.match(expression) || [];
+}
+
+function jobBlock(workflowText, jobName) {
+  const start = workflowText.indexOf(`  ${jobName}:`);
+
+  if (start === -1) {
+    throw new Error(`Missing ${jobName} job`);
+  }
+
+  const remaining = workflowText.slice(start + 1);
+  const nextJobOffset = remaining.search(/\n {2}\S/);
+  const nextJob = nextJobOffset === -1 ? -1 : start + 1 + nextJobOffset;
+
+  return workflowText.slice(start, nextJob === -1 ? undefined : nextJob);
 }
 
 describe('release artifact workflow contracts', () => {
@@ -18,6 +33,22 @@ describe('release artifact workflow contracts', () => {
     expect(release.indexOf("require('./artifacts/package-artifact.json').path")).toBeLessThan(
       release.indexOf('npm publish "$(node -p'),
     );
+  });
+
+  test('publish job only publishes the metadata-selected local tarball', () => {
+    const publish = jobBlock(workflow('release.yml'), 'publish-npm');
+
+    expect(publish).not.toMatch(/npm run build|npm pack/);
+    expect(publish).toContain(
+      'npm publish "$(node -p "require(\'./artifacts/package-artifact.json\').path")" --provenance --access public --tag latest',
+    );
+    expect(matches(publish, /npm publish /g)).toHaveLength(1);
+  });
+
+  test('package metadata emits an npm-valid local artifact path', () => {
+    const producer = script('create-package-artifact.cjs');
+
+    expect(producer).toContain("path: `./${path.relative(projectRoot, tarballPath)}`");
   });
 
   test('pull requests gate packed-artifact contracts but defer performance gating', () => {
@@ -38,6 +69,8 @@ describe('release artifact workflow contracts', () => {
     expect(integration).toContain('npm run bench:gate');
     expect(integration).toContain('reviewed-performance-baseline');
     expect(integration).not.toMatch(/(?:cp|mv|tee)\s+.*benchmarks\/baseline\.json/);
+    expect(integration).toMatch(/set -o pipefail|>\s*bench-out\.json/);
+    expect(workflow('release.yml')).toMatch(/set -o pipefail|>\s*bench-out\.json/);
   });
 
   test('manual hosted baseline capture is pinned and cannot commit a baseline', () => {

@@ -45,6 +45,9 @@ function readArtifactPath() {
   if (!artifact || typeof artifact.path !== 'string') {
     throw new Error(`Artifact metadata must contain one string path: ${artifactPath}`);
   }
+  if (!artifact.path.startsWith('./artifacts/')) {
+    throw new Error(`Artifact metadata path must be an npm-valid local artifact path: ${artifact.path}`);
+  }
 
   const tarballPath = path.resolve(projectRoot, artifact.path);
   if (!fs.existsSync(tarballPath)) {
