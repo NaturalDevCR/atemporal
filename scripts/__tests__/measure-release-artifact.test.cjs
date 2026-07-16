@@ -96,7 +96,8 @@ describe('release artifact measurement report', () => {
   test('installs canonical bundle dependencies with its pinned pnpm lockfile', () => {
     const source = fs.readFileSync(path.join(projectRoot, 'scripts', 'measure-release-artifact.cjs'), 'utf8');
 
-    expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts']");
+    expect(source).toContain('jsbiPackage');
+    expect(source).toContain("['--ignore-workspace', 'install', '--frozen-lockfile', '--ignore-scripts', '--force']");
     expect(source).not.toContain("['ci', '--ignore-scripts']");
   });
 
