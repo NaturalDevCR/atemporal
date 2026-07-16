@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20.19.0'
           cache: pnpm
@@ -26,7 +26,7 @@ jobs:
           node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000 > artifacts/proposed-performance-baseline.json
       - name: Upload proposed hosted performance baseline for human review
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: proposed-hosted-performance-baseline
           path: artifacts/proposed-performance-baseline.json

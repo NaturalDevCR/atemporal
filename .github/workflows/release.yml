@@ -22,7 +22,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -36,8 +36,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20.19.0'
           cache: pnpm
@@ -83,7 +83,7 @@ jobs:
         run: pnpm run bench:gate
       - name: Upload release package artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-package-artifact
           path: |
@@ -93,7 +93,7 @@ jobs:
           retention-days: 90
       - name: Upload release validation evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-validation-evidence
           path: |
@@ -106,7 +106,7 @@ jobs:
           retention-days: 90
       - name: Upload explicit reviewed performance baseline-capture artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reviewed-performance-baseline-capture
           path: bench-out.json
@@ -131,15 +131,15 @@ jobs:
     runs-on: ubuntu-24.04
     environment: npm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '24.12.0'
           registry-url: https://registry.npmjs.org
       - name: Download the validated package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-package-artifact
           path: artifacts
@@ -160,10 +160,10 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           cache: pnpm
@@ -171,7 +171,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: mkdir -p sbom && pnpm sbom --sbom-format=spdx --lockfile-only --out sbom/atemporal.spdx.json
       - run: pnpm sbom --sbom-format=cyclonedx --lockfile-only --out sbom/atemporal.cdx.json
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: |

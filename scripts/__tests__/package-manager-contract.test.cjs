@@ -21,6 +21,16 @@ test('pnpm permits only the reviewed dependency build scripts', () => {
   expect(workspace).toMatch(/unrs-resolver:\s*true/);
 });
 
+test('Stryker resolves plugins through pnpm', () => {
+  const stryker = JSON.parse(fs.readFileSync(path.join(root, 'stryker.config.json'), 'utf8'));
+
+  expect(stryker.packageManager).toBe('pnpm');
+  expect(stryker.plugins).toEqual([
+    '@stryker-mutator/jest-runner',
+    '@stryker-mutator/typescript-checker',
+  ]);
+});
+
 test('lockfiles contain the patched versions for the open Dependabot advisories', () => {
   const rootLock = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));

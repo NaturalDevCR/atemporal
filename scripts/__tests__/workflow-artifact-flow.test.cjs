@@ -36,6 +36,34 @@ describe('release artifact workflow contracts', () => {
     }
   });
 
+  test('repository workflows use the reviewed GitHub Actions major versions', () => {
+    const workflows = fs.readdirSync(path.join(root, '.github', 'workflows'))
+      .filter((name) => name.endsWith('.yml'))
+      .map(workflow)
+      .join('\n');
+
+    for (const action of [
+      'actions/checkout@v6',
+      'actions/setup-node@v6',
+      'actions/upload-artifact@v7',
+      'actions/download-artifact@v8',
+      'codecov/codecov-action@v6',
+      'gitleaks/gitleaks-action@v3',
+      'actions/github-script@v9',
+      'googleapis/release-please-action@v5',
+      'softprops/action-gh-release@v3',
+    ]) {
+      expect(workflows).toContain(action);
+    }
+  });
+
+  test('mutation smoke check passes Stryker flags directly through pnpm', () => {
+    const mutation = workflow('mutation.yml');
+
+    expect(mutation).toContain('pnpm run test:mutation --dryRunOnly');
+    expect(mutation).not.toContain('pnpm run test:mutation -- --dryRunOnly');
+  });
+
   test('release validates and publishes its single packed artifact', () => {
     const release = workflow('release.yml');
 

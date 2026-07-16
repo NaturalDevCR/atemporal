@@ -10,8 +10,8 @@ const config: Config = {
     transform: {
         '^.+\\.tsx?$': ['ts-jest', {
             tsconfig: {
-                module: 'CommonJS',
-                moduleResolution: 'Node',
+                module: 'Node16',
+                moduleResolution: 'Node16',
             },
         }],
     },
