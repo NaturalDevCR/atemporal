@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
@@ -84,6 +87,9 @@ jobs:
         node-version: [18.x, 20.x, 22.x]
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
@@ -107,6 +113,9 @@ jobs:
         typescript-version: ['5.4.5', '7.0.2']
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
@@ -143,6 +152,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
@@ -181,6 +193,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
@@ -197,6 +212,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}

@@ -36,6 +36,18 @@ describe('release artifact workflow contracts', () => {
     }
   });
 
+  test('pnpm is installed before setup-node initializes a pnpm cache', () => {
+    const workflows = fs.readdirSync(path.join(root, '.github', 'workflows'))
+      .filter((name) => name.endsWith('.yml'))
+      .map(workflow)
+      .join('\n');
+
+    const cacheUses = matches(workflows, /cache: pnpm/g);
+
+    expect(cacheUses.length).toBeGreaterThan(0);
+    expect(matches(workflows, /pnpm\/action-setup@v4/g)).toHaveLength(cacheUses.length);
+  });
+
   test('repository workflows use the reviewed GitHub Actions major versions', () => {
     const workflows = fs.readdirSync(path.join(root, '.github', 'workflows'))
       .filter((name) => name.endsWith('.yml'))
@@ -45,6 +57,7 @@ describe('release artifact workflow contracts', () => {
     for (const action of [
       'actions/checkout@v6',
       'actions/setup-node@v6',
+      'pnpm/action-setup@v4',
       'actions/upload-artifact@v7',
       'actions/download-artifact@v8',
       'codecov/codecov-action@v6',
