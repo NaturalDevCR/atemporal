@@ -25,9 +25,9 @@ A clear and concise description of what this PR does.
 ## Checklist
 
 - [ ] My code follows the project's [style guide](../CONTRIBUTING.md#linting-and-type-checking)
-- [ ] I have run `npx tsc --noEmit` (zero errors)
-- [ ] I have run `npm test` (all suites green)
-- [ ] I have run `npm run build` (no errors)
+- [ ] I have run `pnpm exec tsc --noEmit` (zero errors)
+- [ ] I have run `pnpm run test` (all suites green)
+- [ ] I have run `pnpm run build` (no errors)
 - [ ] I have added JSDoc comments to new public APIs
 - [ ] I have updated the [CHANGELOG](../CHANGELOG.md) (if user-facing)
 - [ ] I have added an entry to the docs (if user-facing)

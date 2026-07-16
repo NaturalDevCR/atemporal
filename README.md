@@ -64,6 +64,8 @@ For full guides and API reference, please visit:
 
 ```bash
 npm install atemporal
+# or
+pnpm add atemporal
 ```
 
 ## Quick Start

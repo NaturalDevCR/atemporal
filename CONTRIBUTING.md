@@ -60,8 +60,8 @@ atemporal/
 
 ### Prerequisites
 
-- **Node.js** 18.x or 20.x (CI is run on both)
-- **npm** 9+ (or pnpm/yarn — the lockfile is npm-only)
+- **Node.js** 18.x or later (CI tests Node 18, 20, and 22)
+- **Corepack** (included with supported Node releases) to activate the pinned pnpm version
 - A POSIX-compliant shell (macOS, Linux, WSL)
 
 ### First-time setup
@@ -69,7 +69,8 @@ atemporal/
 ```bash
 git clone https://github.com/NaturalDevCR/atemporal.git
 cd atemporal
-npm install
+corepack enable
+pnpm install --frozen-lockfile
 ```
 
 This installs the one runtime dependency (`@js-temporal/polyfill`)
@@ -78,9 +79,9 @@ plus the dev toolchain (Jest, TypeScript, tsup, VitePress).
 ### Verifying the install
 
 ```bash
-npm test                  # runs the full Jest suite (~13s)
-npx tsc --noEmit         # type-checks the whole project (must be 0 errors)
-npm run build             # builds CJS+ESM bundles to dist/
+pnpm run test             # runs the full Jest suite
+pnpm exec tsc --noEmit    # type-checks the whole project (must be 0 errors)
+pnpm run build            # builds CJS+ESM bundles to dist/
 ```
 
 All three commands should succeed with **zero errors and zero warnings**.
@@ -112,10 +113,10 @@ All three commands should succeed with **zero errors and zero warnings**.
 ### Local pre-PR checklist
 
 ```bash
-npm test                  # 99 suites, ~3000 tests, all green
-npx tsc --noEmit         # 0 errors
-npm run build             # 0 errors, dist/ produced
-npm run docs:build        # VitePress builds cleanly
+pnpm run test             # all suites green
+pnpm exec tsc --noEmit    # 0 errors
+pnpm run build            # 0 errors, dist/ produced
+pnpm run docs:build       # VitePress builds cleanly
 ```
 
 If any of these fail, the PR will not be merged.
@@ -126,11 +127,11 @@ The project uses **Jest** with `ts-jest`. Test files live in
 `src/__tests__/` and mirror the source structure.
 
 ```bash
-npm test                            # full suite with coverage
-npm test -- --watch                 # watch mode
-npm test -- path/to/file.test.ts    # single file
-npm run test:ci                     # CI mode (no performance tests)
-npm run test:performance            # performance tests only
+pnpm run test                           # full suite with coverage
+pnpm run test -- --watch                # watch mode
+pnpm run test -- path/to/file.test.ts   # single file
+pnpm run test:ci                        # CI mode (no performance tests)
+pnpm run test:performance               # performance tests only
 ```
 
 ### Coverage thresholds
@@ -151,7 +152,7 @@ than a test that just calls a function to bump the %.
 
 ## Linting and Type Checking
 
-- **TypeScript** is the source of truth for types. Run `npx tsc --noEmit`
+- **TypeScript** is the source of truth for types. Run `pnpm exec tsc --noEmit`
   before every commit.
 - We do not currently run ESLint or Prettier. Code style is enforced
   by code review and the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html).
@@ -172,20 +173,22 @@ than a test that just calls a function to bump the %.
   in `docs/adr/0000-template.md`.
 - **Build & preview locally**:
   ```bash
-  npm run docs:dev    # live-reload preview
-  npm run docs:build  # static build to docs/.vitepress/dist
+  pnpm run docs:dev    # live-reload preview
+  pnpm run docs:build  # static build to docs/.vitepress/dist
   ```
 
 ## Releasing
 
-This project uses [standard-version](https://github.com/conventional-changelog/standard-version) for releases.
+This project uses Release Please for release PRs and npm trusted publishing for
+the final registry operation.
 
-1. Merge all PRs intended for the release to `main`.
-2. Run `npm run release -- --release-as <major|minor|patch>`.
-3. Push the generated tag: `git push --follow-tags origin main`.
-4. CI publishes to npm via the `prepublishOnly` script.
+1. Merge the reviewed release PR to `main`.
+2. `release.yml` builds one tarball and runs all release gates against it.
+3. GitHub Actions publishes that exact tarball through the configured npm OIDC
+   trusted publisher and the `npm` environment.
 
-The CHANGELOG is auto-generated from conventional commits.
+Maintainers do not run a local publish command and no npm access token is
+stored in the repository or workflow configuration.
 
 ## Reporting Bugs
 

@@ -2,6 +2,20 @@
 
 Thank you for your interest in contributing to Atemporal!
 
+## Maintainer setup
+
+Repository development uses the pinned pnpm version through Corepack:
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run test
+```
+
+Published consumers can continue to use either `npm install atemporal` or
+`pnpm add atemporal`. Releases are published by `release.yml` through npm
+trusted publishing, never through a stored npm token.
+
 ## How to Contribute
 
 - **Report Bugs**: Use GitHub Issues to report bugs.

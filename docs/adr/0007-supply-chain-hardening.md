@@ -38,30 +38,30 @@ mature, GitHub-native tools that satisfy each requirement:
 
 | Gap | Tool | Where |
 | --- | --- | --- |
-| Secret scanning | `gitleaks/gitleaks-action@v2` | `.github/workflows/ci.yml` (`gitleaks` job) |
-| Dependency audit | `npm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
-| SBOM | `npm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
-| Provenance | `npm publish --provenance` (OIDC) | `.github/workflows/release.yml` |
+| Secret scanning | `gitleaks/gitleaks-action@v3` | `.github/workflows/ci.yml` (`gitleaks` job) |
+| Dependency audit | `pnpm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
+| SBOM | `pnpm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
+| Provenance | npm trusted publishing (OIDC) | `.github/workflows/release.yml` |
 | Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
 | Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Weekly integration validation and release validation |
-| Auto versioning | `googleapis/release-please-action@v4` | `.github/workflows/release.yml` |
+| Auto versioning | `googleapis/release-please-action@v5` | `.github/workflows/release.yml` |
 | License compliance | `license-checker` + `scripts/check-licenses.js` | `.github/workflows/ci.yml` (`license-check` job) |
 | Doc link check | `lycheeverse/lychee-action@v2` | `.github/workflows/ci.yml` (`doc-links` job) |
 | Auto dependency updates | `.github/dependabot.yml` (Dependabot) | GitHub-native |
-| Coverage trend | `codecov/codecov-action@v4` | `.github/workflows/ci.yml` (`coverage` job) |
+| Coverage trend | `codecov/codecov-action@v6` | `.github/workflows/ci.yml` (`coverage` job) |
 
 ### Why these specific tools
 
 - **gitleaks over GitHub native secret scanning.** Gitleaks is a strict
   superset of GitHub's secret scanner, has zero false-positive tooling
   we'd have to manage, and integrates with SARIF for the Security tab.
-- **`npm audit --audit-level=high` + OSV-Scanner.** `npm audit` covers the
-  npm registry view; OSV-Scanner is registry-agnostic and surfaces
+- **`pnpm audit --audit-level=high` + OSV-Scanner.** pnpm reads the committed
+  root lockfile; OSV-Scanner is registry-agnostic and surfaces
   GHSA-advisories not yet in npm's mirror. Both are kept; one is the
   primary gate, the other is the cross-check.
-- **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the npm
+- **SPDX + CycloneDX.** SPDX is the de-facto SBOM standard for the Node.js
   ecosystem; CycloneDX is what most enterprise SCA tools consume. We emit
-  both with `npm sbom` and attach both files to the GitHub Release.
+  both with `pnpm sbom` and attach both files to the GitHub Release.
 - **Stryker for mutation.** Stryker integrates with Jest, supports
   TypeScript projects, and is actively maintained. We do not run the
   full mutation suite on every PR or push (too slow for a blocking CI
@@ -73,8 +73,9 @@ mature, GitHub-native tools that satisfy each requirement:
   a human to run the CLI and push tags. `release-please` turns the whole
   release flow into a PR review — version bump, CHANGELOG diff, and
   semantic analysis are all visible in the PR before any tag is created.
-  It also pairs naturally with `--provenance`, which `standard-version`
-  cannot trigger.
+  It also pairs naturally with npm trusted publishing, which validates the
+  GitHub Actions OIDC identity and records provenance without a long-lived
+  npm token.
 - **Dependabot over Renovate.** Dependabot is GitHub-native, requires no
   PAT or self-hosted runner, and groups related updates so we get one PR
   for `@js-temporal/polyfill` updates, not five. Renovate would buy us
@@ -140,7 +141,7 @@ mature, GitHub-native tools that satisfy each requirement:
 - **Dependabot needs a labels workflow.** The `dependencies`,
   `automated`, `ci` labels must exist (they already do, see
   `.github/ISSUE_TEMPLATE/config.yml` — verified, no action needed).
-- **`npm audit` may flag transitive dev deps.** We pass
+- **`pnpm audit` may flag transitive dev deps.** We pass
   `--ignore-scripts` to the install in the audit job to avoid
   postinstall side effects from flagged packages, but the audit
   itself is run against the full lockfile. False positives in dev
