@@ -20,3 +20,17 @@ test('pnpm permits only the reviewed dependency build scripts', () => {
   expect(workspace).toMatch(/esbuild:\s*true/);
   expect(workspace).toMatch(/unrs-resolver:\s*true/);
 });
+
+test('lockfiles contain the patched versions for the open Dependabot advisories', () => {
+  const rootLock = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
+  const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
+
+  expect(rootLock).not.toContain('js-yaml@3.14.2');
+  expect(rootLock).not.toContain("'@babel/core@7.25.9'");
+
+  for (const [location, metadata] of Object.entries(nextLock.packages)) {
+    if (location.endsWith('/postcss')) {
+      expect(metadata.version).toMatch(/^8\.5\.(1[0-9]|[2-9][0-9])$/);
+    }
+  }
+});
