@@ -22,11 +22,11 @@ jobs:
     name: Build and pack the validation artifact
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
           cache: pnpm
@@ -86,11 +86,11 @@ jobs:
       matrix:
         node-version: [22.x, 24.x, 26.x]
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
@@ -118,11 +118,11 @@ jobs:
       matrix:
         typescript-version: ['5.4.5', '7.0.2']
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
           cache: pnpm
@@ -157,11 +157,11 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
           cache: pnpm
@@ -175,7 +175,7 @@ jobs:
           CI: 'true'
         run: pnpm run test:ci
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
@@ -187,7 +187,7 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v3
@@ -199,11 +199,11 @@ jobs:
     name: Dependency audit (npm + OSV)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
           cache: pnpm
@@ -218,11 +218,11 @@ jobs:
     name: License compliance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.13.1
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION_DEFAULT }}
           cache: pnpm
@@ -234,7 +234,7 @@ jobs:
     name: Doc link check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: lycheeverse/lychee-action@v2
