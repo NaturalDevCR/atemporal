@@ -62,6 +62,10 @@ For full guides and API reference, please visit:
 
 ## Installation
 
+**Node.js 22 or newer is required.** Atemporal supports Node 22, 24, and 26;
+browser compatibility continues through Temporal runtime detection and the
+published bundler fixtures.
+
 ```bash
 npm install atemporal
 # or

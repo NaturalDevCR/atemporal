@@ -76,3 +76,10 @@ when their data model needs a deterministic failure policy.
   extensions that explicitly declare an ID.
 - Use `getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`
   instead of importing any `atemporal/src/...` implementation detail.
+
+## Preparing for v2
+
+v2 raises the Node.js floor from 18 to **22**. It supports Node 22, 24, and
+26. Browser support remains available through the packaged Temporal runtime
+detection path and bundler fixtures. Upgrade the runtime before adopting v2;
+the existing callable wrapper facade remains available during the migration.

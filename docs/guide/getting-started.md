@@ -6,6 +6,10 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 
 ## Installation
 
+> **Node.js 22 or newer is required.** The supported Node lines are 22, 24,
+> and 26. Browser consumers continue to use the packaged native/polyfill
+> runtime detection path.
+
 Install `atemporal` with your package manager:
 
 ```bash
