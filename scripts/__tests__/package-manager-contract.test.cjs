@@ -9,6 +9,7 @@ test('root development is pinned to pnpm', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
   expect(manifest.packageManager).toBe('pnpm@11.13.1');
+  expect(manifest.scripts['supply-chain']).toBe('pnpm run licenses:check && pnpm audit --audit-level=high');
   expect(fs.existsSync(path.join(root, 'pnpm-lock.yaml'))).toBe(true);
   expect(fs.existsSync(path.join(root, 'package-lock.json'))).toBe(false);
 });
@@ -67,8 +68,15 @@ test('Jest scripts enable the Node VM modules required by lazy plugin imports', 
 
 test('lockfiles contain the patched versions for the open Dependabot advisories', () => {
   const rootLock = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
+  const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
 
+  expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.16");
+  expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.2");
+  expect(workspace).toContain('fast-uri: 3.1.4');
+  expect(rootLock).not.toContain('brace-expansion@1.1.15');
+  expect(rootLock).not.toContain('brace-expansion@2.1.1');
+  expect(rootLock).not.toContain('fast-uri@3.1.3');
   expect(rootLock).not.toContain('js-yaml@3.14.2');
   expect(rootLock).not.toContain("'@babel/core@7.25.9'");
 
