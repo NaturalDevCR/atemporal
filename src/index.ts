@@ -63,6 +63,11 @@ export type {
   DateRange,
   OverlapResult,
   OverlapOptions,
+  AtemporalDisambiguation,
+  AtemporalOverflow,
+  ParseOptions,
+  AppliedExtension,
+  AtemporalDiagnostics,
 } from "./types";
 export {
   ATEMPORAL_ERROR_CODES,
@@ -142,6 +147,20 @@ atemporal.duration = (
  * The function signature is inferred from `TemporalWrapper.from`.
  */
 atemporal.from = TemporalWrapper.from;
+
+// The strict parsing implementation is introduced in the parsing adapter. This
+// compatibility implementation establishes the public surface while retaining
+// the existing factory behaviour until the strict DST contract is wired in.
+atemporal.parse = (input: DateInput, options = {}): TemporalWrapper =>
+  TemporalWrapper.from(input, options.timeZone);
+
+atemporal.tryParse = (input: DateInput, options = {}): TemporalWrapper | null => {
+  try {
+    return atemporal.parse(input, options);
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).

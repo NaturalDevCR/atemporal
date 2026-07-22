@@ -63,6 +63,40 @@ export type DateInput =
   | undefined
   | null;
 
+/** Controls how a local time in a daylight-saving gap or overlap is resolved. */
+export type AtemporalDisambiguation = 'compatible' | 'earlier' | 'later' | 'reject';
+
+/** Controls whether out-of-range calendar fields are constrained or rejected. */
+export type AtemporalOverflow = 'constrain' | 'reject';
+
+/** Options for the explicit strict parsing API. */
+export interface ParseOptions {
+  timeZone?: string;
+  disambiguation?: AtemporalDisambiguation;
+  overflow?: AtemporalOverflow;
+  preserveOriginalTimeZone?: boolean;
+}
+
+/** A public snapshot of an extension applied to the factory. */
+export interface AppliedExtension {
+  id: string | null;
+  kind: 'official' | 'third-party';
+}
+
+/** A serializable snapshot of runtime and cache diagnostics. */
+export interface AtemporalDiagnostics {
+  temporal: {
+    isNative: boolean;
+    environment: 'browser' | 'node' | 'unknown';
+    version: 'native' | 'polyfill';
+  };
+  caches: {
+    parsing: Record<string, unknown>;
+    formatting: Record<string, unknown>;
+    diff: Record<string, unknown>;
+  };
+}
+
 /**
  * Defines the units of time that can be used for durations and differences.
  */
@@ -167,6 +201,27 @@ export interface AtemporalFactory {
   (input?: DateInput, timeZone?: string): TemporalWrapper;
 
   from(input: DateInput, tz?: string): TemporalWrapper;
+
+  /** Parses input through the explicit strict parsing API. */
+  parse: (input: DateInput, options?: ParseOptions) => TemporalWrapper;
+
+  /** Parses input through the explicit strict parsing API, returning null on invalid input. */
+  tryParse: (input: DateInput, options?: ParseOptions) => TemporalWrapper | null;
+
+  /** Returns a serializable runtime and cache snapshot. */
+  getDiagnostics: () => AtemporalDiagnostics;
+
+  /** Clears diagnostic counters without changing configured defaults. */
+  resetDiagnostics: () => void;
+
+  /** Clears internal caches without changing configured defaults. */
+  clearCaches: () => void;
+
+  /** Prewarms supported caches for the supplied format patterns. */
+  prewarm: (options?: { formatPatterns?: string[] }) => void;
+
+  /** Returns every extension applied to the factory, in application order. */
+  getAppliedExtensions: () => AppliedExtension[];
 
   unix(timestampInSeconds: number): TemporalWrapper;
 
