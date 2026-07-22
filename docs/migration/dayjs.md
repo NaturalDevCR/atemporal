@@ -103,14 +103,11 @@ use `.toDate()` when an API requires a raw `Date`.
 - Duration and locale behavior should be reviewed against the matrix rather
   than inferred from method names.
 
-## Automatic migration
+## Large migrations
 
-For large codebases, you can use a codemod:
-
-```bash
-npx jscodeshift -t atemporal-codemod.js src/
-```
-
-The official codemod is published as `@atemporal/codemod`. See the
-[codemod repo](https://github.com/NaturalDevCR/atemporal-codemod) for
-details.
+There is no official Day.js-to-atemporal codemod. Migrate incrementally and
+review each batch against the [compatibility matrix](dayjs-compatibility.md).
+Routine import and construction changes can be searched and replaced, but do
+not automate time-zone parsing, DST disambiguation, duration handling, custom
+plugins, or raw `Date` conversions without semantic tests for the application
+being migrated.

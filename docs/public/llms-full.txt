@@ -3813,18 +3813,19 @@ raw `Date` conversions in the source-library guide. The Day.js matrix labels
 each reviewed item as compatible, semantically different, plugin-required,
 unsupported, or better served by a different approach.
 
-## Migration tools
+## Migrating a large codebase
 
-For large codebases, a codemod is available at
-[`@atemporal/codemod`](https://github.com/NaturalDevCR/atemporal-codemod):
+There is currently no official atemporal codemod. Do not depend on an
+unpublished `@atemporal/codemod` package or an external transformation as part
+of your migration plan.
 
-```bash
-npx @atemporal/codemod src/
-```
-
-The codemod handles the most common Day.js and moment.js patterns
-automatically. For Luxon and raw Temporal, the patterns are simple
-enough that a manual search-and-replace is usually sufficient.
+For large codebases, migrate in small batches and use the source-library guide
+and compatibility matrix as the review checklist. A focused search-and-replace
+is usually sufficient for routine imports and construction; review time-zone
+parsing, DST behavior, duration values, plugins, and raw `Date` conversions
+manually. If your team owns an internal AST transform, treat its output as a
+candidate change and run the same tests and semantic review as hand-written
+migrations.
 
 ## After the migration
 
@@ -3974,17 +3975,14 @@ use `.toDate()` when an API requires a raw `Date`.
 - Duration and locale behavior should be reviewed against the matrix rather
   than inferred from method names.
 
-## Automatic migration
+## Large migrations
 
-For large codebases, you can use a codemod:
-
-```bash
-npx jscodeshift -t atemporal-codemod.js src/
-```
-
-The official codemod is published as `@atemporal/codemod`. See the
-[codemod repo](https://github.com/NaturalDevCR/atemporal-codemod) for
-details.
+There is no official Day.js-to-atemporal codemod. Migrate incrementally and
+review each batch against the [compatibility matrix](dayjs-compatibility.md).
+Routine import and construction changes can be searched and replaced, but do
+not automate time-zone parsing, DST disambiguation, duration handling, custom
+plugins, or raw `Date` conversions without semantic tests for the application
+being migrated.
 
 
 
@@ -4274,15 +4272,13 @@ d.days;          // 2
   API does not currently include non-Gregorian calendars; atemporal can
   be extended via plugins when Temporal lands calendar support.
 
-## Automatic migration
+## Large migrations
 
-For large codebases, use a codemod:
-
-```bash
-npx jscodeshift -t moment-to-atemporal.js src/
-```
-
-The official codemod is `@atemporal/codemod` (in development).
+There is no official moment.js-to-atemporal codemod. Use the mappings in this
+guide as a migration checklist, make routine changes in small batches, and
+verify the resulting time-zone, DST, duration, locale, and raw `Date` behavior
+with application tests. An internal transformation can help with mechanical
+edits, but its output still requires the same semantic review.
 
 
 
@@ -5669,8 +5665,6 @@ buyers.
 
 ## Open-source projects
 
-- [atemporal-codemod](https://github.com/NaturalDevCR/atemporal-codemod) —
-  automated migration from Day.js / moment.js to atemporal.
 - *Your project here* — file a PR.
 
 ## How to add your entry

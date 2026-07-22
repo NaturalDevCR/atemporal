@@ -88,3 +88,22 @@ test('consumer documentation never uses unsupported source-path imports', () => 
     }
   }
 });
+
+test('consumer documentation does not advertise an unavailable official codemod', () => {
+  const consumerDocs = [
+    ...markdownFilesUnder(sourceDocs),
+    sourceOutput,
+    sourceFullOutput,
+  ];
+
+  for (const file of consumerDocs) {
+    const content = fs.readFileSync(file, 'utf8');
+    expect(content).not.toContain('NaturalDevCR/atemporal-codemod');
+    expect(content).not.toMatch(/npx\s+@atemporal\/codemod/);
+    expect(content).not.toMatch(/npx\s+jscodeshift\s+-t\s+(?:atemporal-codemod|moment-to-atemporal)\.js/);
+  }
+
+  expect(fs.readFileSync(path.join(sourceDocs, 'migration', 'index.md'), 'utf8')).toContain(
+    'There is currently no official atemporal codemod.',
+  );
+});
