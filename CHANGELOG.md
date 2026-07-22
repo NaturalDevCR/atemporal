@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/NaturalDevCR/atemporal/compare/v1.5.0...v2.0.0) (2026-07-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* require Node 22 or newer
+
+### Features
+
+* add explicit raw Temporal constructors ([01291e6](https://github.com/NaturalDevCR/atemporal/commit/01291e669cdd52cd53d12c594bb1aeefa704f86e))
+* require Node 22 or newer ([b194e6d](https://github.com/NaturalDevCR/atemporal/commit/b194e6dded392273e0bc58ab990e9444df311773))
+
 ## [1.5.0](https://github.com/NaturalDevCR/atemporal/compare/v1.4.3...v1.5.0) (2026-07-22)
 
 
