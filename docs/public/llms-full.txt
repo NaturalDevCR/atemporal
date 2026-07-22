@@ -902,6 +902,21 @@ For extended functionality like relative time (`.fromNow()`), business day calcu
 
 You can create an `atemporal` instance from various input types:
 
+> In v2, prefer the explicit constructors for new code when the value category
+> is known: `atemporal.instant()` for instants, `atemporal.date()` for dates,
+> `atemporal.plainDateTime()` for zone-free civil times, and
+> `atemporal.zonedDateTime()` for scheduled values. The callable wrapper below
+> remains available as a deprecated compatibility facade.
+
+```ts
+const instant = atemporal.instant("2026-07-15T10:00:00Z");
+const invoiceDate = atemporal.date("2026-07-15");
+const businessHours = atemporal.plainDateTime("2026-07-15T09:00:00");
+const meeting = atemporal.zonedDateTime("2026-07-15T10:00:00", {
+  timeZone: "America/Costa_Rica",
+});
+```
+
 ```ts
 import atemporal from "atemporal";
 
