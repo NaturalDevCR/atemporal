@@ -13,6 +13,23 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const budgetFile = path.join(projectRoot, 'size-budgets.json');
 
 describe('release artifact measurement report', () => {
+  test('keeps core budget increases reviewed and synchronized with the blocking limits', () => {
+    const policy = JSON.parse(fs.readFileSync(budgetFile, 'utf8'));
+    const limits = JSON.parse(fs.readFileSync(path.join(projectRoot, '.size-limit.json'), 'utf8'));
+
+    for (const entry of policy.coreHistory) {
+      expect(entry.absoluteDeltaBytes).toBe(entry.nextBytes - entry.previousBytes);
+      expect(entry.percentDelta).toBe(((entry.nextBytes - entry.previousBytes) / entry.previousBytes) * 100);
+      expect(entry.cause).not.toBe('');
+      expect(entry.changeReference).not.toBe('');
+    }
+
+    for (const limit of limits) {
+      expect(policy.core[limit.name]).toBeDefined();
+      expect(Number.parseInt(limit.limit, 10) * 1024).toBe(policy.core[limit.name].limitBytes);
+    }
+  });
+
   test('records canonical budget history deltas from their previous and next byte values', () => {
     const { history } = JSON.parse(fs.readFileSync(budgetFile, 'utf8'));
 
