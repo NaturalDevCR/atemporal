@@ -8,6 +8,9 @@ describe('official plugin tracking', () => {
 
       expect(atemporal.isPluginLoaded('relativeTime')).toBe(true);
       expect(atemporal.getLoadedPlugins()).toEqual(['relativeTime']);
+      expect(atemporal.getAppliedExtensions()).toEqual([
+        { id: 'relativeTime', kind: 'official' },
+      ]);
     });
   });
 

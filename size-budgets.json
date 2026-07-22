@@ -1,5 +1,39 @@
 {
   "schemaVersion": 1,
+  "core": {
+    "atemporal (CJS, raw)": {
+      "limitBytes": 21504
+    },
+    "atemporal (ESM, raw)": {
+      "limitBytes": 16384
+    },
+    "atemporal (CJS, gzip)": {
+      "limitBytes": 5120
+    },
+    "atemporal (ESM, gzip)": {
+      "limitBytes": 5120
+    }
+  },
+  "coreHistory": [
+    {
+      "name": "atemporal (CJS, raw)",
+      "previousBytes": 20480,
+      "nextBytes": 21504,
+      "absoluteDeltaBytes": 1024,
+      "percentDelta": 5,
+      "cause": "v1.5 adds strict parsing, snapshot diagnostics, and explicit extension inspection to the distributed factory.",
+      "changeReference": "v1.5 strict API contract implementation"
+    },
+    {
+      "name": "atemporal (ESM, raw)",
+      "previousBytes": 15360,
+      "nextBytes": 16384,
+      "absoluteDeltaBytes": 1024,
+      "percentDelta": 6.666666666666667,
+      "cause": "v1.5 adds strict parsing, snapshot diagnostics, and explicit extension inspection to the distributed factory.",
+      "changeReference": "v1.5 strict API contract implementation"
+    }
+  ],
   "canonicalBundles": {
     "canonicalCoreBundle": {
       "limitBytes": 341759,

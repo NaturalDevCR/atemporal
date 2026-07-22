@@ -5,6 +5,7 @@ Atemporal provides a comprehensive and type-safe API for date-time manipulation,
 ## Core API
 
 - [**Creating Instances**](./creating-instances): How to initialize Atemporal from strings, dates, timestamps, and Firestore objects.
+- [**Strict parsing**](./parsing): Reject invalid calendar input and explicitly choose a DST ambiguity policy.
 - [**Manipulation**](./manipulation): Immutably adding, subtracting, and setting date components.
 - [**Formatting**](./formatting): Versatile string formatting using tokens or `Intl` options.
 - [**Comparison & Difference**](./comparison-difference): Comparing dates and calculating time differences.
@@ -24,6 +25,8 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | `atemporal.from(input, tz?)` | Alias for `atemporal(input, tz?)` |
 | `atemporal.unix(seconds)` | Create from Unix timestamp (seconds) |
 | `atemporal.duration(like)` | Create a `Temporal.Duration` from an object or ISO string |
+| `atemporal.parse(input, options?)` | Strict parsing; throws `InvalidDateError` for invalid or ambiguous local input by default |
+| `atemporal.tryParse(input, options?)` | Strict parsing that returns `null` instead of throwing |
 
 ### Validation
 
@@ -51,6 +54,10 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | `atemporal.setDefaultTimeZone(tz)` | Set the default IANA time zone |
 | `atemporal.getDefaultLocale()` | Get the current default locale |
 | `atemporal.getTemporalInfo()` | Get info about the Temporal implementation (`{ isNative, environment, version }`) |
+| `atemporal.getDiagnostics()` | Get a detached snapshot of Temporal runtime and cache metrics |
+| `atemporal.clearCaches()` | Clear parsing, formatting, and diff cache entries |
+| `atemporal.resetDiagnostics()` | Clear caches and parser/formatter diagnostic counters |
+| `atemporal.prewarm({ formatPatterns? })` | Initialize formatting and compile common patterns |
 
 ### Plugin Management
 
@@ -61,6 +68,7 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | `atemporal.lazyLoadMultiple(names, options?)` | Lazy-load official plugins by name (async) |
 | `atemporal.isPluginLoaded(name)` | Check if an official plugin has been loaded |
 | `atemporal.getLoadedPlugins()` | Get loaded official plugin names; third-party extensions are not listed |
+| `atemporal.getAppliedExtensions()` | Get snapshots of all successfully applied official and third-party extensions |
 | `atemporal.getAvailablePlugins()` | Get official plugins available for lazy loading |
 
 ## Plugins

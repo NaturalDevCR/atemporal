@@ -21,8 +21,10 @@ import {
   isPlugin,
   markAsPlugin,
   getOfficialPluginMetadata,
+  getExtensionMetadata,
   PLUGIN_SENTINEL,
   OFFICIAL_PLUGIN_METADATA,
+  EXTENSION_METADATA,
 } from "./typeGuards";
 import type {
   DateInput,
@@ -51,6 +53,13 @@ import {
   clearStrictWarnings,
   type StrictModeFlags,
 } from "./core/strict-mode";
+import { parseStrict, tryParseStrict } from './core/parsing/public-parse';
+import {
+  clearCaches,
+  getDiagnostics,
+  prewarm,
+  resetDiagnostics,
+} from './core/diagnostics';
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
@@ -63,6 +72,11 @@ export type {
   DateRange,
   OverlapResult,
   OverlapOptions,
+  AtemporalDisambiguation,
+  AtemporalOverflow,
+  ParseOptions,
+  AppliedExtension,
+  AtemporalDiagnostics,
 } from "./types";
 export {
   ATEMPORAL_ERROR_CODES,
@@ -81,9 +95,12 @@ export type { AtemporalErrorCode } from "./errors";
 export {
   markAsPlugin,
   getOfficialPluginMetadata,
+  getExtensionMetadata,
   PLUGIN_SENTINEL,
   OFFICIAL_PLUGIN_METADATA,
+  EXTENSION_METADATA,
 };
+export type { ExtensionMetadata, OfficialPluginMetadata } from './typeGuards';
 
 // Export the dateRangeOverlap plugin and related utilities
 export {
@@ -142,6 +159,13 @@ atemporal.duration = (
  * The function signature is inferred from `TemporalWrapper.from`.
  */
 atemporal.from = TemporalWrapper.from;
+
+atemporal.parse = parseStrict;
+atemporal.tryParse = tryParseStrict;
+atemporal.getDiagnostics = getDiagnostics;
+atemporal.resetDiagnostics = resetDiagnostics;
+atemporal.clearCaches = clearCaches;
+atemporal.prewarm = prewarm;
 
 /**
  * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
@@ -254,6 +278,7 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
  * The function signature is defined by its implementation.
  */
 const appliedPlugins = new Set<Plugin>();
+const appliedExtensions: Array<{ id: string | null; kind: 'official' | 'third-party' }> = [];
 const loadedPlugins = new Map<OfficialPluginName, Plugin>();
 
   atemporal.extend = (plugin: Plugin, options) => {
@@ -268,7 +293,15 @@ const loadedPlugins = new Map<OfficialPluginName, Plugin>();
       plugin(TemporalWrapper, atemporal, options);
       appliedPlugins.add(plugin);
       const metadata = getOfficialPluginMetadata(plugin);
-      if (metadata) loadedPlugins.set(metadata.name, plugin);
+      if (metadata) {
+        loadedPlugins.set(metadata.name, plugin);
+        appliedExtensions.push({ id: metadata.name, kind: 'official' });
+      } else {
+        appliedExtensions.push({
+          id: getExtensionMetadata(plugin)?.id ?? null,
+          kind: 'third-party',
+        });
+      }
     } catch (error) {
       debugLog('error', 'Error applying plugin', String(error));
       throw error;
@@ -388,6 +421,9 @@ atemporal.isPluginLoaded = (pluginName: string): boolean => {
 atemporal.getLoadedPlugins = (): string[] => {
   return Array.from(loadedPlugins.keys());
 };
+
+/** Returns metadata snapshots for every successfully applied extension. */
+atemporal.getAppliedExtensions = () => appliedExtensions.map((extension) => ({ ...extension }));
 
 /**
  * Gets the list of all available plugins

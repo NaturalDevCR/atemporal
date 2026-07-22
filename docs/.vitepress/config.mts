@@ -23,6 +23,7 @@ export default defineConfig({
             { text: 'Overview', link: '/guide/' },
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/core-concepts' },
+            { text: 'Choosing the Public API', link: '/guide/choosing-an-api' },
             { text: 'Performance & Caching', link: '/guide/performance' },
             { text: 'Temporal Detection', link: '/guide/temporal-detection' },
             { text: 'Playground', link: '/guide/playground' },
@@ -38,6 +39,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/api/' },
             { text: 'Creating Instances', link: '/api/creating-instances' },
+            { text: 'Strict Parsing', link: '/api/parsing' },
             { text: 'Manipulation', link: '/api/manipulation' },
             { text: 'Formatting', link: '/api/formatting' },
             { text: 'Comparison & Difference', link: '/api/comparison-difference' },
