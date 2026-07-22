@@ -21,4 +21,11 @@ describe('extension inspection contract', () => {
     ]));
     expect(atemporal.getLoadedPlugins()).not.toContain('acme.named');
   });
+
+  test('rejects malformed explicit metadata without inferring function names', () => {
+    const plugin = (() => undefined) as Plugin;
+
+    expect(() => markAsPlugin(plugin, { id: '', official: false })).toThrow(TypeError);
+    expect(() => markAsPlugin(plugin, { name: '', official: true } as never)).toThrow(TypeError);
+  });
 });
