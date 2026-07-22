@@ -21,8 +21,10 @@ import {
   isPlugin,
   markAsPlugin,
   getOfficialPluginMetadata,
+  getExtensionMetadata,
   PLUGIN_SENTINEL,
   OFFICIAL_PLUGIN_METADATA,
+  EXTENSION_METADATA,
 } from "./typeGuards";
 import type {
   DateInput,
@@ -93,9 +95,12 @@ export type { AtemporalErrorCode } from "./errors";
 export {
   markAsPlugin,
   getOfficialPluginMetadata,
+  getExtensionMetadata,
   PLUGIN_SENTINEL,
   OFFICIAL_PLUGIN_METADATA,
+  EXTENSION_METADATA,
 };
+export type { ExtensionMetadata, OfficialPluginMetadata } from './typeGuards';
 
 // Export the dateRangeOverlap plugin and related utilities
 export {
@@ -273,6 +278,7 @@ atemporal.getDefaultLocale = TemporalUtils.getDefaultLocale;
  * The function signature is defined by its implementation.
  */
 const appliedPlugins = new Set<Plugin>();
+const appliedExtensions: Array<{ id: string | null; kind: 'official' | 'third-party' }> = [];
 const loadedPlugins = new Map<OfficialPluginName, Plugin>();
 
   atemporal.extend = (plugin: Plugin, options) => {
@@ -287,7 +293,15 @@ const loadedPlugins = new Map<OfficialPluginName, Plugin>();
       plugin(TemporalWrapper, atemporal, options);
       appliedPlugins.add(plugin);
       const metadata = getOfficialPluginMetadata(plugin);
-      if (metadata) loadedPlugins.set(metadata.name, plugin);
+      if (metadata) {
+        loadedPlugins.set(metadata.name, plugin);
+        appliedExtensions.push({ id: metadata.name, kind: 'official' });
+      } else {
+        appliedExtensions.push({
+          id: getExtensionMetadata(plugin)?.id ?? null,
+          kind: 'third-party',
+        });
+      }
     } catch (error) {
       debugLog('error', 'Error applying plugin', String(error));
       throw error;
@@ -407,6 +421,9 @@ atemporal.isPluginLoaded = (pluginName: string): boolean => {
 atemporal.getLoadedPlugins = (): string[] => {
   return Array.from(loadedPlugins.keys());
 };
+
+/** Returns metadata snapshots for every successfully applied extension. */
+atemporal.getAppliedExtensions = () => appliedExtensions.map((extension) => ({ ...extension }));
 
 /**
  * Gets the list of all available plugins
