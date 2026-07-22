@@ -51,6 +51,7 @@ import {
   clearStrictWarnings,
   type StrictModeFlags,
 } from "./core/strict-mode";
+import { parseStrict, tryParseStrict } from './core/parsing/public-parse';
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
@@ -148,19 +149,8 @@ atemporal.duration = (
  */
 atemporal.from = TemporalWrapper.from;
 
-// The strict parsing implementation is introduced in the parsing adapter. This
-// compatibility implementation establishes the public surface while retaining
-// the existing factory behaviour until the strict DST contract is wired in.
-atemporal.parse = (input: DateInput, options = {}): TemporalWrapper =>
-  TemporalWrapper.from(input, options.timeZone);
-
-atemporal.tryParse = (input: DateInput, options = {}): TemporalWrapper | null => {
-  try {
-    return atemporal.parse(input, options);
-  } catch {
-    return null;
-  }
-};
+atemporal.parse = parseStrict;
+atemporal.tryParse = tryParseStrict;
 
 /**
  * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
