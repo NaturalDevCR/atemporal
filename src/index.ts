@@ -52,6 +52,12 @@ import {
   type StrictModeFlags,
 } from "./core/strict-mode";
 import { parseStrict, tryParseStrict } from './core/parsing/public-parse';
+import {
+  clearCaches,
+  getDiagnostics,
+  prewarm,
+  resetDiagnostics,
+} from './core/diagnostics';
 
 // Re-export the main wrapper class and utility types for direct use by consumers.
 export { TemporalWrapper as Atemporal };
@@ -151,6 +157,10 @@ atemporal.from = TemporalWrapper.from;
 
 atemporal.parse = parseStrict;
 atemporal.tryParse = tryParseStrict;
+atemporal.getDiagnostics = getDiagnostics;
+atemporal.resetDiagnostics = resetDiagnostics;
+atemporal.clearCaches = clearCaches;
+atemporal.prewarm = prewarm;
 
 /**
  * Creates a new TemporalWrapper instance from a Unix timestamp (seconds since epoch).
