@@ -18,8 +18,6 @@ buyers.
 
 ## Open-source projects
 
-- [atemporal-codemod](https://github.com/NaturalDevCR/atemporal-codemod) —
-  automated migration from Day.js / moment.js to atemporal.
 - *Your project here* — file a PR.
 
 ## How to add your entry

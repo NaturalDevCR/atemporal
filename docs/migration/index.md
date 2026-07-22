@@ -33,18 +33,19 @@ raw `Date` conversions in the source-library guide. The Day.js matrix labels
 each reviewed item as compatible, semantically different, plugin-required,
 unsupported, or better served by a different approach.
 
-## Migration tools
+## Migrating a large codebase
 
-For large codebases, a codemod is available at
-[`@atemporal/codemod`](https://github.com/NaturalDevCR/atemporal-codemod):
+There is currently no official atemporal codemod. Do not depend on an
+unpublished `@atemporal/codemod` package or an external transformation as part
+of your migration plan.
 
-```bash
-npx @atemporal/codemod src/
-```
-
-The codemod handles the most common Day.js and moment.js patterns
-automatically. For Luxon and raw Temporal, the patterns are simple
-enough that a manual search-and-replace is usually sufficient.
+For large codebases, migrate in small batches and use the source-library guide
+and compatibility matrix as the review checklist. A focused search-and-replace
+is usually sufficient for routine imports and construction; review time-zone
+parsing, DST behavior, duration values, plugins, and raw `Date` conversions
+manually. If your team owns an internal AST transform, treat its output as a
+candidate change and run the same tests and semantic review as hand-written
+migrations.
 
 ## After the migration
 

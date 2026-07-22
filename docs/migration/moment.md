@@ -122,12 +122,10 @@ d.days;          // 2
   API does not currently include non-Gregorian calendars; atemporal can
   be extended via plugins when Temporal lands calendar support.
 
-## Automatic migration
+## Large migrations
 
-For large codebases, use a codemod:
-
-```bash
-npx jscodeshift -t moment-to-atemporal.js src/
-```
-
-The official codemod is `@atemporal/codemod` (in development).
+There is no official moment.js-to-atemporal codemod. Use the mappings in this
+guide as a migration checklist, make routine changes in small batches, and
+verify the resulting time-zone, DST, duration, locale, and raw `Date` behavior
+with application tests. An internal transformation can help with mechanical
+edits, but its output still requires the same semantic review.
