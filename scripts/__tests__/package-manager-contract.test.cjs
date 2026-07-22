@@ -70,6 +70,7 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   const rootLock = fs.readFileSync(path.join(root, 'pnpm-lock.yaml'), 'utf8');
   const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
+  const webpackLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'webpack', 'package-lock.json'), 'utf8'));
 
   expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.16");
   expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.2");
@@ -79,6 +80,8 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(rootLock).not.toContain('fast-uri@3.1.3');
   expect(rootLock).not.toContain('js-yaml@3.14.2');
   expect(rootLock).not.toContain("'@babel/core@7.25.9'");
+  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.4');
+  expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.0');
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {
     if (location.endsWith('/postcss')) {
