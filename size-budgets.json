@@ -2,19 +2,46 @@
   "schemaVersion": 1,
   "core": {
     "atemporal (CJS, raw)": {
-      "limitBytes": 21504
+      "limitBytes": 24576
     },
     "atemporal (ESM, raw)": {
-      "limitBytes": 16384
+      "limitBytes": 20480
     },
     "atemporal (CJS, gzip)": {
-      "limitBytes": 5120
+      "limitBytes": 7168
     },
     "atemporal (ESM, gzip)": {
       "limitBytes": 5120
     }
   },
   "coreHistory": [
+    {
+      "name": "atemporal (CJS, raw)",
+      "previousBytes": 21504,
+      "nextBytes": 24576,
+      "absoluteDeltaBytes": 3072,
+      "percentDelta": 14.285714285714285,
+      "cause": "v2 adds explicit raw Temporal constructors that preserve Instant, PlainDate, PlainDateTime, and ZonedDateTime categories.",
+      "changeReference": "v2 explicit Temporal constructors"
+    },
+    {
+      "name": "atemporal (ESM, raw)",
+      "previousBytes": 16384,
+      "nextBytes": 20480,
+      "absoluteDeltaBytes": 4096,
+      "percentDelta": 25,
+      "cause": "v2 adds explicit raw Temporal constructors that preserve Instant, PlainDate, PlainDateTime, and ZonedDateTime categories.",
+      "changeReference": "v2 explicit Temporal constructors"
+    },
+    {
+      "name": "atemporal (CJS, gzip)",
+      "previousBytes": 5120,
+      "nextBytes": 7168,
+      "absoluteDeltaBytes": 2048,
+      "percentDelta": 40,
+      "cause": "v2 constructor validation and category-specific conversion exceed the v1.5 compressed CJS budget.",
+      "changeReference": "v2 explicit Temporal constructors"
+    },
     {
       "name": "atemporal (CJS, raw)",
       "previousBytes": 20480,
