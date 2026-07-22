@@ -6,6 +6,7 @@ Welcome to the Atemporal guide. This section provides detailed explanations on h
 
 - **[Getting Started](./getting-started)**: Installation instructions and quick start examples.
 - **[Core Concepts](./core-concepts)**: Understand the immutable architecture, plugin system, input types, and the native Temporal API underneath.
+- **[Choosing the Public API](./choosing-an-api)**: Select strict parsing, compatibility parsing, diagnostics, and plugin APIs by use case.
 - **[Performance & Caching](./performance)**: Deep dive into the internal caching engines and how to optimize and monitor performance.
 - **[Temporal Detection](./temporal-detection)**: How atemporal detects and switches between native Temporal and the polyfill automatically.
 

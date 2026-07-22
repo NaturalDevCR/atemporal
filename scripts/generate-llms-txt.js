@@ -37,7 +37,8 @@ const path = require('node:path');
 
 const repoRoot = path.join(__dirname, '..');
 const docsDir = path.join(repoRoot, 'docs');
-const outPath = path.join(docsDir, 'public', 'llms.txt');
+const conciseOutPath = path.join(docsDir, 'public', 'llms.txt');
+const fullOutPath = path.join(docsDir, 'public', 'llms-full.txt');
 
 /** @typedef {{ file: string, title?: string }} Section */
 
@@ -50,6 +51,7 @@ const SECTIONS = [
   // ---- ONBOARDING ------------------------------------------------
   { file: 'guide/getting-started.md', title: 'Getting started' },
   { file: 'guide/core-concepts.md', title: 'Core concepts' },
+  { file: 'guide/choosing-an-api.md', title: 'Choosing the public API' },
   { file: 'guide/performance.md', title: 'Performance & caching' },
   { file: 'guide/temporal-detection.md', title: 'Temporal native vs polyfill detection' },
   { file: 'guide/playground.md', title: 'Playground (in-browser REPL)' },
@@ -260,7 +262,7 @@ function buildTldr() {
     '- **Plugins:** synchronously install any plugin with `atemporal.extend(plugin)`. Lazy loading accepts an official plugin name: `await atemporal.lazyLoad("relativeTime")`. `getLoadedPlugins()` reports only official plugins; use `getAppliedExtensions()` to inspect explicitly identified third-party extensions too.',
     '- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code.',
     '- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.',
-    '- **Temporal runtime:** call `atemporal.getTemporalInfo()` to observe the selected native or polyfill implementation. CI verifies the native path on Node 26; do not infer native support from an arbitrary runtime version. The polyfill is statically imported, so native runtime selection does not by itself remove it from an application bundle.',
+    '- **Temporal runtime:** call `atemporal.getTemporalInfo()` to observe the selected native or polyfill implementation. Do not assume `globalThis.Temporal` exists. CI verifies the native path on Node 26; do not infer native support from an arbitrary runtime version. The polyfill is statically imported, so native runtime selection does not by itself remove it from an application bundle.',
     '- **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.',
     '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.',
     '- **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.',
@@ -297,9 +299,36 @@ function readSection(section) {
   return fs.readFileSync(fullPath, 'utf8');
 }
 
-function build() {
+function buildConciseGuide() {
+  return [
+    buildTldr(),
+    '## Choose the public API',
+    '',
+    '| Case | Public API | Timezone rule | Failure result |',
+    '| --- | --- | --- | --- |',
+    '| Event instant | `atemporal.parse` with an offset-bearing input | Do not guess a zone | `InvalidDateError` / `null` |',
+    '| Scheduled event | `atemporal.parse(input, { timeZone })` | Explicit IANA zone | Reject DST ambiguity by default |',
+    '| Local civil date-time | `atemporal.parse` | Always provide an IANA zone | `InvalidDateError` / `null` |',
+    '| Date-only value | `atemporal.parse` | Provide the business zone when a time is implied | `InvalidDateError` / `null` |',
+    '| Trusted boundary parsing | `atemporal.parse` | Explicit zone for local input | Throws `InvalidDateError` |',
+    '| Compatibility parsing | `atemporal(input)` | Optional zone preserves v1 behavior | Invalid wrapper |',
+    '| Formatting | `value.format(pattern)` | Format in the value zone or convert first | Throws for invalid wrapper |',
+    '| Duration | `atemporal.duration(like)` | No zone | Temporal conversion error |',
+    '| Range | `value.range(...)` | Keep both ends in a known zone | Invalid wrapper/error |',
+    '| Official plugin | `extend(plugin)` / `lazyLoad(name)` | No zone | Plugin load error |',
+    '| Third-party extension | `extend(markAsPlugin(...))` | No zone | Extension error |',
+    '',
+    'For complete API signatures, migration matrices, plugin guides, and cookbook recipes read `llms-full.txt`.',
+    '',
+  ].join('\n');
+}
+
+function buildFullGuide() {
   const out = [];
-  out.push(buildTldr());
+  out.push('# Atemporal — complete LLM reference');
+  out.push('');
+  out.push('> Generated from public consumer documentation. Use `llms.txt` for the concise operational guide.');
+  out.push('');
   out.push(buildMethodIndex());
   out.push(
     [
@@ -318,17 +347,25 @@ function build() {
     out.push(readSection(section));
   }
 
-  const content = out.join('\n');
-  fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, content, 'utf8');
+  return `${out.join('\n')}\n`;
+}
+
+function writeGuide(file, content) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, content, 'utf8');
 
   const lines = content.split('\n').length;
   const bytes = Buffer.byteLength(content, 'utf8');
   process.stdout.write(
-    `Generated ${path.relative(repoRoot, outPath)} — ${lines.toLocaleString()} lines, ${(
+    `Generated ${path.relative(repoRoot, file)} — ${lines.toLocaleString()} lines, ${(
       bytes / 1024
     ).toFixed(1)} KB\n`,
   );
+}
+
+function build() {
+  writeGuide(conciseOutPath, `${buildConciseGuide().trimEnd()}\n`);
+  writeGuide(fullOutPath, buildFullGuide());
 }
 
 build();

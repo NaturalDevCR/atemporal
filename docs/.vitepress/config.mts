@@ -23,6 +23,7 @@ export default defineConfig({
             { text: 'Overview', link: '/guide/' },
             { text: 'Getting Started', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/core-concepts' },
+            { text: 'Choosing the Public API', link: '/guide/choosing-an-api' },
             { text: 'Performance & Caching', link: '/guide/performance' },
             { text: 'Temporal Detection', link: '/guide/temporal-detection' },
             { text: 'Playground', link: '/guide/playground' },
