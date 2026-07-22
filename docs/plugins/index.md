@@ -70,6 +70,23 @@ Third-party plugins can be installed with `extend()`, but they do not appear
 in `getLoadedPlugins()` or `getAvailablePlugins()`. Those APIs are reserved for
 the stable official-plugin registry.
 
+Use `getAppliedExtensions()` to inspect every successfully applied extension.
+It returns detached `{ id, kind }` records in application order. An extension
+has an ID only when the author explicitly provides metadata; Atemporal never
+uses `Function.name` as an identity.
+
+```ts
+import atemporal, { markAsPlugin, type Plugin } from "atemporal";
+
+const auditPlugin = markAsPlugin(((Wrapper) => {
+  Wrapper.prototype.isAudited = () => true;
+}) as Plugin, { id: "acme.audit", official: false });
+
+atemporal.extend(auditPlugin);
+// [{ id: "acme.audit", kind: "third-party" }]
+console.log(atemporal.getAppliedExtensions());
+```
+
 ## Available Plugins
 
 - [**relativeTime**](/plugins/relative-time): `.fromNow()`, `.toNow()`.

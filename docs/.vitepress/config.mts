@@ -38,6 +38,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/api/' },
             { text: 'Creating Instances', link: '/api/creating-instances' },
+            { text: 'Strict Parsing', link: '/api/parsing' },
             { text: 'Manipulation', link: '/api/manipulation' },
             { text: 'Formatting', link: '/api/formatting' },
             { text: 'Comparison & Difference', link: '/api/comparison-difference' },
