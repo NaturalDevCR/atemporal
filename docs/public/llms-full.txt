@@ -191,6 +191,10 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 
 ## Installation
 
+> **Node.js 22 or newer is required.** The supported Node lines are 22, 24,
+> and 26. Browser consumers continue to use the packaged native/polyfill
+> runtime detection path.
+
 Install `atemporal` with your package manager:
 
 ```bash
@@ -897,6 +901,21 @@ For extended functionality like relative time (`.fromNow()`), business day calcu
 # Creating Instances
 
 You can create an `atemporal` instance from various input types:
+
+> In v2, prefer the explicit constructors for new code when the value category
+> is known: `atemporal.instant()` for instants, `atemporal.date()` for dates,
+> `atemporal.plainDateTime()` for zone-free civil times, and
+> `atemporal.zonedDateTime()` for scheduled values. The callable wrapper below
+> remains available as a deprecated compatibility facade.
+
+```ts
+const instant = atemporal.instant("2026-07-15T10:00:00Z");
+const invoiceDate = atemporal.date("2026-07-15");
+const businessHours = atemporal.plainDateTime("2026-07-15T09:00:00");
+const meeting = atemporal.zonedDateTime("2026-07-15T10:00:00", {
+  timeZone: "America/Costa_Rica",
+});
+```
 
 ```ts
 import atemporal from "atemporal";
@@ -3838,6 +3857,13 @@ when their data model needs a deterministic failure policy.
 - Use `getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`
   instead of importing any `atemporal/src/...` implementation detail.
 
+## Preparing for v2
+
+v2 raises the Node.js floor from 18 to **22**. It supports Node 22, 24, and
+26. Browser support remains available through the packaged Temporal runtime
+detection path and bundler fixtures. Upgrade the runtime before adopting v2;
+the existing callable wrapper facade remains available during the migration.
+
 
 
 --- FILE: migration/dayjs.md (Migration — from Day.js) ---
@@ -4425,6 +4451,35 @@ exposes them.
 - [Migration from Luxon](luxon.md)
 - [Migration from moment.js](moment.md)
 - [Core concepts](../guide/core-concepts.md)
+
+
+
+--- FILE: migration/v2.md (Migration — to v2) ---
+
+
+# Migrating to v2
+
+v2 requires Node.js 22 or newer and introduces explicit constructors for raw
+Temporal values. The callable `atemporal(input, timeZone?)` wrapper remains
+available through v2, but is deprecated for new code.
+
+| Domain value | v2 API |
+| --- | --- |
+| Log or webhook timestamp | `atemporal.instant(value)` |
+| Birthday or invoice date | `atemporal.date(value)` |
+| Business-hours template | `atemporal.plainDateTime(value)` |
+| Scheduled event | `atemporal.zonedDateTime(value, { timeZone })` |
+
+```ts
+// Before: compatibility wrapper
+const event = atemporal("2026-11-01T01:30:00", "America/New_York");
+
+// After: explicit DST policy and raw value
+const event = atemporal.zonedDateTime("2026-11-01T01:30:00", {
+  timeZone: "America/New_York",
+  disambiguation: "later",
+});
+```
 
 
 

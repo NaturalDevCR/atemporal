@@ -193,6 +193,7 @@ export type AtemporalFunction = (
  * This is an interface so that plugins can augment it with new static methods.
  */
 export interface AtemporalFactory {
+  /** @deprecated Use instant(), date(), plainDateTime(), or zonedDateTime() for new code. */
   /**
    * Creates a new atemporal instance.
    * @param input The date/time input. Defaults to now.
@@ -200,7 +201,13 @@ export interface AtemporalFactory {
    */
   (input?: DateInput, timeZone?: string): TemporalWrapper;
 
+  /** @deprecated Use instant(), date(), plainDateTime(), or zonedDateTime() for new code. */
   from(input: DateInput, tz?: string): TemporalWrapper;
+
+  instant: (input: import('./types/temporal-inputs').InstantInput) => Temporal.Instant;
+  date: (input: import('./types/temporal-inputs').PlainDateInput) => Temporal.PlainDate;
+  plainDateTime: (input: import('./types/temporal-inputs').PlainDateTimeInput) => Temporal.PlainDateTime;
+  zonedDateTime: (input: import('./types/temporal-inputs').ZonedDateTimeInput, options?: import('./types/temporal-inputs').ZonedDateTimeOptions) => Temporal.ZonedDateTime;
 
   /** Parses input through the explicit strict parsing API. */
   parse: (input: DateInput, options?: ParseOptions) => TemporalWrapper;

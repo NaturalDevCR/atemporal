@@ -74,6 +74,7 @@ export default defineConfig({
             { text: 'From Luxon', link: '/migration/luxon' },
             { text: 'From moment.js', link: '/migration/moment' },
             { text: 'From raw Temporal', link: '/migration/temporal' },
+            { text: 'To v2', link: '/migration/v2' },
           ]
         }
       ],

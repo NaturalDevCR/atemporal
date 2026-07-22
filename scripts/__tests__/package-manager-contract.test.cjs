@@ -9,6 +9,7 @@ test('root development is pinned to pnpm', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
   expect(manifest.packageManager).toBe('pnpm@11.13.1');
+  expect(manifest.engines.node).toBe('>=22');
   expect(manifest.scripts['supply-chain']).toBe('pnpm run licenses:check && pnpm audit --audit-level=high');
   expect(fs.existsSync(path.join(root, 'pnpm-lock.yaml'))).toBe(true);
   expect(fs.existsSync(path.join(root, 'package-lock.json'))).toBe(false);

@@ -177,7 +177,7 @@
     "vue": "^3.5.40"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "sideEffects": false,
   "keywords": [

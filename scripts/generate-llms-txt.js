@@ -97,6 +97,7 @@ const SECTIONS = [
   { file: 'migration/luxon.md', title: 'Migration — from Luxon' },
   { file: 'migration/moment.md', title: 'Migration — from moment.js' },
   { file: 'migration/temporal.md', title: 'Migration — from raw Temporal' },
+  { file: 'migration/v2.md', title: 'Migration — to v2' },
 
   // ---- SECURITY --------------------------------------------------
   { file: 'security/index.md', title: 'Security — overview' },
