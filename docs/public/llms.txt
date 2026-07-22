@@ -3834,6 +3834,24 @@ enough that a manual search-and-replace is usually sufficient.
 4. Update your CI to require TypeScript strict mode (now safe with atemporal's
    public typings).
 
+## Upgrading to v1.5
+
+v1.5 is additive: `atemporal(input, timeZone?)` and existing plugins keep their
+compatibility behaviour. New applications should use the explicit boundary APIs
+when their data model needs a deterministic failure policy.
+
+- Use `atemporal.parse(input, options)` to throw `InvalidDateError` for invalid
+  values. Its defaults reject invalid calendar fields and DST gaps or overlaps.
+- Use `atemporal.tryParse(input, options)` when invalid user input should become
+  `null` instead of an exception.
+- Select `disambiguation: "earlier"`, `"later"`, or `"compatible"` only as an
+  intentional domain rule; the default is `"reject"`.
+- `getLoadedPlugins()` still reports official plugins only. Use
+  `getAppliedExtensions()` when diagnostics need to include third-party
+  extensions that explicitly declare an ID.
+- Use `getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`
+  instead of importing any `atemporal/src/...` implementation detail.
+
 
 
 --- FILE: migration/dayjs.md (Migration — from Day.js) ---
