@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/NaturalDevCR/atemporal/compare/v1.4.3...v1.5.0) (2026-07-22)
+
+
+### Features
+
+* add strict parsing and operational LLM guides ([8f2e90c](https://github.com/NaturalDevCR/atemporal/commit/8f2e90c451ea3d44b41f21faa9e320aedff98cc1))
+* add strict parsing with DST policy ([f1f5771](https://github.com/NaturalDevCR/atemporal/commit/f1f577194b7b76cf72afee92040a5011880bec4f))
+* declare strict parsing and diagnostics API ([198b27d](https://github.com/NaturalDevCR/atemporal/commit/198b27d6c7c4c9911e4ff148650fe181c5adb827))
+* expose snapshot diagnostics API ([dd11db3](https://github.com/NaturalDevCR/atemporal/commit/dd11db3f215a820c7f1967052f0834d1f7ea484a))
+* inspect applied third-party extensions ([0e18bc1](https://github.com/NaturalDevCR/atemporal/commit/0e18bc18e1455acd64140ce939d7d10c48f7ffe9))
+
 ## [1.4.3](https://github.com/NaturalDevCR/atemporal/compare/v1.4.2...v1.4.3) (2026-07-15)
 
 ### Bug Fixes
