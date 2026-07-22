@@ -54,6 +54,7 @@ import {
   type StrictModeFlags,
 } from "./core/strict-mode";
 import { parseStrict, tryParseStrict } from './core/parsing/public-parse';
+import { instant, date, plainDateTime, zonedDateTime } from './constructors';
 import {
   clearCaches,
   getDiagnostics,
@@ -78,6 +79,13 @@ export type {
   AppliedExtension,
   AtemporalDiagnostics,
 } from "./types";
+export type {
+  InstantInput,
+  PlainDateInput,
+  PlainDateTimeInput,
+  ZonedDateTimeInput,
+  ZonedDateTimeOptions,
+} from './types/temporal-inputs';
 export {
   ATEMPORAL_ERROR_CODES,
   AtemporalError,
@@ -162,6 +170,10 @@ atemporal.from = TemporalWrapper.from;
 
 atemporal.parse = parseStrict;
 atemporal.tryParse = tryParseStrict;
+atemporal.instant = instant;
+atemporal.date = date;
+atemporal.plainDateTime = plainDateTime;
+atemporal.zonedDateTime = zonedDateTime;
 atemporal.getDiagnostics = getDiagnostics;
 atemporal.resetDiagnostics = resetDiagnostics;
 atemporal.clearCaches = clearCaches;

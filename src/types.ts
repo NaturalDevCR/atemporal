@@ -202,6 +202,11 @@ export interface AtemporalFactory {
 
   from(input: DateInput, tz?: string): TemporalWrapper;
 
+  instant: (input: import('./types/temporal-inputs').InstantInput) => Temporal.Instant;
+  date: (input: import('./types/temporal-inputs').PlainDateInput) => Temporal.PlainDate;
+  plainDateTime: (input: import('./types/temporal-inputs').PlainDateTimeInput) => Temporal.PlainDateTime;
+  zonedDateTime: (input: import('./types/temporal-inputs').ZonedDateTimeInput, options?: import('./types/temporal-inputs').ZonedDateTimeOptions) => Temporal.ZonedDateTime;
+
   /** Parses input through the explicit strict parsing API. */
   parse: (input: DateInput, options?: ParseOptions) => TemporalWrapper;
 
