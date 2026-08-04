@@ -83,12 +83,13 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(rootLock).not.toContain('fast-uri@3.1.3');
   expect(rootLock).not.toContain('js-yaml@3.14.2');
   expect(rootLock).not.toContain("'@babel/core@7.25.9'");
-  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.4');
+  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.5');
+  expect(nextLock.packages[''].dependencies.next).toBe('16.2.11');
   expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.0');
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {
     if (location.endsWith('/postcss')) {
-      expect(metadata.version).toMatch(/^8\.5\.(1[0-9]|[2-9][0-9])$/);
+      expect(metadata.version).toBe('8.5.23');
     }
   }
 });
