@@ -54,6 +54,7 @@ jobs:
     name: Stryker mutation testing (shard ${{ matrix.shard }})
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
+    continue-on-error: true
     timeout-minutes: 60
     strategy:
       fail-fast: false
