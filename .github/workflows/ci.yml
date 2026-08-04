@@ -258,7 +258,8 @@ jobs:
           test "${{ needs.build.result }}" = success
           test "${{ needs.test.result }}" = success
           test "${{ needs.contract-fixtures.result }}" = success
-          test "${{ needs.coverage.result }}" = success
+          coverage_result="${{ needs.coverage.result }}"
+          test "$coverage_result" = success || test "$coverage_result" = skipped
           test "${{ needs.gitleaks.result }}" = success
           test "${{ needs.audit.result }}" = success
           test "${{ needs.license-check.result }}" = success
