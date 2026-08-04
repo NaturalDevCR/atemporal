@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const shardCount = Number(process.env.MUTATION_SHARD_COUNT ?? 24);
+const shardCount = Number(process.env.MUTATION_SHARD_COUNT ?? 128);
 const shardIndex = Number(process.env.MUTATION_SHARD_INDEX);
 
 if (!Number.isInteger(shardCount) || shardCount < 1) {
@@ -36,29 +36,46 @@ function visit(directory) {
       !entry.name.endsWith('.test.ts') &&
       !entry.name.endsWith('.spec.ts')
     ) {
-      files.push({
-        path: relativePath,
-        weight: fs.readFileSync(absolutePath, 'utf8').split(/\r?\n/).length,
-      });
+      const lineCount = fs.readFileSync(absolutePath, 'utf8').split(/\r?\n/).length;
+      files.push({ path: relativePath, lineCount });
     }
   }
 }
 
 visit(sourceRoot);
-files.sort((left, right) => right.weight - left.weight || left.path.localeCompare(right.path));
+files.sort((left, right) => right.lineCount - left.lineCount || left.path.localeCompare(right.path));
 
-const shards = Array.from({ length: shardCount }, () => ({ files: [], weight: 0 }));
+const totalLines = files.reduce((total, file) => total + file.lineCount, 0);
+const targetLinesPerChunk = Math.max(1, Math.ceil(totalLines / shardCount));
+const chunks = [];
+
 for (const file of files) {
+  for (let startLine = 1; startLine <= file.lineCount; startLine += targetLinesPerChunk) {
+    const endLine = Math.min(file.lineCount, startLine + targetLinesPerChunk - 1);
+    chunks.push({
+      selector: `${file.path}:${startLine}-${endLine}`,
+      weight: endLine - startLine + 1,
+    });
+  }
+}
+
+if (chunks.length < shardCount) {
+  throw new Error(`Cannot fill ${shardCount} mutation shards with ${chunks.length} source ranges`);
+}
+
+const shards = Array.from({ length: shardCount }, () => ({ chunks: [], weight: 0 }));
+chunks.sort((left, right) => right.weight - left.weight || left.selector.localeCompare(right.selector));
+for (const chunk of chunks) {
   const target = shards.reduce((lightest, candidate) =>
     candidate.weight < lightest.weight ? candidate : lightest,
   );
-  target.files.push(file.path);
-  target.weight += file.weight;
+  target.chunks.push(chunk.selector);
+  target.weight += chunk.weight;
 }
 
-const selectedFiles = shards[shardIndex].files.sort();
-if (selectedFiles.length === 0) {
+const selectedChunks = shards[shardIndex].chunks.sort();
+if (selectedChunks.length === 0) {
   throw new Error(`Mutation shard ${shardIndex} is empty`);
 }
 
-process.stdout.write(selectedFiles.join(','));
+process.stdout.write(selectedChunks.join(','));
