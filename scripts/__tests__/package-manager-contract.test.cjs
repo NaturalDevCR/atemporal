@@ -73,9 +73,11 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
   const webpackLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'webpack', 'package-lock.json'), 'utf8'));
 
-  expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.16");
-  expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.2");
-  expect(workspace).toContain('fast-uri: 3.1.4');
+  expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.18");
+  expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.4");
+  expect(workspace).toContain("'brace-expansion@^5.0.0': 5.0.9");
+  expect(workspace).toContain('fast-uri: 3.1.5');
+  expect(workspace).toContain('postcss: 8.5.23');
   expect(rootLock).not.toContain('brace-expansion@1.1.15');
   expect(rootLock).not.toContain('brace-expansion@2.1.1');
   expect(rootLock).not.toContain('fast-uri@3.1.3');
