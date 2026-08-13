@@ -45,7 +45,7 @@ describe('release artifact workflow contracts', () => {
     const cacheUses = matches(workflows, /cache: pnpm/g);
 
     expect(cacheUses.length).toBeGreaterThan(0);
-    expect(matches(workflows, /pnpm\/action-setup@v6\.0\.9[\s\S]{0,350}?cache: pnpm/g)).toHaveLength(cacheUses.length);
+    expect(matches(workflows, /pnpm\/action-setup@v6\.0\.10[\s\S]{0,350}?cache: pnpm/g)).toHaveLength(cacheUses.length);
   });
 
   test('repository workflows use the reviewed GitHub Actions major versions', () => {
@@ -57,7 +57,7 @@ describe('release artifact workflow contracts', () => {
     for (const action of [
       'actions/checkout@v7',
       'actions/setup-node@v7',
-      'pnpm/action-setup@v6.0.9',
+      'pnpm/action-setup@v6.0.10',
       'actions/upload-artifact@v7',
       'actions/download-artifact@v8',
       'codecov/codecov-action@v7',

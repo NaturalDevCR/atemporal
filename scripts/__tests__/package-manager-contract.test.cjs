@@ -77,7 +77,8 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.4");
   expect(workspace).toContain("'brace-expansion@^5.0.0': 5.0.9");
   expect(workspace).toContain('fast-uri: 3.1.5');
-  expect(workspace).toContain('postcss: 8.5.23');
+  expect(workspace).toContain('js-yaml: 3.15.1');
+  expect(workspace).toContain('postcss: 8.5.26');
   expect(rootLock).not.toContain('brace-expansion@1.1.15');
   expect(rootLock).not.toContain('brace-expansion@2.1.1');
   expect(rootLock).not.toContain('fast-uri@3.1.3');
@@ -89,7 +90,7 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {
     if (location.endsWith('/postcss')) {
-      expect(metadata.version).toBe('8.5.23');
+      expect(metadata.version).toBe('8.5.26');
     }
   }
 });

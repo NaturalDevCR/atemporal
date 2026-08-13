@@ -8,8 +8,8 @@ overrides:
   'brace-expansion@^5.0.0': 5.0.9
   electron-to-chromium: 1.5.368
   fast-uri: 3.1.5
-  js-yaml: 3.15.0
-  postcss: 8.5.23
+  js-yaml: 3.15.1
+  postcss: 8.5.26
   qs: 6.15.2
   tmp: 0.2.7
   tsup>esbuild: 0.28.1

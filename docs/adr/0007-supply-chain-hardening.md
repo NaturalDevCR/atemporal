@@ -39,7 +39,7 @@ mature, GitHub-native tools that satisfy each requirement:
 | Gap | Tool | Where |
 | --- | --- | --- |
 | Secret scanning | `gitleaks/gitleaks-action@v3` | `.github/workflows/ci.yml` (`gitleaks` job) |
-| Dependency audit | `pnpm audit --audit-level=high` + `google/osv-scanner-action@v2.3.8` | `.github/workflows/ci.yml` (`audit` job) |
+| Dependency audit | `pnpm audit --audit-level=high` + `google/osv-scanner-action@v2.5.0` | `.github/workflows/ci.yml` (`audit` job) |
 | SBOM | `pnpm sbom` (SPDX + CycloneDX) | `.github/workflows/release.yml` |
 | Provenance | npm trusted publishing (OIDC) | `.github/workflows/release.yml` |
 | Mutation testing | `@stryker-mutator/*` | `.github/workflows/mutation.yml` (push dry-run + nightly/on-demand advisory) |
