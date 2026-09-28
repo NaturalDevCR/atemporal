@@ -165,7 +165,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.2",
     "esbuild": "^0.28.1",
-    "fast-check": "^4.9.0",
+    "fast-check": "^4.10.2",
     "jest": "^30.2.0",
     "standard-version": "^9.5.0",
     "ts-jest": "^29.4.12",
