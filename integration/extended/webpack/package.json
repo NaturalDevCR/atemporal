@@ -12,6 +12,8 @@
     "webpack-cli": "7.2.1"
   },
   "overrides": {
-    "fast-uri": "3.1.5"
+    "baseline-browser-mapping": "2.11.28",
+    "browserslist": "4.29.3",
+    "fast-uri": "3.1.8"
   }
 }

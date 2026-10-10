@@ -38,7 +38,7 @@ test('pnpm manifest declares strict test types and audited transitive overrides'
   expect(workspace).toContain('vite@6.4.3:');
   expect(workspace).toContain('esbuild: 0.25.12');
   expect(workspace).toContain('tsup>esbuild: 0.28.1');
-  expect(workspace).toContain('qs: 6.15.2');
+  expect(workspace).toContain('qs: 6.16.0');
 });
 
 test('pnpm permits only the reviewed dependency build scripts', () => {
@@ -73,24 +73,30 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   const nextLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'nextjs', 'package-lock.json'), 'utf8'));
   const webpackLock = JSON.parse(fs.readFileSync(path.join(root, 'integration', 'extended', 'webpack', 'package-lock.json'), 'utf8'));
 
-  expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.18");
-  expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.4");
-  expect(workspace).toContain("'brace-expansion@^5.0.0': 5.0.9");
-  expect(workspace).toContain('fast-uri: 3.1.5');
-  expect(workspace).toContain('js-yaml: 3.15.1');
-  expect(workspace).toContain('postcss: 8.5.26');
+  expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.21");
+  expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.7");
+  expect(workspace).toContain("'brace-expansion@^5.0.0': 5.0.12");
+  expect(workspace).toContain('fast-uri: 3.1.8');
+  expect(workspace).toContain('js-yaml: 3.15.2');
+  expect(workspace).toContain('postcss: 8.5.29');
+  expect(workspace).toContain('handlebars: 4.7.10');
+  expect(workspace).toContain('browserslist: 4.29.3');
+  expect(workspace).toContain("'nanoid@^3.3.0': 3.3.20");
+  expect(workspace).toContain('source-map-js: 1.2.2');
   expect(rootLock).not.toContain('brace-expansion@1.1.15');
   expect(rootLock).not.toContain('brace-expansion@2.1.1');
   expect(rootLock).not.toContain('fast-uri@3.1.3');
   expect(rootLock).not.toContain('js-yaml@3.14.2');
   expect(rootLock).not.toContain("'@babel/core@7.25.9'");
-  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.5');
-  expect(nextLock.packages[''].dependencies.next).toBe('16.2.11');
-  expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.0');
+  expect(rootLock).not.toContain('handlebars@4.7.9');
+  expect(rootLock).not.toContain('fast-uri@3.1.5');
+  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.8');
+  expect(nextLock.packages[''].dependencies.next).toBe('16.4.0');
+  expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.5');
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {
     if (location.endsWith('/postcss')) {
-      expect(metadata.version).toBe('8.5.26');
+      expect(metadata.version).toBe('8.5.29');
     }
   }
 });
