@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.1](https://github.com/NaturalDevCR/atemporal/compare/v2.0.0...v2.0.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **security:** bump stale transitive overrides to patched releases ([374d128](https://github.com/NaturalDevCR/atemporal/commit/374d1280206460bc62d4ff739022c34d26a868d3))
+* **security:** bump stale transitive overrides to patched releases ([f9d0930](https://github.com/NaturalDevCR/atemporal/commit/f9d093004f3397ddb124445b57439e74cefa7ba3))
+* **security:** consolidate dependency updates ([088bf52](https://github.com/NaturalDevCR/atemporal/commit/088bf521359956086200d33fecb21bc6796b5612))
+
 ## [2.0.0](https://github.com/NaturalDevCR/atemporal/compare/v1.5.0...v2.0.0) (2026-07-22)
 
 
