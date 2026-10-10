@@ -31,8 +31,8 @@ test('pnpm manifest declares strict test types and audited transitive overrides'
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
 
-  expect(manifest.devDependencies['@jest/globals']).toBe('^30.4.1');
-  expect(manifest.devDependencies.esbuild).toBe('^0.28.1');
+  expect(manifest.devDependencies['@jest/globals']).toBe('^30.5.2');
+  expect(manifest.devDependencies.esbuild).toBe('^0.28.2');
   expect(manifest.devDependencies['license-checker']).toBeUndefined();
   expect(workspace).toContain('packageExtensions:');
   expect(workspace).toContain('vite@6.4.3:');

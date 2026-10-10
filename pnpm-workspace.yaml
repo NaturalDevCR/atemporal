@@ -1,8 +1,12 @@
 allowBuilds:
+  # jest-haste-map 30.5 pulls in @parcel/watcher for watch mode only; its
+  # prebuilt platform binaries ship as optional deps, so the build script is
+  # never needed in CI or tests.
+  '@parcel/watcher': false
   esbuild: true
   unrs-resolver: true
 overrides:
-  '@babel/core': 7.29.7
+  '@babel/core@^7.0.0': 7.29.7
   'brace-expansion@^1.1.0': 1.1.21
   'brace-expansion@^2.0.0': 2.1.7
   'brace-expansion@^5.0.0': 5.0.12
