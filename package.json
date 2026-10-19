@@ -168,7 +168,7 @@
     "fast-check": "^4.10.2",
     "jest": "^30.5.2",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.4.13",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
