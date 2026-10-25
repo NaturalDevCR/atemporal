@@ -1,4 +1,5 @@
 import { Temporal } from '../core/temporal-api';
+import { hasExplicitOffset, hasTrailingTimeZoneAnnotation } from '../core/parsing/input-safety';
 import type { Temporal as TemporalTypes } from '@js-temporal/polyfill';
 import { InvalidDateError } from '../errors';
 import type { InstantInput, PlainDateInput, PlainDateTimeInput, ZonedDateTimeInput, ZonedDateTimeOptions } from '../types/temporal-inputs';
@@ -16,7 +17,7 @@ export function instant(input: InstantInput): TemporalTypes.Instant {
       if (!Number.isFinite(input)) throw new TypeError('epoch milliseconds must be finite');
       return Temporal.Instant.fromEpochMilliseconds(input);
     }
-    if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(input)) throw new TypeError('ISO input requires Z or an explicit offset');
+    if (!hasExplicitOffset(input)) throw new TypeError('ISO input requires Z or an explicit offset');
     return Temporal.Instant.from(input);
   } catch (error) { return invalid('instant', error); }
 }
@@ -35,7 +36,7 @@ export function zonedDateTime(input: ZonedDateTimeInput, options: ZonedDateTimeO
   try {
     const policy = { disambiguation: options.disambiguation ?? 'reject', overflow: options.overflow ?? 'reject' } as const;
     if (input instanceof Temporal.ZonedDateTime) return options.timeZone ? input.withTimeZone(options.timeZone) : input;
-    if (typeof input === 'string' && /\[[^\]]+\]$/.test(input)) return Temporal.ZonedDateTime.from(input, policy);
+    if (typeof input === 'string' && hasTrailingTimeZoneAnnotation(input)) return Temporal.ZonedDateTime.from(input, policy);
     const plain = input instanceof Temporal.PlainDateTime ? input : Temporal.PlainDateTime.from(input, policy);
     if (!options.timeZone) throw new TypeError('timeZone is required for a local date-time');
     return Temporal.ZonedDateTime.from({

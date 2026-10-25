@@ -35,7 +35,7 @@ test('pnpm manifest declares strict test types and audited transitive overrides'
   expect(manifest.devDependencies.esbuild).toBe('^0.28.2');
   expect(manifest.devDependencies['license-checker']).toBeUndefined();
   expect(workspace).toContain('packageExtensions:');
-  expect(workspace).toContain('vite@6.4.3:');
+  expect(workspace).toContain('vite@6.4.4:');
   expect(workspace).toContain('esbuild: 0.25.12');
   expect(workspace).toContain('tsup>esbuild: 0.28.1');
   expect(workspace).toContain('qs: 6.16.0');
@@ -76,7 +76,7 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(workspace).toContain("'brace-expansion@^1.1.0': 1.1.21");
   expect(workspace).toContain("'brace-expansion@^2.0.0': 2.1.7");
   expect(workspace).toContain("'brace-expansion@^5.0.0': 5.0.12");
-  expect(workspace).toContain('fast-uri: 3.1.8');
+  expect(workspace).toContain('fast-uri: 3.1.9');
   expect(workspace).toContain('js-yaml: 3.15.2');
   expect(workspace).toContain('postcss: 8.5.29');
   expect(workspace).toContain('handlebars: 4.7.10');
@@ -90,8 +90,8 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(rootLock).not.toContain("'@babel/core@7.25.9'");
   expect(rootLock).not.toContain('handlebars@4.7.9');
   expect(rootLock).not.toContain('fast-uri@3.1.5');
-  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.8');
-  expect(nextLock.packages[''].dependencies.next).toBe('16.4.0');
+  expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.9');
+  expect(nextLock.packages[''].dependencies.next).toBe('16.4.1');
   expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.5');
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {

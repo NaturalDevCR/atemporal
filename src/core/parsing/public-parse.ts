@@ -2,6 +2,7 @@ import { TemporalWrapper } from '../../TemporalWrapper';
 import { TemporalUtils } from '../../TemporalUtils';
 import { InvalidDateError } from '../../errors';
 import { Temporal } from '../temporal-api';
+import { getExplicitOffset, hasTrailingTimeZoneAnnotation } from './input-safety';
 import type { DateInput, ParseOptions } from '../../types';
 
 type StrictTemporalOptions = Required<Pick<ParseOptions, 'disambiguation' | 'overflow'>>;
@@ -49,18 +50,18 @@ function parseString(
 ): InstanceType<typeof Temporal.ZonedDateTime> {
   const policy = strictOptions(options);
 
-  if (/\[[^\]]+\]$/.test(input)) {
+  if (hasTrailingTimeZoneAnnotation(input)) {
     return preserveOrConvert(Temporal.ZonedDateTime.from(input, policy), options, timeZone);
   }
 
-  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(input)) {
+  const explicitOffset = getExplicitOffset(input);
+  if (explicitOffset) {
     const instant = Temporal.Instant.from(input);
-    const originalOffset = input.match(/([+-]\d{2}:?\d{2})(?:$|\[)/)?.[1];
-    const originalTimeZone = originalOffset
-      ? originalOffset.includes(':')
-        ? originalOffset
-        : `${originalOffset.slice(0, 3)}:${originalOffset.slice(3)}`
-      : 'UTC';
+    const originalTimeZone = explicitOffset === 'UTC'
+      ? explicitOffset
+      : explicitOffset.includes(':')
+        ? explicitOffset
+        : `${explicitOffset.slice(0, 3)}:${explicitOffset.slice(3)}`;
     return preserveOrConvert(instant.toZonedDateTimeISO(originalTimeZone), options, timeZone);
   }
 

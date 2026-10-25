@@ -168,13 +168,13 @@
     "fast-check": "^4.10.2",
     "jest": "^30.5.2",
     "standard-version": "^9.5.0",
-    "ts-jest": "^29.4.13",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "tsup": "^9.0.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.6",
+    "vite": "^8.1.6",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.43"
+    "vue": "^3.5.44"
   },
   "engines": {
     "node": ">=22"
