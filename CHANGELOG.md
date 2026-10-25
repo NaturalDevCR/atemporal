@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.2](https://github.com/NaturalDevCR/atemporal/compare/v2.0.1...v2.0.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* **security:** patch dependency and CodeQL alerts ([#79](https://github.com/NaturalDevCR/atemporal/issues/79)) ([70c82e5](https://github.com/NaturalDevCR/atemporal/commit/70c82e50642536d5b1665c27d8e7c881875cc737))
+
 ## [2.0.1](https://github.com/NaturalDevCR/atemporal/compare/v2.0.0...v2.0.1) (2026-10-10)
 
 
