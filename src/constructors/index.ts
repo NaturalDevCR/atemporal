@@ -1,30 +1,8 @@
 import { Temporal } from '../core/temporal-api';
+import { hasExplicitOffset, hasTrailingTimeZoneAnnotation } from '../core/parsing/input-safety';
 import type { Temporal as TemporalTypes } from '@js-temporal/polyfill';
 import { InvalidDateError } from '../errors';
 import type { InstantInput, PlainDateInput, PlainDateTimeInput, ZonedDateTimeInput, ZonedDateTimeOptions } from '../types/temporal-inputs';
-
-function isAsciiDigit(value: string | undefined): boolean {
-  return value !== undefined && value >= '0' && value <= '9';
-}
-
-function hasExplicitOffset(input: string): boolean {
-  if (input.endsWith('Z') || input.endsWith('z')) return true;
-
-  const compact = input.slice(-5);
-  if ((compact[0] === '+' || compact[0] === '-') &&
-      isAsciiDigit(compact[1]) && isAsciiDigit(compact[2]) &&
-      isAsciiDigit(compact[3]) && isAsciiDigit(compact[4])) return true;
-
-  const separated = input.slice(-6);
-  return (separated[0] === '+' || separated[0] === '-') &&
-    isAsciiDigit(separated[1]) && isAsciiDigit(separated[2]) &&
-    separated[3] === ':' && isAsciiDigit(separated[4]) && isAsciiDigit(separated[5]);
-}
-
-function hasTrailingTimeZoneAnnotation(input: string): boolean {
-  const openingBracket = input.lastIndexOf('[');
-  return openingBracket >= 0 && openingBracket < input.length - 1 && input.endsWith(']');
-}
 
 function invalid(name: string, error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
