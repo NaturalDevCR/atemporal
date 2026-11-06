@@ -18,6 +18,18 @@ describe('CustomParseFormat Plugin - Branch Coverage Improvements', () => {
         resetCurrentDateFunction();
     });
 
+    it('matches runs of format spaces as a single flexible separator', () => {
+        const format = 'YYYY      MM-DD';
+        expect(atemporal.fromFormat('2024\t01-03', format).isValid()).toBe(true);
+        expect(atemporal.fromFormat('2024' + ' '.repeat(150) + '!', format).isValid()).toBe(false);
+    });
+
+    it('rejects oversized values and patterns before matching', () => {
+        const padding = ' '.repeat(4096);
+        expect(atemporal.fromFormat(`2024${padding}01-03`, 'YYYY MM-DD').isValid()).toBe(false);
+        expect(atemporal.fromFormat('2024 01-03', `YYYY${padding}MM-DD`).isValid()).toBe(false);
+    });
+
     describe('validateDateParts Error Scenarios', () => {
         it('should handle month name validation failures (lines 137-138)', () => {
             // Test invalid month names that should trigger null return

@@ -45,15 +45,17 @@ function toISODateString(
 }
 
 /**
- * Sets the global business days configuration.
+ * Sets the global business days configuration. At least one day must be a workday.
  */
 function setBusinessDaysConfig(options: BusinessDaysOptions) {
-  if (options.holidays) {
-    globalHolidays = options.holidays.map(toISODateString);
+  const weekendDays = options.weekendDays?.slice() ?? globalWeekendDays;
+  if (weekendDays.some((day) => !Number.isInteger(day) || day < 1 || day > 7) ||
+      new Set(weekendDays).size === 7) {
+    throw new RangeError("weekendDays must use ISO weekdays and leave at least one business day");
   }
-  if (options.weekendDays) {
-    globalWeekendDays = options.weekendDays;
-  }
+
+  globalHolidays = options.holidays?.map(toISODateString) ?? globalHolidays;
+  globalWeekendDays = weekendDays;
 }
 
 /**
@@ -122,6 +124,9 @@ const businessDaysPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
     days: number
   ): TemporalWrapper {
     if (!this.isValid()) return this;
+    if (!Number.isSafeInteger(days)) {
+      throw new RangeError("days must be a safe integer");
+    }
     if (days === 0) return this.clone();
 
     let count = 0;
@@ -155,12 +160,7 @@ const businessDaysPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
   Atemporal.prototype.nextBusinessDay = function (
     this: TemporalWrapper
   ): TemporalWrapper {
-    if (!this.isValid()) return this;
-    let current = this.clone();
-    do {
-      current = current.add(1, "day");
-    } while (!current.isBusinessDay());
-    return current;
+    return this.addBusinessDays(1);
   };
 };
 

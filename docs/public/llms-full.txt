@@ -1583,11 +1583,13 @@ The `.range()` method generates an array of dates between a start and end date. 
 
 **API:** `start.range(endDate, unit, options)`
 
-- `endDate`: The end of the range.
+- `endDate`: The end of the range. A date or time without an explicit zone is interpreted in the start instance's time zone.
 - `unit`: The step unit (e.g., `'day'`, `'week'`, `'month'`).
 - `options` (optional):
   - `inclusivity`: `'[]'` (default, includes both start and end), `'()'`, `'[)'`, `'(]'`.
   - `format`: If provided, returns a `string[]` instead of `atemporal[]`.
+
+An exclusive end excludes a step exactly at `endDate`. Earlier steps remain in the result even if they fall within the same calendar day or month as the end.
 
 ```ts
 const start = atemporal("2024-04-28");
@@ -1932,7 +1934,8 @@ const withTz = atemporal.fromFormat("2024-01-01 10:00", "YYYY-MM-DD HH:mm", "Ame
 
 ## Error Handling
 
-When the date string does not match the format, `fromFormat()` returns an **invalid instance** rather than throwing. Use `.isValid()` to check:
+`fromFormat()` returns an **invalid instance** when the date does not match the
+format or when either string exceeds 4,096 UTF-16 code units. Use `.isValid()` to check:
 
 ```ts
 const result = atemporal.fromFormat("invalid", "YYYY-MM-DD");
@@ -2445,6 +2448,8 @@ atemporal.setBusinessDaysConfig({
 > [!NOTE]
 > Holidays should be provided as ISO date strings in the format `YYYY-MM-DD`. They are normalized internally for accurate comparison.
 
+`weekendDays` must contain ISO weekday numbers from 1 to 7 and leave at least one business day. Invalid values throw a `RangeError`.
+
 ## Methods
 
 ### `.isBusinessDay()`
@@ -2480,7 +2485,7 @@ friday.isWeekend(); // true (Friday)
 
 ### `.addBusinessDays(n)`
 
-Adds `n` working days, skipping weekends and holidays.
+Adds `n` working days, skipping weekends and holidays. `n` must be a safe integer.
 
 ```ts
 const thursday = atemporal("2024-07-04"); // Thursday + holiday
@@ -2535,12 +2540,8 @@ const slots = atemporal.findAvailableSlots({
   busySlots: [{ start: "2023-01-01T12:00:00", end: "2023-01-01T13:00:00" }],
 });
 
-// slots is an array of TimeSlot objects:
-// [
-//   { start: atemporal("2023-01-01T09:00:00"), end: atemporal("2023-01-01T09:30:00") },
-//   { start: atemporal("2023-01-01T09:30:00"), end: atemporal("2023-01-01T10:00:00") },
-//   ...
-// ]
+// Each result is the start of an available slot.
+// slots[0].format("HH:mm"); // "09:00"
 ```
 
 ## API
@@ -2560,12 +2561,7 @@ interface AvailabilityOptions {
 
 ### Return Type
 
-```ts
-interface TimeSlot {
-  start: TemporalWrapper; // Start of the available slot
-  end: TemporalWrapper;   // End of the available slot
-}
-```
+Returns `TemporalWrapper[]`. Add the requested duration to a start value to get the end of that slot. A zero or negative duration or interval throws a `RangeError`.
 
 ## How It Works
 
@@ -2607,7 +2603,7 @@ const slots = atemporal.findAvailableSlots({
 });
 
 // Overlapping busy slots are merged into 09:30-10:15
-// Result: 09:00-09:30, 10:15-10:45, 10:45-11:15, 11:15-11:45
+// Result: 09:00-09:30, 10:30-11:00, 11:00-11:30, 11:30-12:00
 ```
 
 ### Custom interval (gap between slots)
@@ -4565,8 +4561,10 @@ atemporal does **not** assume:
 causes a regex in `customParseFormat` to backtrack catastrophically.
 
 **Mitigation:**
-- All format-token regexes are linear in input length.
-- We do not use nested quantifiers (`(a+)+`, `(a*)*`).
+- Custom formats escape regex metacharacters and compile each run of spaces
+  to one whitespace matcher.
+- `fromFormat()` limits both the input and the format to 4,096 UTF-16 code units
+  before compiling or matching the regex.
 - The string strategy enforces a default 4 096-character input cap
   (configurable via `setMaxInputLength`).
 - The CI fuzz tests run 1 000 random strings per build (see

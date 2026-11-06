@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.3](https://github.com/NaturalDevCR/atemporal/compare/v2.0.2...v2.0.3) (2026-11-06)
+
+### Bug Fixes
+
+- Keep date parsing, formatting, differences, and overlap caches isolated by input and time zone.
+- Preserve local times, DST policies, offsets, and calendars in the strict parser and Temporal constructors.
+- Reject non-progressing time slots and business-day configurations. Use exact range endpoints and calendar boundaries across DST changes.
+- Bound custom format parsing and match consecutive spaces as a single separator.
+- Recognize wrappers and plugins across CommonJS and ESM, and accept polyfill instants on native Temporal runtimes.
+
+### Maintenance
+
+- Update development dependencies and patch the `deepmerge` copy used by Jest.
+- Validate the release tarball before publishing it to npm and creating the GitHub release.
+
 ## [2.0.2](https://github.com/NaturalDevCR/atemporal/compare/v2.0.1...v2.0.2) (2026-10-25)
 
 

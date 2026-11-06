@@ -97,4 +97,34 @@ describe("Time Slots Plugin", () => {
     });
     expect(slots.length).toBe(0);
   });
+
+  test.each([0, -1])("rejects an interval of %i minutes", (minutes) => {
+    expect(() => atemporal.findAvailableSlots({
+      range: { start: "2023-01-01T09:00:00", end: "2023-01-01T10:00:00" },
+      duration: { minutes: 30 },
+      interval: { minutes },
+      busySlots: [],
+    })).toThrow(RangeError);
+  });
+
+  test("rejects a zero duration even with a positive interval", () => {
+    expect(() => atemporal.findAvailableSlots({
+      range: { start: "2023-01-01T09:00:00", end: "2023-01-01T10:00:00" },
+      duration: { minutes: 0 },
+      interval: { minutes: 30 },
+      busySlots: [],
+    })).toThrow(RangeError);
+  });
+
+  test("ignores reversed and empty busy periods", () => {
+    const slots = atemporal.findAvailableSlots({
+      range: { start: "2023-01-01T09:00:00", end: "2023-01-01T10:00:00" },
+      duration: { hours: 1 },
+      busySlots: [
+        { start: "2023-01-01T09:45:00", end: "2023-01-01T09:15:00" },
+        { start: "2023-01-01T09:30:00", end: "2023-01-01T09:30:00" },
+      ],
+    });
+    expect(slots).toHaveLength(1);
+  });
 });

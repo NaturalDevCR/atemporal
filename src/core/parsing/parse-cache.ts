@@ -85,6 +85,7 @@ export class ParseCache {
     
     const startTime = performance.now();
     const key = this.createCacheKey(input, options);
+    if (key === undefined) return undefined;
     
     try {
       const entry = this.cache.get(key);
@@ -123,6 +124,7 @@ export class ParseCache {
     }
     
     const key = this.createCacheKey(input, options);
+    if (key === undefined) return;
     const now = Date.now();
     
     const entry: ParseCacheEntry = {
@@ -152,6 +154,7 @@ export class ParseCache {
     }
     
     const key = this.createCacheKey(input, options);
+    if (key === undefined) return false;
     const entry = this.cache.get(key);
     
     if (entry && !this.isExpired(entry)) {
@@ -174,6 +177,7 @@ export class ParseCache {
     }
     
     const key = this.createCacheKey(input, options);
+    if (key === undefined) return false;
     return this.cache.delete(key);
   }
 
@@ -381,6 +385,7 @@ export class ParseCache {
   preload(patterns: Array<{ input: TemporalInput; options: StrictParsingOptions; result: Temporal.ZonedDateTime; strategy: ParseStrategyType }>): void {
     for (const pattern of patterns) {
       const key = this.createCacheKey(pattern.input, pattern.options);
+      if (key === undefined) continue;
       const now = Date.now();
       
       const entry: ParseCacheEntry = {
@@ -406,8 +411,13 @@ export class ParseCache {
   /**
    * Create cache key for input and options
    */
-  private createCacheKey(input: TemporalInput, options: StrictParsingOptions): string {
-    return CacheKeys.parseKey(input, options);
+  private createCacheKey(input: TemporalInput, options: StrictParsingOptions): string | undefined {
+    try {
+      return CacheKeys.parseKey(input, options);
+    } catch {
+      // A cache-key failure must not prevent parsing the original input.
+      return undefined;
+    }
   }
 
   /**

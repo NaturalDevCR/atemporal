@@ -5,6 +5,31 @@
 
 import type { Temporal } from '@js-temporal/polyfill';
 import type { TimeUnit } from '../../types';
+import { Temporal as TemporalRuntime } from '../temporal-api';
+
+const temporalPrototypes = [
+  TemporalRuntime.ZonedDateTime.prototype,
+  TemporalRuntime.PlainDateTime.prototype,
+  TemporalRuntime.PlainDate.prototype,
+  TemporalRuntime.PlainTime.prototype,
+  TemporalRuntime.Instant.prototype,
+];
+
+function parseFields(value: object): string | undefined {
+  if (Object.getOwnPropertySymbols(value).length) return undefined;
+
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const fields = [];
+  for (const key of Object.keys(descriptors).sort()) {
+    const descriptor = descriptors[key];
+    const field = descriptor.value;
+    const type = typeof field;
+    if (!('value' in descriptor) || (field !== null && type === 'object') ||
+        type === 'function' || type === 'symbol') return undefined;
+    fields.push([key, type, String(field)]);
+  }
+  return JSON.stringify(fields);
+}
 
 /**
  * Cache key builder for structured, fast key generation
@@ -125,7 +150,11 @@ export class CacheKeys {
       .reset()
       .addString('diff')
       .addString(d1.epochNanoseconds.toString())
+      .addString(d1.timeZoneId)
+      .addString(d1.calendarId)
       .addString(d2.epochNanoseconds.toString())
+      .addString(d2.timeZoneId)
+      .addString(d2.calendarId)
       .addString(unit)
       .build();
   }
@@ -184,18 +213,43 @@ export class CacheKeys {
   /**
    * Generates cache key for parsing operations
    */
-  static parseKey(input: any, options: any): string {
-    const builder = this.builder
-      .reset()
-      .addString('parse')
-      .addString(typeof input)
-      .addString(String(input));
-    
-    if (options) {
-      builder.addObject(options);
+  static parseKey(input: unknown, options: object): string | undefined {
+    const inputType = typeof input;
+    let kind: string = inputType;
+    let value: string | undefined;
+
+    if (typeof input === 'object' && input !== null) {
+      const prototype = Object.getPrototypeOf(input);
+      if (prototype === Date.prototype && Reflect.ownKeys(input).length === 0) {
+        kind = 'date';
+        value = String(Date.prototype.getTime.call(input));
+      } else if (prototype === Object.prototype || prototype === null || prototype === Array.prototype) {
+        kind = prototype === Array.prototype ? 'array' : prototype === null ? 'null-prototype' : 'object';
+        value = parseFields(input);
+      } else {
+        const temporalType = temporalPrototypes.indexOf(prototype);
+        if (temporalType !== -1 && Reflect.ownKeys(input).length === 0) {
+          kind = `temporal${temporalType}`;
+          value = prototype.toString.call(input);
+        }
+      }
+    } else if (inputType !== 'function' && inputType !== 'symbol') {
+      value = String(input);
     }
-    
-    return builder.build();
+
+    // Methods and accessors can return different values even when object identity is unchanged.
+    if (value === undefined) return undefined;
+    let optionKey = '';
+    for (const key of Object.keys(options).sort()) {
+      const option = (options as Record<string, unknown>)[key];
+      const type = typeof option;
+      if (type !== 'undefined' && type !== 'string' && type !== 'boolean' && !Number.isFinite(option)) {
+        return undefined;
+      }
+      const field = String(option);
+      optionKey += `${key.length}:${key}${type}${field.length}:${field}`;
+    }
+    return `parse|${kind}|${value.length}:${value}|${optionKey}`;
   }
 
   /**

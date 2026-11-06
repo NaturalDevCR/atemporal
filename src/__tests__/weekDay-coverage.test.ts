@@ -266,6 +266,20 @@ describe("WeekDay Plugin - Coverage Improvements", () => {
   });
 
   describe("Cache Integration and Performance", () => {
+    it("ends the custom week at the next local boundary after a midnight gap", () => {
+      atemporal.setWeekStartsOn(0);
+      const date = atemporal("2018-11-04T12:00:00", "America/Sao_Paulo");
+      expect(date.startOf("week").raw.hour).toBe(1);
+      expect(date.endOf("week").raw.toString()).toBe("2018-11-10T23:59:59.999-02:00[America/Sao_Paulo]");
+    });
+
+    it("preserves the configured weekday when an entire start date is skipped", () => {
+      atemporal.setWeekStartsOn(5);
+      const date = atemporal("2012-01-02T12:00:00", "Pacific/Apia");
+      expect(date.startOf("week").raw.day).toBe(31);
+      expect(date.endOf("week").raw.toString()).toBe("2012-01-05T23:59:59.999+14:00[Pacific/Apia]");
+    });
+
     it("should use cached results for identical weekday calculations", () => {
       const date = atemporal("2024-01-15T12:00:00Z");
 

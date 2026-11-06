@@ -44,10 +44,11 @@ for the reviewed scope.
 | Firebase timestamps | Yes | No | No | No |
 | Native Temporal fallback | Auto-detected | N/A | N/A | N/A |
 | IANA time zones | Yes | Via plugin | Yes | Yes (v3+) |
-| Size measurements | [Generated report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md) | Varies by use | Varies by use | Varies by use |
+| Size measurements | [CI size reports](https://github.com/NaturalDevCR/atemporal/actions/workflows/ci.yml) | Varies by use | Varies by use | Varies by use |
 
-Core distribution, packed-tarball, and application-bundle sizes are separate
-measurements; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md).
+The `package-artifact-reports` artifact on each CI run includes `size-report.md`
+with separate measurements for the core distribution, packed tarball, and
+application bundle.
 `@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle
 cost is measured separately rather than inferred from the core distribution.
 

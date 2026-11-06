@@ -6,9 +6,7 @@
 
 import { TemporalWrapper } from '../TemporalWrapper';
 import { TemporalUtils, LRUCache, GlobalCacheCoordinator } from '../TemporalUtils';
-import { LocaleUtils } from '../core/locale';
 import type { AtemporalFactory, Plugin, DateRange, OverlapResult, OverlapOptions, DateInput } from '../types';
-import { InvalidDateError } from '../errors';
 import { markAsPlugin } from '../typeGuards';
 
 /**
@@ -36,8 +34,8 @@ export class OverlapDetectionError extends Error {
  * Stores calculated overlap results with range-aware keys.
  */
 class OverlapCache {
-    private static cache = new LRUCache<string, OverlapResult>(200); // Reasonable size for overlap cache
     private static readonly MAX_SIZE = 200;
+    private static cache = new LRUCache<string, { overlaps: boolean; bounds: [number, number] | null }>(this.MAX_SIZE);
 
     /**
      * Generates a cache key for two date ranges and options.
@@ -51,20 +49,11 @@ class OverlapCache {
         range2: DateRange,
         options: OverlapOptions
     ): string {
-        // Handle null/undefined ranges safely.
-        // NOTE: generateKey is only called from getOverlapResult/setOverlapResult, both of which
-        // already guard against null ranges before calling this method. This branch is a safety
-        // net — we use a static key because a random one would defeat the cache entirely.
-        if (!range1 || !range2) {
-            return 'null:invalid-range';
-        }
-        
-        const r1Start = typeof range1.start === 'string' ? range1.start : String(range1.start);
-        const r1End = typeof range1.end === 'string' ? range1.end : String(range1.end);
-        const r2Start = typeof range2.start === 'string' ? range2.start : String(range2.start);
-        const r2End = typeof range2.end === 'string' ? range2.end : String(range2.end);
-        
-        return JSON.stringify([r1Start, r1End, r2Start, r2End, options.includeBoundaries, options.timezone, options.strictValidation]);
+        const instants = [range1.start, range1.end, range2.start, range2.end].map((value) => {
+            const date = value instanceof TemporalWrapper ? value.raw : TemporalUtils.from(value, options.timezone);
+            return date.epochNanoseconds.toString();
+        });
+        return JSON.stringify([instants, options.includeBoundaries, options.strictValidation]);
     }
 
     /**
@@ -86,7 +75,11 @@ class OverlapCache {
         
         const key = this.generateKey(range1, range2, options);
         const result = this.cache.get(key);
-        return result !== undefined ? result : null;
+        if (!result) return null;
+
+        const { overlaps, bounds } = result;
+        const overlapRange = bounds ? { start: new Date(bounds[0]), end: new Date(bounds[1]) } : null;
+        return { overlaps, overlapRange };
     }
 
     /**
@@ -108,7 +101,15 @@ class OverlapCache {
         }
         
         const key = this.generateKey(range1, range2, options);
-        this.cache.set(key, result);
+        const { overlaps, overlapRange } = result;
+        const epochMilliseconds = (value: DateInput) => value instanceof Date
+            ? value.getTime()
+            : TemporalUtils.from(value, options.timezone).epochMilliseconds;
+        const bounds: [number, number] | null = overlapRange ? [
+            epochMilliseconds(overlapRange.start),
+            epochMilliseconds(overlapRange.end),
+        ] : null;
+        this.cache.set(key, { overlaps, bounds });
     }
 
     /**
@@ -181,7 +182,7 @@ function validateDateRange(
     }
 
     // Check if start is after end (invalid range)
-    if (options.strictValidation && start.isAfter(end)) {
+    if (options.strictValidation && start.raw.epochNanoseconds > end.raw.epochNanoseconds) {
         throw new InvalidDateRangeError(
             `Invalid date range: start date (${start.format()}) is after end date (${end.format()})`,
             range
@@ -210,58 +211,26 @@ export function checkDateRangeOverlap(
         strictValidation: options.strictValidation ?? true
     };
 
-    // Check cache first for performance
-    const cachedResult = OverlapCache.getOverlapResult(range1, range2, opts);
-    if (cachedResult !== null) {
-        return cachedResult;
-    }
-
     try {
         // Validate both date ranges
-        const { start: start1, end: end1 } = validateDateRange(range1, opts);
-        const { start: start2, end: end2 } = validateDateRange(range2, opts);
+        const normalized1 = validateDateRange(range1, opts);
+        const normalized2 = validateDateRange(range2, opts);
+        const cachedResult = OverlapCache.getOverlapResult(normalized1, normalized2, opts);
+        if (cachedResult !== null) return cachedResult;
 
-        // Calculate overlap using efficient comparison logic
-        let overlaps: boolean;
-        let overlapStart: TemporalWrapper | null = null;
-        let overlapEnd: TemporalWrapper | null = null;
+        const { start: start1, end: end1 } = normalized1;
+        const { start: start2, end: end2 } = normalized2;
 
-        if (opts.includeBoundaries) {
-            // Ranges overlap if: start1 <= end2 AND start2 <= end1
-            overlaps = start1.isSameOrBefore(end2) && start2.isSameOrBefore(end1);
-        } else {
-            // Ranges overlap if: start1 < end2 AND start2 < end1 (strict overlap, no touching)
-            overlaps = start1.isBefore(end2) && start2.isBefore(end1);
-        }
-
-        let overlapRange: DateRange | null = null;
-
-        if (overlaps) {
-            // Calculate the overlapping period
-            // Overlap start is the later of the two start dates
-            overlapStart = start1.isAfter(start2) ? start1 : start2;
-            // Overlap end is the earlier of the two end dates
-            overlapEnd = end1.isBefore(end2) ? end1 : end2;
-
-            // Double-check that we have a valid overlap range
-            if (opts.includeBoundaries ? overlapStart.isSameOrBefore(overlapEnd) : overlapStart.isBefore(overlapEnd)) {
-                overlapRange = {
-                    start: overlapStart.toDate(),
-                    end: overlapEnd.toDate()
-                };
-            } else {
-                // Edge case: ranges touch but don't overlap when boundaries are excluded
-                overlaps = false;
-            }
-        }
-
-        const result: OverlapResult = {
-            overlaps,
-            overlapRange
-        };
+        const overlapStart = start1.raw.epochNanoseconds > start2.raw.epochNanoseconds ? start1 : start2;
+        const overlapEnd = end1.raw.epochNanoseconds < end2.raw.epochNanoseconds ? end1 : end2;
+        const start = overlapStart.raw.epochNanoseconds;
+        const end = overlapEnd.raw.epochNanoseconds;
+        const overlaps = start < end || (opts.includeBoundaries && start === end);
+        const overlapRange = overlaps ? { start: overlapStart.toDate(), end: overlapEnd.toDate() } : null;
+        const result: OverlapResult = { overlaps, overlapRange };
 
         // Cache the result for future use
-        OverlapCache.setOverlapResult(range1, range2, opts, result);
+        OverlapCache.setOverlapResult(normalized1, normalized2, opts, result);
 
         return result;
     } catch (error) {
@@ -324,8 +293,8 @@ const dateRangeOverlapPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) 
 
         // Create a single-point range from the current instance
         const currentRange: DateRange = {
-            start: this.toDate(),
-            end: this.toDate()
+            start: this,
+            end: this
         };
 
         return checkDateRangeOverlap(currentRange, range, options);

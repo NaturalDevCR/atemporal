@@ -3,8 +3,7 @@
  * considering a list of busy periods.
  */
 
-import { Temporal } from "../core/temporal-api"; // Use polyfill types for internal logic
-import { TemporalWrapper } from "../TemporalWrapper";
+import type { TemporalWrapper } from "../TemporalWrapper";
 import type { Plugin, AtemporalFactory, DateInput } from "../types";
 import { markAsPlugin } from '../typeGuards';
 
@@ -52,9 +51,10 @@ function normalizeSlot(
   slot: TimeSlot,
   atemporal: AtemporalFactory
 ): { start: TemporalWrapper; end: TemporalWrapper } | null {
+  if (slot.start == null || slot.end == null) return null;
   const start = atemporal(slot.start);
   const end = atemporal(slot.end);
-  if (!start.isValid() || !end.isValid()) return null;
+  if (!start.isValid() || !end.isValid() || start.raw.epochNanoseconds >= end.raw.epochNanoseconds) return null;
   return { start, end };
 }
 
@@ -67,11 +67,16 @@ const timeSlotsPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
     options: AvailabilityOptions
   ): TemporalWrapper[] => {
     const { range, duration, busySlots } = options;
-    const interval = options.interval || duration;
 
     // 1. Normalize Range
     const window = normalizeSlot(range, atemporal);
     if (!window) return [];
+
+    const durationObj = atemporal.duration(duration);
+    const intervalObj = options.interval === undefined ? durationObj : atemporal.duration(options.interval);
+    if (durationObj.sign <= 0 || intervalObj.sign <= 0) {
+      throw new RangeError("Slot duration and interval must be positive");
+    }
 
     // 2. Normalize and Sort Busy Slots
     const normalizedBusySlots = busySlots
@@ -80,7 +85,11 @@ const timeSlotsPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
         (slot): slot is { start: TemporalWrapper; end: TemporalWrapper } =>
           slot !== null
       )
-      .sort((a, b) => Temporal.ZonedDateTime.compare(a.start.raw, b.start.raw));
+      .sort((a, b) => {
+        const first = a.start.raw.epochNanoseconds;
+        const second = b.start.raw.epochNanoseconds;
+        return first < second ? -1 : first > second ? 1 : 0;
+      });
 
     // 3. Merge Overlapping Busy Slots
     const mergedBusySlots: { start: TemporalWrapper; end: TemporalWrapper }[] =
@@ -90,7 +99,7 @@ const timeSlotsPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
         mergedBusySlots.push(slot);
       } else {
         const last = mergedBusySlots[mergedBusySlots.length - 1];
-        if (slot.start.isBefore(last.end) || slot.start.isSame(last.end)) {
+        if (slot.start.raw.epochNanoseconds <= last.end.raw.epochNanoseconds) {
           // Overlap or touching: extend the last slot if needed
           if (slot.end.isAfter(last.end)) {
             mergedBusySlots[mergedBusySlots.length - 1] = {
@@ -108,12 +117,11 @@ const timeSlotsPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
     const results: TemporalWrapper[] = [];
     let cursor = window.start.clone();
 
-    // Convert duration/interval to Temporal.Duration for addition
-    const durationObj = atemporal.duration(duration);
-    const intervalObj = atemporal.duration(interval);
-
-    while (true) {
+    while (cursor.isBefore(window.end)) {
       const slotEnd = cursor.add(durationObj);
+      if (!slotEnd.isAfter(cursor)) {
+        throw new RangeError("Slot duration must advance time");
+      }
 
       // Stop if potential slot exceeds the window end
       if (slotEnd.isAfter(window.end)) {
@@ -137,7 +145,11 @@ const timeSlotsPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
       }
 
       // Advance cursor
-      cursor = cursor.add(intervalObj);
+      const next = cursor.add(intervalObj);
+      if (!next.isAfter(cursor)) {
+        throw new RangeError("Slot interval must advance time");
+      }
+      cursor = next;
     }
 
     return results;

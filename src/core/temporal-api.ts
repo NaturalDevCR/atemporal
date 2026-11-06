@@ -15,10 +15,19 @@
  */
 
 import { getCachedTemporalAPI } from './temporal-detection';
-import { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
+import type { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
 
 // Export the runtime Temporal (native when available, polyfill otherwise).
 // Cast to `typeof PolyfillTemporal` so TypeScript can use `Temporal.ZonedDateTime`
 // as a type namespace in function signatures and declaration files — the
 // native and polyfill APIs are structurally compatible.
 export const Temporal = getCachedTemporalAPI().Temporal as typeof PolyfillTemporal;
+
+type TemporalValue = 'Instant' | 'PlainDate' | 'PlainDateTime' | 'ZonedDateTime';
+
+/** Recognizes native and polyfill values for conversion into the selected runtime. */
+export function isTemporalValue<Category extends TemporalValue>(
+  input: unknown, category: Category,
+): input is InstanceType<(typeof PolyfillTemporal)[Category]> {
+  return Object.prototype.toString.call(input) === `[object Temporal.${category}]`;
+}

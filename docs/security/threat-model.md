@@ -49,8 +49,10 @@ atemporal does **not** assume:
 causes a regex in `customParseFormat` to backtrack catastrophically.
 
 **Mitigation:**
-- All format-token regexes are linear in input length.
-- We do not use nested quantifiers (`(a+)+`, `(a*)*`).
+- Custom formats escape regex metacharacters and compile each run of spaces
+  to one whitespace matcher.
+- `fromFormat()` limits both the input and the format to 4,096 UTF-16 code units
+  before compiling or matching the regex.
 - The string strategy enforces a default 4 096-character input cap
   (configurable via `setMaxInputLength`).
 - The CI fuzz tests run 1 000 random strings per build (see

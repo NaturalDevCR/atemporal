@@ -267,7 +267,7 @@ function buildTldr() {
     '- **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.',
     '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.',
     '- **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.',
-    '- **Size:** Core, packed-tarball, and application-bundle measurements are reported separately; see the [generated size report](https://github.com/NaturalDevCR/atemporal/blob/main/reports/size-report.md). `@js-temporal/polyfill` is a direct runtime dependency, and its application-bundle cost is measured separately.',
+    '- **Size:** See `size-report.md` in the `package-artifact-reports` artifact on [GitHub Actions](https://github.com/NaturalDevCR/atemporal/actions/workflows/ci.yml). It reports core, packed-tarball, and application-bundle measurements separately, including the application-bundle cost of `@js-temporal/polyfill`.',
     '- **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.',
     '',
     '### Common recipes (1-liners)',

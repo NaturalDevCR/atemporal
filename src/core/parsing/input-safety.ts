@@ -1,26 +1,25 @@
-function isAsciiDigit(value: string | undefined): boolean {
-  return value !== undefined && value >= '0' && value <= '9';
-}
-
-export function hasExplicitOffset(input: string): boolean {
-  return getExplicitOffset(input) !== undefined;
-}
-
 export function hasTrailingTimeZoneAnnotation(input: string): boolean {
-  const openingBracket = input.lastIndexOf('[');
-  return openingBracket >= 0 && openingBracket < input.length - 1 && input.endsWith(']');
+  const openingBracket = input.indexOf('[');
+  if (openingBracket < 0) return false;
+  const closingBracket = input.indexOf(']', openingBracket + 1);
+  return closingBracket > openingBracket + 1 &&
+    !input.slice(openingBracket + 1, closingBracket).includes('=');
 }
 
 export function getExplicitOffset(input: string): string | undefined {
-  const compact = input.slice(-5);
-  if ((compact[0] === '+' || compact[0] === '-') &&
-      isAsciiDigit(compact[1]) && isAsciiDigit(compact[2]) &&
-      isAsciiDigit(compact[3]) && isAsciiDigit(compact[4])) return compact;
+  const annotation = input.indexOf('[');
+  const base = annotation < 0 ? input : input.slice(0, annotation);
+  if (!/[Tt ]/.test(base)) return undefined;
+  if (base.endsWith('Z') || base.endsWith('z')) return 'UTC';
+  // RFC 9557 offsets have at most 19 characters, including fractional seconds.
+  return /[+-]\d{2}(?::?\d{2}(?::?\d{2}(?:[.,]\d{1,9})?)?)?$/.exec(base.slice(-19))?.[0];
+}
 
-  const separated = input.slice(-6);
-  if ((separated[0] === '+' || separated[0] === '-') &&
-      isAsciiDigit(separated[1]) && isAsciiDigit(separated[2]) &&
-      separated[3] === ':' && isAsciiDigit(separated[4]) && isAsciiDigit(separated[5])) return separated;
-
-  return input.endsWith('Z') || input.endsWith('z') ? 'UTC' : undefined;
+export function withFixedOffsetZone(input: string, offset: string): string {
+  // ZonedDateTime offset zone IDs have minute precision. Use UTC for
+  // sub-minute offsets while retaining the original offset in the input.
+  const timeZone = /^[+-]\d{2}(?::?\d{2})?$/.test(offset) ? offset : 'UTC';
+  const annotation = input.indexOf('[');
+  const end = annotation < 0 ? input.length : annotation;
+  return `${input.slice(0, end)}[${timeZone}]${input.slice(end)}`;
 }

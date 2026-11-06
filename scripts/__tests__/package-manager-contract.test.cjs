@@ -2,8 +2,23 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { createRequire } = require('node:module');
 
 const root = path.resolve(__dirname, '..', '..');
+
+test('the deepmerge copy used by Jest rejects prototype keys from both inputs', () => {
+  const fromJest = createRequire(require.resolve('jest'));
+  const fromJestCli = createRequire(fromJest.resolve('jest-cli'));
+  const fromJestConfig = createRequire(fromJestCli.resolve('jest-config'));
+  const merge = fromJestConfig('deepmerge');
+  const payload = JSON.parse('{"__proto__":{"admin":true},"normal":1}');
+
+  for (const result of [merge(Object.create(null), payload), merge(payload, {}), merge({ nested: null }, { nested: payload }).nested]) {
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(result.admin).toBeUndefined();
+    expect(result.normal).toBe(1);
+  }
+});
 
 test('root development is pinned to pnpm', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -35,10 +50,10 @@ test('pnpm manifest declares strict test types and audited transitive overrides'
   expect(manifest.devDependencies.esbuild).toBe('^0.28.2');
   expect(manifest.devDependencies['license-checker']).toBeUndefined();
   expect(workspace).toContain('packageExtensions:');
-  expect(workspace).toContain('vite@6.4.4:');
+  expect(workspace).toContain('vite@6.4.5:');
   expect(workspace).toContain('esbuild: 0.25.12');
   expect(workspace).toContain('tsup>esbuild: 0.28.1');
-  expect(workspace).toContain('qs: 6.16.0');
+  expect(workspace).toContain('qs: 6.16.1');
 });
 
 test('pnpm permits only the reviewed dependency build scripts', () => {

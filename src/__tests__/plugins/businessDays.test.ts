@@ -115,4 +115,24 @@ describe("Business Days Plugin", () => {
     expect(result).not.toBe(date); // new instance
     expect(result.isSame(date)).toBe(true);
   });
+
+  test("rejects an invalid workweek without replacing the current configuration", () => {
+    expect(() => atemporal.setBusinessDaysConfig({
+      holidays: ["2023-01-09"],
+      weekendDays: [1, 2, 3, 4, 5, 6, 7],
+    })).toThrow(RangeError);
+    expect(() => atemporal.setBusinessDaysConfig({ weekendDays: [0] })).toThrow(RangeError);
+    expect(atemporal("2023-01-06").nextBusinessDay().format("YYYY-MM-DD")).toBe("2023-01-09");
+  });
+
+  test("copies the weekend configuration and rejects invalid day counts", () => {
+    const weekendDays = [6, 7];
+    atemporal.setBusinessDaysConfig({ weekendDays });
+    weekendDays.push(1, 2, 3, 4, 5);
+    const friday = atemporal("2023-01-06");
+    expect(friday.nextBusinessDay().format("YYYY-MM-DD")).toBe("2023-01-09");
+    for (const days of [Infinity, NaN, 1.5]) {
+      expect(() => friday.addBusinessDays(days)).toThrow(RangeError);
+    }
+  });
 });

@@ -43,6 +43,8 @@ atemporal.setBusinessDaysConfig({
 > [!NOTE]
 > Holidays should be provided as ISO date strings in the format `YYYY-MM-DD`. They are normalized internally for accurate comparison.
 
+`weekendDays` must contain ISO weekday numbers from 1 to 7 and leave at least one business day. Invalid values throw a `RangeError`.
+
 ## Methods
 
 ### `.isBusinessDay()`
@@ -78,7 +80,7 @@ friday.isWeekend(); // true (Friday)
 
 ### `.addBusinessDays(n)`
 
-Adds `n` working days, skipping weekends and holidays.
+Adds `n` working days, skipping weekends and holidays. `n` must be a safe integer.
 
 ```ts
 const thursday = atemporal("2024-07-04"); // Thursday + holiday

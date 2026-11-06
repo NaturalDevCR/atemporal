@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "packageManager": "pnpm@11.13.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
@@ -159,11 +159,11 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.5.2",
-    "@stryker-mutator/core": "^10.0.0",
-    "@stryker-mutator/jest-runner": "^10.0.0",
-    "@stryker-mutator/typescript-checker": "^10.0.0",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/jest-runner": "^10.1.1",
+    "@stryker-mutator/typescript-checker": "^10.1.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "esbuild": "^0.28.2",
     "fast-check": "^4.10.2",
     "jest": "^30.5.2",

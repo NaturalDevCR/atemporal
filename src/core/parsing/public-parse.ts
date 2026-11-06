@@ -1,8 +1,8 @@
 import { TemporalWrapper } from '../../TemporalWrapper';
 import { TemporalUtils } from '../../TemporalUtils';
 import { InvalidDateError } from '../../errors';
-import { Temporal } from '../temporal-api';
-import { getExplicitOffset, hasTrailingTimeZoneAnnotation } from './input-safety';
+import { isTemporalValue, Temporal } from '../temporal-api';
+import { getExplicitOffset, hasTrailingTimeZoneAnnotation, withFixedOffsetZone } from './input-safety';
 import type { DateInput, ParseOptions } from '../../types';
 
 type StrictTemporalOptions = Required<Pick<ParseOptions, 'disambiguation' | 'overflow'>>;
@@ -12,25 +12,6 @@ function strictOptions(options: ParseOptions): StrictTemporalOptions {
     disambiguation: options.disambiguation ?? 'reject',
     overflow: options.overflow ?? 'reject',
   };
-}
-
-function toZonedDateTime(
-  plain: InstanceType<typeof Temporal.PlainDateTime>,
-  timeZone: string,
-  options: StrictTemporalOptions,
-): InstanceType<typeof Temporal.ZonedDateTime> {
-  return Temporal.ZonedDateTime.from({
-    year: plain.year,
-    month: plain.month,
-    day: plain.day,
-    hour: plain.hour,
-    minute: plain.minute,
-    second: plain.second,
-    millisecond: plain.millisecond,
-    microsecond: plain.microsecond,
-    nanosecond: plain.nanosecond,
-    timeZone,
-  }, options);
 }
 
 function preserveOrConvert(
@@ -56,19 +37,11 @@ function parseString(
 
   const explicitOffset = getExplicitOffset(input);
   if (explicitOffset) {
-    const instant = Temporal.Instant.from(input);
-    const originalTimeZone = explicitOffset === 'UTC'
-      ? explicitOffset
-      : explicitOffset.includes(':')
-        ? explicitOffset
-        : `${explicitOffset.slice(0, 3)}:${explicitOffset.slice(3)}`;
-    return preserveOrConvert(instant.toZonedDateTimeISO(originalTimeZone), options, timeZone);
+    const value = Temporal.ZonedDateTime.from(withFixedOffsetZone(input, explicitOffset), { offset: 'use' });
+    return preserveOrConvert(value, options, timeZone);
   }
 
-  const plain = input.includes('T')
-    ? Temporal.PlainDateTime.from(input, policy)
-    : Temporal.PlainDate.from(input, policy).toPlainDateTime();
-  return toZonedDateTime(plain, timeZone, policy);
+  return Temporal.PlainDateTime.from(input, policy).toZonedDateTime(timeZone, policy);
 }
 
 function parseStrictInput(
@@ -84,23 +57,41 @@ function parseStrictInput(
 
   if (input instanceof TemporalWrapper) {
     if (!input.isValid()) throw new InvalidDateError(input.error ?? 'Invalid atemporal instance');
-    return preserveOrConvert(input.raw, options, timeZone);
+    return preserveOrConvert(TemporalUtils.from(input), options, timeZone);
   }
 
   if (input instanceof Temporal.ZonedDateTime) {
     return preserveOrConvert(input, options, timeZone);
   }
 
+  if (isTemporalValue(input, 'ZonedDateTime')) {
+    return preserveOrConvert(Temporal.ZonedDateTime.from(String(input), policy), options, timeZone);
+  }
+
   if (input instanceof Temporal.PlainDateTime) {
-    return toZonedDateTime(input, timeZone, policy);
+    return input.toZonedDateTime(timeZone, policy);
+  }
+
+  if (isTemporalValue(input, 'PlainDateTime')) {
+    return Temporal.PlainDateTime.from(String(input), policy).toZonedDateTime(timeZone, policy);
   }
 
   if (typeof input === 'string') {
     return parseString(input, timeZone, options);
   }
 
+  if (Array.isArray(input)) {
+    if (input.length === 0 || input.length > 9 || !Array.from(input).every(Number.isInteger)) {
+      throw new InvalidDateError('Strict parsing requires one to nine integer date components');
+    }
+    const [year, month = 1, day = 1, hour, minute, second, millisecond, microsecond, nanosecond] = input;
+    return Temporal.ZonedDateTime.from({
+      year, month, day, hour, minute, second, millisecond, microsecond, nanosecond, timeZone,
+    }, policy);
+  }
+
   if (typeof input === 'object' && 'year' in input) {
-    return toZonedDateTime(Temporal.PlainDateTime.from(input, policy), timeZone, policy);
+    return Temporal.PlainDateTime.from(input, policy).toZonedDateTime(timeZone, policy);
   }
 
   const compatible = TemporalWrapper.from(input, timeZone);

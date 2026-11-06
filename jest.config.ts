@@ -15,6 +15,9 @@ const config: Config = {
             },
         }],
     },
+    moduleNameMapper: {
+        '^\\./plugins/(.+)\\.js$': '<rootDir>/src/plugins/$1.ts',
+    },
     testEnvironment: 'node',
     clearMocks: true,
     coverageProvider: 'v8',
@@ -42,7 +45,8 @@ const config: Config = {
     },
     
     modulePathIgnorePatterns: [
-        '<rootDir>/dist/'
+        '<rootDir>/dist/',
+        '<rootDir>/\\.worktrees/',
     ],
     
     // Exclude performance tests in CI environments

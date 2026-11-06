@@ -70,8 +70,7 @@ export class FormattingCache {
    * Creates a simplified date key for quick comparison
    */
   private static createDateKey(date: Temporal.ZonedDateTime): string {
-    // Create a compact representation that captures all relevant date/time components
-    return `${date.year}-${date.month}-${date.day}-${date.hour}-${date.minute}-${date.second}-${date.millisecond}-${date.timeZoneId}`;
+    return `${date.epochNanoseconds}|${date.timeZoneId}|${date.calendarId}`;
   }
   
   /**

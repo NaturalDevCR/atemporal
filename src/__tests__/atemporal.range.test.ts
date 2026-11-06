@@ -49,10 +49,27 @@ describe('Atemporal: .range() method', () => {
             const startOfMonth = atemporal('2023-11-05');
             const endOfMonth = atemporal('2024-02-20');
             const result = startOfMonth.range(endOfMonth, 'month', { inclusivity: '[)' });
-            expect(result).toHaveLength(3); // Nov, Dec, Jan
+            expect(result).toHaveLength(4); // February 5 still precedes February 20.
             expect(result.map(d => (d as TemporalWrapper).format('YYYY-MM'))).toEqual([
-                '2023-11', '2023-12', '2024-01'
+                '2023-11', '2023-12', '2024-01', '2024-02'
             ]);
+        });
+
+        it('interprets a local endpoint in the start zone and preserves an explicit instant', () => {
+            const local = atemporal('2024-01-01T23:00:00', 'America/New_York');
+            const localEnd = '2024-01-02T23:00:00';
+            expect(local.range(localEnd, 'day')).toHaveLength(2);
+            expect(local.range(localEnd, 'day', { inclusivity: '[)' })).toHaveLength(1);
+            expect(local.range('2024-01-03T03:59:59Z', 'day')).toHaveLength(1);
+        });
+
+        it('retains the final representable instant without advancing past it', () => {
+            const maximum = new Date(8.64e15);
+            const previous = atemporal(new Date(maximum.getTime() - 1), 'UTC');
+            expect(previous.range(maximum, 'millisecond').map((date) => date.raw.epochMilliseconds)).toEqual([
+                maximum.getTime() - 1, maximum.getTime(),
+            ]);
+            expect(previous.range(maximum, 'second')).toHaveLength(1);
         });
 
         it('should handle same start and end dates', () => {

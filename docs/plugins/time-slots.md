@@ -17,12 +17,8 @@ const slots = atemporal.findAvailableSlots({
   busySlots: [{ start: "2023-01-01T12:00:00", end: "2023-01-01T13:00:00" }],
 });
 
-// slots is an array of TimeSlot objects:
-// [
-//   { start: atemporal("2023-01-01T09:00:00"), end: atemporal("2023-01-01T09:30:00") },
-//   { start: atemporal("2023-01-01T09:30:00"), end: atemporal("2023-01-01T10:00:00") },
-//   ...
-// ]
+// Each result is the start of an available slot.
+// slots[0].format("HH:mm"); // "09:00"
 ```
 
 ## API
@@ -42,12 +38,7 @@ interface AvailabilityOptions {
 
 ### Return Type
 
-```ts
-interface TimeSlot {
-  start: TemporalWrapper; // Start of the available slot
-  end: TemporalWrapper;   // End of the available slot
-}
-```
+Returns `TemporalWrapper[]`. Add the requested duration to a start value to get the end of that slot. A zero or negative duration or interval throws a `RangeError`.
 
 ## How It Works
 
@@ -89,7 +80,7 @@ const slots = atemporal.findAvailableSlots({
 });
 
 // Overlapping busy slots are merged into 09:30-10:15
-// Result: 09:00-09:30, 10:15-10:45, 10:45-11:15, 11:15-11:45
+// Result: 09:00-09:30, 10:30-11:00, 11:00-11:30, 11:30-12:00
 ```
 
 ### Custom interval (gap between slots)

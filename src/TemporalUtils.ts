@@ -5,6 +5,7 @@
  */
 
 import type { Temporal } from '@js-temporal/polyfill';
+import { TemporalWrapper } from './TemporalWrapper';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
 import { InvalidTimeZoneError, InvalidDateError } from './errors';
@@ -111,6 +112,13 @@ export class TemporalUtils {
         // FAST PATH: undefined/null (current time) - very common in real-world usage
         if (input === undefined || input === null) {
             return TemporalAPI.Now.zonedDateTimeISO(tz);
+        }
+
+        if (input instanceof TemporalWrapper && !TemporalWrapper.prototype.isPrototypeOf(input)) {
+            if (!input.isValid()) throw new InvalidDateError(input.error ?? 'Invalid atemporal instance');
+            const raw = input.raw;
+            const zoned = new TemporalAPI.ZonedDateTime(raw.epochNanoseconds, raw.timeZoneId, raw.calendarId);
+            return timeZone ? zoned.withTimeZone(timeZone) : zoned;
         }
 
         // Use new ParseCoordinator-based parsing system

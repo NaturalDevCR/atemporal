@@ -100,7 +100,7 @@ describe('release artifact workflow contracts', () => {
     expect(matches(release, /pnpm run pack:artifact/g)).toHaveLength(1);
     expect(release).toContain("require('./artifacts/package-artifact.json').path");
     expect(release).toContain('npm publish "$(node -p');
-    expect(release.indexOf("require('./artifacts/package-artifact.json').path")).toBeLessThan(
+    expect(release.indexOf('assert.equal(digest, artifact.sha512)')).toBeLessThan(
       release.indexOf('npm publish "$(node -p'),
     );
   });
@@ -110,8 +110,13 @@ describe('release artifact workflow contracts', () => {
 
     expect(release).toContain('workflow_dispatch:');
     expect(release).toContain('release_version:');
-    expect(release).toContain("test \"$release_version\" = \"$package_version\"");
-    expect(release).toContain('steps.manual.outputs.release_created || steps.release.outputs.release_created');
+    const releaseJob = jobBlock(release, 'plan-release');
+    expect(releaseJob).toContain("if: github.ref == 'refs/heads/main'");
+    expect(releaseJob).toContain('RELEASE_VERSION: ${{ inputs.release_version }}');
+    expect(releaseJob).toContain('test "$RELEASE_VERSION" = "$package_version"');
+    expect(releaseJob.split('run: |')[1]).not.toContain('${{ inputs.release_version }}');
+    expect(releaseJob).toContain('test "$package_version" = "$manifest_version"');
+    expect(releaseJob).toContain('version: ${{ steps.version.outputs.version }}');
   });
 
   test('publish job only publishes the metadata-selected local tarball', () => {
@@ -122,6 +127,8 @@ describe('release artifact workflow contracts', () => {
       'npm publish "$(node -p "require(\'./artifacts/package-artifact.json\').path")" --access public --tag latest',
     );
     expect(matches(publish, /npm publish /g)).toHaveLength(1);
+    expect(publish).toContain('assert.equal(digest, artifact.sha512)');
+    expect(publish).toContain('dist.integrity');
     expect(publish).toContain("node-version: '24.12.0'");
     expect(publish).not.toContain('NODE_AUTH_TOKEN');
     expect(publish).not.toContain('--provenance');
@@ -140,10 +147,13 @@ describe('release artifact workflow contracts', () => {
   });
 
   test('release publication succeeds before GitHub release finalization and SBOM upload', () => {
-    const attachSbom = jobBlock(workflow('release.yml'), 'attach-sbom');
+    const release = workflow('release.yml');
+    const attachSbom = jobBlock(release, 'attach-sbom');
 
-    expect(attachSbom).toContain('needs: [release-please, publish-npm]');
+    expect(jobBlock(release, 'release-please')).toContain('skip-github-release: true');
+    expect(attachSbom).toContain('needs: [plan-release, publish-npm]');
     expect(attachSbom).toContain("needs.publish-npm.result == 'success'");
+    expect(attachSbom).toContain('target_commitish: ${{ needs.plan-release.outputs.sha }}');
   });
 
   test('package metadata emits an npm-valid local artifact path', () => {
