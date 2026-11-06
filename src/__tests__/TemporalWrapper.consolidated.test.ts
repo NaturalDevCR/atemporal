@@ -78,6 +78,22 @@ describe('TemporalWrapper: Consolidated Coverage Tests', () => {
             const endOfMonth = date.endOf('month');
             expect(endOfMonth.format('DD')).toBe('31'); // January has 31 days
         });
+
+        it('ends a day at the following local boundary after a midnight gap', () => {
+            const date = atemporal('2018-11-04T12:00:00', 'America/Sao_Paulo');
+            expect(date.startOf('day').raw.hour).toBe(1);
+            expect(date.endOf('day').raw.toString()).toBe('2018-11-04T23:59:59.999-02:00[America/Sao_Paulo]');
+        });
+
+        it('ends each occurrence of a partially shifted local hour at its own boundary', () => {
+            const spring = atemporal('2024-10-06T02:35:00', 'Australia/Lord_Howe');
+            expect(spring.endOf('hour').raw.toString()).toBe('2024-10-06T02:59:59.999+11:00[Australia/Lord_Howe]');
+
+            const first = atemporal('2024-04-07T01:45:00+11:00', 'Australia/Lord_Howe');
+            const second = atemporal('2024-04-07T01:45:00+10:30', 'Australia/Lord_Howe');
+            expect(first.endOf('hour').raw.toString()).toBe('2024-04-07T01:59:59.999+11:00[Australia/Lord_Howe]');
+            expect(second.endOf('hour').raw.toString()).toBe('2024-04-07T01:59:59.999+10:30[Australia/Lord_Howe]');
+        });
     });
 
     describe('Day of Week Operations', () => {

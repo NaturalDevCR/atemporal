@@ -42,9 +42,9 @@ export function isValidLocale(code: string): boolean {
     }
 }
 
-export const PLUGIN_SENTINEL = Symbol('atemporal.plugin');
-export const OFFICIAL_PLUGIN_METADATA = Symbol('atemporal.officialPlugin');
-export const EXTENSION_METADATA = Symbol('atemporal.extension');
+export const PLUGIN_SENTINEL = Symbol.for('atemporal.plugin');
+export const OFFICIAL_PLUGIN_METADATA = Symbol.for('atemporal.officialPlugin');
+export const EXTENSION_METADATA = Symbol.for('atemporal.extension');
 
 export type OfficialPluginMetadata = Readonly<{
     name: OfficialPluginName;

@@ -4,11 +4,13 @@ The `.range()` method generates an array of dates between a start and end date. 
 
 **API:** `start.range(endDate, unit, options)`
 
-- `endDate`: The end of the range.
+- `endDate`: The end of the range. A date or time without an explicit zone is interpreted in the start instance's time zone.
 - `unit`: The step unit (e.g., `'day'`, `'week'`, `'month'`).
 - `options` (optional):
   - `inclusivity`: `'[]'` (default, includes both start and end), `'()'`, `'[)'`, `'(]'`.
   - `format`: If provided, returns a `string[]` instead of `atemporal[]`.
+
+An exclusive end excludes a step exactly at `endDate`. Earlier steps remain in the result even if they fall within the same calendar day or month as the end.
 
 ```ts
 const start = atemporal("2024-04-28");

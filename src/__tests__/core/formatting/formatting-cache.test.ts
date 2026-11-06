@@ -64,7 +64,7 @@ describe('FormattingCache', () => {
             const entry = {
                 result,
                 timestamp: Date.now(),
-                dateKey: '2023-1-1-12-0-0-0-UTC'
+                dateKey: '1672574400000000000|UTC|iso8601'
             };
             
             mockLRUCache.get.mockReturnValue(entry);
@@ -122,7 +122,7 @@ describe('FormattingCache', () => {
             const entry = {
                 result: 'formatted-result',
                 timestamp: Date.now(),
-                dateKey: '2023-1-1-12-0-0-0-UTC'
+                dateKey: '1672574400000000000|UTC|iso8601'
             };
             
             mockLRUCache.get.mockReturnValue(entry);

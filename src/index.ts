@@ -135,7 +135,7 @@ const atemporalFn: AtemporalFunction = (
   timeZone?: string
 ) => {
   // If the input is already an atemporal instance, clone it or change its timezone.
-  if (input instanceof TemporalWrapper) {
+  if (input instanceof TemporalWrapper && TemporalWrapper.prototype.isPrototypeOf(input)) {
     return timeZone ? input.timeZone(timeZone) : input.clone();
   }
 
@@ -320,24 +320,18 @@ const loadedPlugins = new Map<OfficialPluginName, Plugin>();
     }
   };
 
-// Add these functions before the final export
-
-/**
- * Tracks which plugins have been loaded
- */
-/**
- * List of available plugins in the library
- */
-const AVAILABLE_PLUGINS: readonly OfficialPluginName[] = [
-  "relativeTime",
-  "customParseFormat",
-  "advancedFormat",
-  "durationHumanizer",
-  "weekDay",
-  "dateRangeOverlap",
-  "businessDays",
-  "timeSlots",
-];
+// Literal imports let bundlers resolve each optional plugin at build time.
+const pluginLoaders = {
+  relativeTime: () => import("./plugins/relativeTime.js"),
+  customParseFormat: () => import("./plugins/customParseFormat.js"),
+  advancedFormat: () => import("./plugins/advancedFormat.js"),
+  durationHumanizer: () => import("./plugins/durationHumanizer.js"),
+  weekDay: () => import("./plugins/weekDay.js"),
+  dateRangeOverlap: () => import("./plugins/dateRangeOverlap.js"),
+  businessDays: () => import("./plugins/businessDays.js"),
+  timeSlots: () => import("./plugins/timeSlots.js"),
+} satisfies Record<OfficialPluginName, () => Promise<{ default: Plugin | { default: Plugin } }>>;
+const AVAILABLE_PLUGINS = Object.keys(pluginLoaders) as OfficialPluginName[];
 
 /**
  * Loads a plugin lazily (on-demand) when needed
@@ -351,12 +345,13 @@ atemporal.lazyLoad = async (
   options?: any
 ): Promise<void> => {
   // Skip if already loaded
-  if (loadedPlugins.has(pluginName as OfficialPluginName)) {
+  const name = pluginName as OfficialPluginName;
+  if (loadedPlugins.has(name)) {
     return;
   }
 
   // Validate plugin name
-  if (!AVAILABLE_PLUGINS.includes(pluginName as OfficialPluginName)) {
+  if (!Object.hasOwn(pluginLoaders, name)) {
     throw new Error(
       `Plugin '${pluginName}' not found. Available plugins are: ${AVAILABLE_PLUGINS.join(
         ", "
@@ -365,35 +360,17 @@ atemporal.lazyLoad = async (
   }
 
   try {
-    // Dynamically import the plugin with the correct extension
-    let plugin;
-    try {
-      // First try importing with .ts extension (for development with ts-node)
-      const pluginModule = await import(`./plugins/${pluginName}.ts`);
-      plugin = pluginModule.default?.default ?? pluginModule.default;
-    } catch (e) {
-      try {
-        // If that fails, try without extension (for production/npm)
-        const pluginModule = await import(`./plugins/${pluginName}`);
-        plugin = pluginModule.default?.default ?? pluginModule.default;
-      } catch (e2) {
-        // Last attempt: import from root package (for use as npm dependency)
-        const pluginModule = await import(`atemporal/plugins/${pluginName}`);
-        plugin = pluginModule.default?.default ?? pluginModule.default;
-      }
-    }
-
-    if (!plugin || typeof plugin !== "function") {
+    const { default: exported }: { default: Plugin | { default: Plugin } } = await pluginLoaders[name]();
+    const plugin = typeof exported === 'function' ? exported : exported?.default;
+    if (typeof plugin !== "function") {
       throw new Error(`Invalid plugin format for '${pluginName}'`);
     }
-
-    // Apply the plugin
-    atemporal.extend(plugin, options);
 
     const metadata = getOfficialPluginMetadata(plugin);
     if (!metadata || metadata.name !== pluginName) {
       throw new Error(`Invalid metadata for official plugin '${pluginName}'`);
     }
+    atemporal.extend(plugin, options);
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Error loading plugin '${pluginName}': ${error.message}`, { cause: error });

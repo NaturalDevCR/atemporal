@@ -23,4 +23,37 @@ describe('explicit Temporal constructors', () => {
       timeZone: 'America/New_York', disambiguation: 'later',
     }).offset).toBe('-05:00');
   });
+
+  test('preserves instants with hour-only and sub-minute offsets', () => {
+    expect(atemporal.instant('2026-07-15T10:00:00+06[u-ca=iso8601]').toString())
+      .toBe('2026-07-15T04:00:00Z');
+    expect(atemporal.zonedDateTime('2026-07-15T10:00:00+06:30:25.1').toInstant().toString())
+      .toBe('2026-07-15T03:29:34.9Z');
+    const converted = atemporal.zonedDateTime('2026-07-15T10:00:00+06[u-ca=hebrew]', { timeZone: 'UTC' });
+    expect(converted.toString()).toBe('2026-07-15T04:00:00+00:00[UTC][u-ca=hebrew]');
+    expect(atemporal.zonedDateTime('2026-07-15T10:00:00+06').timeZoneId).toBe('+06:00');
+    expect(() => atemporal.instant('2026-07-15T10:00:00')).toThrow();
+  });
+
+  test('accepts millisecond inputs and keeps the instant when changing an annotated zone', () => {
+    const instant = Temporal.Instant.fromEpochMilliseconds(999);
+    expect(atemporal.instant(instant)).toBe(instant);
+    expect(atemporal.instant(new Date(999)).equals(instant)).toBe(true);
+    expect(atemporal.instant(999).equals(instant)).toBe(true);
+    expect(() => atemporal.instant(Infinity)).toThrow();
+
+    const local = '2026-07-15T10:00:00-06:00[America/Costa_Rica]';
+    expect(atemporal.zonedDateTime(local, { timeZone: 'UTC' }).toInstant().toString())
+      .toBe('2026-07-15T16:00:00Z');
+    expect(() => atemporal.zonedDateTime('2026-07-15T10:00:00')).toThrow();
+  });
+
+  test('preserves calendar annotations and local fields when attaching a timezone', () => {
+    const local = Temporal.PlainDateTime.from('2026-07-15T10:00:00[u-ca=hebrew]');
+    const zoned = atemporal.zonedDateTime(local, { timeZone: 'UTC' });
+    expect(zoned.toPlainDateTime().equals(local)).toBe(true);
+    expect(zoned.calendarId).toBe('hebrew');
+    expect(atemporal.zonedDateTime('2026-07-15T10:00:00[u-ca=hebrew]', { timeZone: 'UTC' }).equals(zoned)).toBe(true);
+    expect(atemporal.zonedDateTime('2026-07-15T10:00:00[UTC][u-ca=hebrew]').equals(zoned)).toBe(true);
+  });
 });

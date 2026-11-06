@@ -4,6 +4,7 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.0.x   | :white_check_mark: |
 | 1.3.x   | :white_check_mark: |
 | 1.2.x   | :white_check_mark: |
 | 1.1.x   | :x:                |
@@ -41,8 +42,8 @@ dominated by the parsing pipeline, which accepts arbitrary user input
 ### In scope
 
 - **ReDoS in format/parse regexes** (e.g. `customParseFormat`).
-  - We deliberately keep regexes linear; no nested quantifiers.
-  - Inputs are length-capped at the strategy level (default 4096 chars).
+  - Custom formats compile each run of spaces to one whitespace matcher.
+  - `fromFormat()` caps both the input and the format at 4,096 UTF-16 code units.
 - **Prototype-pollution in object parsing** (e.g. `temporal-like` strategy).
   - We only read *known* keys (`year`, `month`, `day`, `hour`, `minute`,
     `second`, `millisecond`, `timeZone`, `calendar`); we never spread or
@@ -84,7 +85,7 @@ dominated by the parsing pipeline, which accepts arbitrary user input
    (token expiry, audit log timestamps). Always pass the time zone
    explicitly.
 4. **Pin atemporal versions** in production. Use exact versions
-   (`1.3.7`) or tight ranges (`~1.3.7`) — never caret ranges for
+   (`2.0.2`) or tight ranges (`~2.0.2`) — never caret ranges for
    security-critical workloads.
 5. **Audit custom plugins.** Plugins run with full access to the
    `TemporalWrapper` class. Only install plugins from sources you
@@ -105,28 +106,27 @@ to consumers.
 
 ## Signed Releases
 
-Starting with v1.4.0, release tarballs are published with
-[`npm publish --provenance`](https://docs.npmjs.com/generating-provenance-statements),
-which provides SLSA build-level provenance attestation verifiable via
+Release tarballs are published using
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers),
+which automatically generates provenance attestations verifiable via
 [Sigstore](https://www.sigstore.dev/). Every GitHub Release also ships:
 
-- **SPDX** and **CycloneDX SBOMs** generated via `npm sbom`.
+- **SPDX** and **CycloneDX SBOMs** generated via `pnpm sbom`.
 
 These let consumers answer "what exactly is in this tarball?" without
 having to ask us.
 
 ## Continuous Security
 
-The CI pipeline enforces the following security invariants on every push
-to `main` and every pull request:
+The repository runs the following checks in CI and during scheduled or release validation:
 
 | Check | Tool | Severity | Configured at |
 | --- | --- | --- | --- |
 | Secret scanning | `gitleaks` | Fails on any committed secret | `.github/workflows/ci.yml` |
-| Dependency CVEs | `npm audit --audit-level=high` + `osv-scanner` | Fails on high or critical | `.github/workflows/ci.yml` |
-| License compliance | `license-checker` + `scripts/check-licenses.js` | Fails on GPL/AGPL/SSPL/BUSL/Elastic or unknown | `.github/workflows/ci.yml` |
-| Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Fails on >25% regression on hot paths | `.github/workflows/ci.yml` |
-| Doc link integrity | `lychee` (offline) | Fails on any broken internal link | `.github/workflows/ci.yml` |
+| Dependency CVEs | `pnpm audit --audit-level=high` + `osv-scanner` | pnpm gates high and critical findings. OSV gates findings at any severity, subject to `osv-scanner.toml` | `.github/workflows/ci.yml` |
+| License compliance | `scripts/check-licenses.js` | Checks licenses of direct and transitive production dependencies | `.github/workflows/ci.yml` |
+| Performance gate | `scripts/perf-gate.js` vs `benchmarks/baseline.json` | Runs in weekly and release validation | `.github/workflows/integration.yml`, `.github/workflows/release.yml` |
+| Doc link integrity | `lychee` | Checks links covered by `.lychee.toml` | `.github/workflows/ci.yml` |
 | Coverage trend | Codecov | Informational; no PR gate | `.github/workflows/ci.yml` |
 | Mutation health | Stryker | Push dry-run gates config/test discovery; full score is nightly/on-demand advisory | `.github/workflows/mutation.yml` |
 | Auto dependency updates | Dependabot | Patch + minor PRs grouped | `.github/dependabot.yml` |
@@ -142,4 +142,4 @@ We thank the following researchers for responsible disclosure:
 
 ---
 
-Last updated: 2026-06-03
+Last updated: 2026-11-06

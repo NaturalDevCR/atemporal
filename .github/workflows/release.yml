@@ -11,51 +11,81 @@ on:
         type: string
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
-  issues: write
+  contents: read
 
 concurrency:
   group: release-please-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release-please:
-    name: Release PR
+  plan-release:
+    name: Select the release version
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.manual.outputs.release_created || steps.release.outputs.release_created }}
-      tag_name: ${{ steps.manual.outputs.tag_name || steps.release.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
-        if: github.event_name == 'workflow_dispatch'
-      - name: Validate the manually requested package version
-        id: manual
-        if: github.event_name == 'workflow_dispatch'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the manifest and existing tag
+        id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
         run: |
-          release_version="${{ inputs.release_version }}"
           package_version="$(node -p "require('./package.json').version")"
-          test -n "$release_version"
-          test "$release_version" = "$package_version"
-          echo "release_created=true" >> "$GITHUB_OUTPUT"
-          echo "tag_name=v${package_version}" >> "$GITHUB_OUTPUT"
+          manifest_version="$(node -p "require('./.release-please-manifest.json')['.']")"
+          test "$package_version" = "$manifest_version"
+          if [[ ! "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Expected a stable SemVer package version' >&2
+            exit 1
+          fi
+
+          tag_ref="refs/tags/v${package_version}"
+          release_sha="$(git log -1 --first-parent --format=%H -- .release-please-manifest.json)"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            test "$RELEASE_VERSION" = "$package_version"
+            if git show-ref --verify --quiet "$tag_ref"; then
+              release_sha="$(git rev-parse "${tag_ref}^{commit}")"
+            fi
+          elif git show-ref --verify --quiet "$tag_ref"; then
+            exit 0
+          fi
+
+          if [ "$release_sha" != "$GITHUB_SHA" ]; then
+            echo 'Rerun the release workflow for the original version commit.' >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$package_version" >> "$GITHUB_OUTPUT"
+
+  release-please:
+    name: Prepare the release PR
+    needs: plan-release
+    if: github.event_name == 'push' && needs.plan-release.outputs.version == ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
       - uses: googleapis/release-please-action@v5
-        id: release
-        if: github.event_name == 'push'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: true
 
   release-validation:
     name: Validate the release tarball
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    needs: plan-release
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
         with:
           version: 11.13.1
@@ -148,17 +178,17 @@ jobs:
 
   publish-npm:
     name: Publish validated tarball to npm
-    needs: [release-please, release-validation]
-    if: ${{ needs.release-please.outputs.release_created == 'true' && needs.release-validation.result == 'success' }}
+    needs: [plan-release, release-validation]
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != '' && needs.release-validation.result == 'success'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
     environment: npm
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 11.13.1
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: '24.12.0'
@@ -169,25 +199,45 @@ jobs:
           name: release-package-artifact
           path: artifacts
       - name: Verify validated artifact metadata
-        run: node -e "const path = require('./artifacts/package-artifact.json').path; if (!path || !path.startsWith('./artifacts/')) process.exit(1)"
-      - name: Publish the validated tarball through npm trusted publishing
+        env:
+          RELEASE_VERSION: ${{ needs.plan-release.outputs.version }}
         run: |
-          package_version="$(node -p "require('./package.json').version")"
-          if npm view "atemporal@${package_version}" version >/dev/null 2>&1; then
-            echo "atemporal@${package_version} is already published; skipping npm publish."
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { createHash } = require('node:crypto');
+          const { readFileSync } = require('node:fs');
+          const artifact = require('./artifacts/package-artifact.json');
+          assert.equal(artifact.path, './artifacts/atemporal-' + process.env.RELEASE_VERSION + '.tgz');
+          const digest = createHash('sha512').update(readFileSync(artifact.path)).digest('base64');
+          assert.equal(digest, artifact.sha512);
+          NODE
+      - name: Publish the validated tarball through npm trusted publishing
+        env:
+          RELEASE_VERSION: ${{ needs.plan-release.outputs.version }}
+        run: |
+          if published_integrity="$(npm view "atemporal@${RELEASE_VERSION}" dist.integrity)" && [ -n "$published_integrity" ]; then
+            artifact_integrity="sha512-$(node -p "require('./artifacts/package-artifact.json').sha512")"
+            if [ "$published_integrity" != "$artifact_integrity" ]; then
+              echo "Published atemporal@${RELEASE_VERSION} differs from the validated tarball." >&2
+              exit 1
+            fi
+            echo "The validated tarball for atemporal@${RELEASE_VERSION} is already published."
             exit 0
           fi
           npm publish "$(node -p "require('./artifacts/package-artifact.json').path")" --access public --tag latest
 
   attach-sbom:
     name: Finalize GitHub Release and attach SBOM
-    needs: [release-please, publish-npm]
-    if: ${{ needs.release-please.outputs.release_created == 'true' && needs.publish-npm.result == 'success' }}
+    needs: [plan-release, publish-npm]
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != '' && needs.publish-npm.result == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
         with:
           version: 11.13.1
@@ -199,11 +249,39 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: mkdir -p sbom && pnpm sbom --sbom-format=spdx --lockfile-only --out sbom/atemporal.spdx.json
       - run: pnpm sbom --sbom-format=cyclonedx --lockfile-only --out sbom/atemporal.cdx.json
+      - name: Extract the validated version's changelog
+        id: notes
+        env:
+          RELEASE_VERSION: ${{ needs.plan-release.outputs.version }}
+        run: |
+          notes="$RUNNER_TEMP/release-notes.md"
+          awk -v version="$RELEASE_VERSION" '
+            /^## / {
+              if (section) exit
+              section = index($0, "## [" version "]") == 1
+            }
+            section
+          ' CHANGELOG.md > "$notes"
+          if [ -s "$notes" ]; then
+            printf 'path=%s\n' "$notes" >> "$GITHUB_OUTPUT"
+          fi
       - uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ needs.release-please.outputs.tag_name }}
-          generate_release_notes: ${{ github.event_name == 'workflow_dispatch' }}
+          tag_name: v${{ needs.plan-release.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: ${{ steps.notes.outputs.path }}
+          generate_release_notes: ${{ steps.notes.outputs.path == '' }}
           files: |
             sbom/atemporal.spdx.json
             sbom/atemporal.cdx.json
           fail_on_unmatched_files: true
+      - name: Mark the merged release PR as tagged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pull_requests="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq \
+            '.[] | select(.merged_at and .base.ref == "main" and any(.labels[]; .name == "autorelease: pending")) | .number')"
+          for pull_request in $pull_requests; do
+            gh pr edit "$pull_request" --repo "$GITHUB_REPOSITORY" \
+              --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
+          done

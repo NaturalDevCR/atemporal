@@ -7,25 +7,19 @@
 import type { Temporal } from '@js-temporal/polyfill';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import { TemporalUtils, IntlCache } from './TemporalUtils';
-import type {DateInput, TimeUnit, SettableUnit, StartOfUnit} from './types';
+import type {DateInput, RangeOptions, TimeUnit, SettableUnit, StartOfUnit} from './types';
 import { InvalidAtemporalInstanceError } from './errors';
 import { FormattingEngine, legacyFormat } from './core/formatting';
 import type { FormattingOptions } from './core/formatting/formatting-types';
+import { registerWrapper, wrapperRuntime } from './core/wrapper-brand';
 
-/**
- * Maps a flexible TimeUnit to the strict unit required by startOf/endOf.
- * @internal
- */
-function toStartOfUnit(unit: TimeUnit): StartOfUnit | null {
-    const u = unit.toLowerCase();
-    if (u.startsWith('year')) return 'year';
-    if (u.startsWith('month')) return 'month';
-    if (u.startsWith('week')) return 'week';
-    if (u.startsWith('day')) return 'day';
-    if (u.startsWith('hour')) return 'hour';
-    if (u.startsWith('minute')) return 'minute';
-    if (u.startsWith('second')) return 'second';
-    return null; // Non supported units by startOf as 'millisecond'
+function calendarPeriodStart(date: Temporal.PlainDate, unit: 'year' | 'month' | 'week' | 'day'): Temporal.PlainDate {
+    switch (unit) {
+        case 'year': return date.with({ month: 1, day: 1 });
+        case 'month': return date.with({ day: 1 });
+        case 'week': return date.subtract({ days: date.dayOfWeek - 1 });
+        case 'day': return date;
+    }
 }
 
 /**
@@ -62,6 +56,11 @@ export class TemporalWrapper {
     private readonly _error: string | null;
     readonly _isTemporalWrapper: true = true;
 
+    static [Symbol.hasInstance](value: unknown): boolean {
+        return Function.prototype[Symbol.hasInstance].call(this, value) ||
+            (this === TemporalWrapper && wrapperRuntime(value) !== undefined);
+    }
+
     /**
      * The constructor is private to ensure all instances are created through
      * controlled static methods, which handle parsing and validation.
@@ -77,6 +76,7 @@ export class TemporalWrapper {
             this._isValid = false;
             this._error = e instanceof Error ? e.message : String(e);
         }
+        registerWrapper(this);
     }
 
     /**
@@ -178,6 +178,7 @@ export class TemporalWrapper {
      */
     private static _fromZonedDateTime(dateTime: Temporal.ZonedDateTime): TemporalWrapper {
         const wrapper = Object.create(TemporalWrapper.prototype);
+        registerWrapper(wrapper);
         try {
             wrapper._datetime = dateTime;
             wrapper._isValid = true;
@@ -341,18 +342,14 @@ export class TemporalWrapper {
      * @param unit - The unit to set to the start of.
      * @returns A new TemporalWrapper instance.
      */
-    startOf(unit: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'): TemporalWrapper {
+    startOf(unit: StartOfUnit): TemporalWrapper {
         if (!this.isValid()) return this;
         switch (unit) {
             case 'year':
-                return this._cloneWith(this.datetime.with({ month: 1, day: 1 }).startOfDay());
             case 'month':
-                return this._cloneWith(this.datetime.with({ day: 1 }).startOfDay());
             case 'week':
-                const daysToSubtract = this.datetime.dayOfWeek - 1;
-                return this._cloneWith(this.datetime.subtract({ days: daysToSubtract }).startOfDay());
             case 'day':
-                return this._cloneWith(this.datetime.startOfDay());
+                return this._cloneWith(calendarPeriodStart(this.datetime.toPlainDate(), unit).toZonedDateTime(this.timeZoneId));
             case 'hour':
             case 'minute':
             case 'second':
@@ -365,11 +362,25 @@ export class TemporalWrapper {
      * @param unit - The unit to set to the end of.
      * @returns A new TemporalWrapper instance.
      */
-    endOf(unit: 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second'): TemporalWrapper {
+    endOf(unit: StartOfUnit): TemporalWrapper {
         if (!this.isValid()) return this;
-        const start = this.startOf(unit);
-        const nextStart = start.add(1, unit);
-        return nextStart.subtract(1, 'millisecond');
+        const dateTime = this.datetime;
+        let nextStart: Temporal.ZonedDateTime;
+        if (unit === 'year' || unit === 'month' || unit === 'week' || unit === 'day') {
+            // Advance the calendar date before resolving a potentially shifted midnight.
+            nextStart = calendarPeriodStart(dateTime.toPlainDate(), unit)
+                .add({ [getDurationUnit(unit)]: 1 }).toZonedDateTime(dateTime.timeZoneId);
+        } else {
+            // Measure from the current wall clock to the next boundary. A time-zone
+            // transition before that boundary ends the current occurrence early.
+            const seconds = unit === 'second' ? 1 : (unit === 'hour' ? 60 - dateTime.minute : 1) * 60 - dateTime.second;
+            const nanoseconds = seconds * 1e9 - dateTime.millisecond * 1e6 - dateTime.microsecond * 1e3 - dateTime.nanosecond;
+            nextStart = dateTime.add({ nanoseconds });
+            if (nextStart.offsetNanoseconds !== dateTime.offsetNanoseconds) {
+                nextStart = dateTime.getTimeZoneTransition('next') ?? nextStart;
+            }
+        }
+        return this._cloneWith(nextStart.subtract({ milliseconds: 1 }));
     }
 
     /**
@@ -834,63 +845,47 @@ export class TemporalWrapper {
     range(
         endDate: DateInput,
         unit: TimeUnit,
-        options: any = {}
+        options: RangeOptions = {}
     ): TemporalWrapper[] | string[] {
         if (!this.isValid()) {
             return [];
         }
 
-        const endAtemporal = endDate instanceof TemporalWrapper ? endDate : TemporalWrapper.from(endDate);
-        if (!endAtemporal.isValid() || this.isAfter(endAtemporal)) {
+        const endAtemporal = endDate instanceof TemporalWrapper ? endDate : TemporalWrapper.from(endDate, this.timeZoneId);
+        if (!endAtemporal.isValid()) {
             return [];
         }
 
         const { inclusivity = '[]', format } = options;
         const results: TemporalWrapper[] = [];
-        let cursor = this.clone();
-
-        if (inclusivity.startsWith('(')) {
-            cursor = cursor.add(1, unit);
-        }
-
+        const start = this.datetime;
+        const end = endAtemporal.datetime.epochNanoseconds;
+        const isInclusiveStart = inclusivity.startsWith('[');
         const isInclusiveEnd = inclusivity.endsWith(']');
-        const startOfUnit = toStartOfUnit(unit);
+        const step = { [getDurationUnit(unit)]: 1 };
+        let cursor = start;
 
         while (true) {
-            let shouldStop = false;
-            if (isInclusiveEnd) {
-                if (cursor.isAfter(endAtemporal)) {
-                    shouldStop = true;
-                }
-            } else {
-                if (startOfUnit) {
-                    const endBoundary = endAtemporal.startOf(startOfUnit);
-                    if (cursor.isSameOrAfter(endBoundary)) {
-                        shouldStop = true;
-                    }
-                } else {
-                    if (cursor.isSameOrAfter(endAtemporal)) {
-                        shouldStop = true;
-                    }
-                }
+            const current = cursor.epochNanoseconds;
+            if (current > end || (current === end && !isInclusiveEnd)) break;
+
+            if (isInclusiveStart || cursor !== start) {
+                results.push(this._cloneWith(cursor));
             }
+            if (current === end) break;
 
-            if (shouldStop) {
-                break;
-            }
-
-            results.push(cursor);
-            cursor = cursor.add(1, unit);
-        }
-
-        if (format) {
-            if (typeof format === 'string') {
-                return results.map(date => date.format(format));
-            } else {
-                return results.map(date => date.format(format));
+            try {
+                cursor = cursor.add(step);
+            } catch (error) {
+                // A positive step past Temporal's upper limit is also past the end.
+                if (error instanceof RangeError) break;
+                throw error;
             }
         }
 
-        return results;
+        if (format === undefined) return results;
+        return typeof format === 'string'
+            ? results.map(date => date.format(format))
+            : results.map(date => date.format(format));
     }
 }

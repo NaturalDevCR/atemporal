@@ -51,7 +51,8 @@ const withTz = atemporal.fromFormat("2024-01-01 10:00", "YYYY-MM-DD HH:mm", "Ame
 
 ## Error Handling
 
-When the date string does not match the format, `fromFormat()` returns an **invalid instance** rather than throwing. Use `.isValid()` to check:
+`fromFormat()` returns an **invalid instance** when the date does not match the
+format or when either string exceeds 4,096 UTF-16 code units. Use `.isValid()` to check:
 
 ```ts
 const result = atemporal.fromFormat("invalid", "YYYY-MM-DD");

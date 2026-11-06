@@ -253,8 +253,8 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                     }
                 }
 
-                // The logic is to find the start of the current week, add a week, and subtract a millisecond.
-                // This correctly uses our newly wrapped `startOf` method.
+                // Resolve the next week's actual start after advancing a week. The
+                // current week's start may have skipped midnight or a whole date.
                 const startOfWeek = this.startOf('week');
                 if (!startOfWeek.isValid()) {
                     debugLog('warn', 'WeekDay: startOf(week) failed for endOf calculation');
@@ -267,7 +267,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                     return originalEndOf.call(this, unit);
                 }
                 
-                const result = addedWeek.subtract(1, 'millisecond');
+                const result = addedWeek.startOf('week').subtract(1, 'millisecond');
                 
                 // Cache the result
                 WeekCache.setWeekBoundary(dateKey, result.raw.toString());
@@ -275,7 +275,7 @@ const weekDayPlugin: Plugin = (Atemporal, atemporal: AtemporalFactory) => {
                 return result;
             } catch (error) {
                 debugLog('warn', 'WeekDay: Error calculating week end');
-                return this.startOf('week').add(1, 'week').subtract(1, 'millisecond');
+                return this.startOf('week').add(1, 'week').startOf('week').subtract(1, 'millisecond');
             }
         }
 

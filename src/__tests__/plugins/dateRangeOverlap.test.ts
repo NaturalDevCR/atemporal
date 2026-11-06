@@ -458,6 +458,29 @@ describe('Date Range Overlap Plugin', () => {
             expect(stats2.size).toBeGreaterThan(0);
         });
 
+        it('keys cached ranges by their normalized endpoints', () => {
+            const range = { start: '2024-01-02', end: '2024-01-04' };
+            const first = { start: { year: 2024, month: 1, day: 1 }, end: '2024-01-15' };
+            const second = { start: { year: 2024, month: 1, day: 10 }, end: '2024-01-15' };
+            expect(checkDateRangeOverlap(first, range).overlaps).toBe(true);
+            atemporal.clearCaches(); // Isolate the overlap cache from the parser cache.
+            expect(checkDateRangeOverlap(second, range)).toEqual({ overlaps: false, overlapRange: null });
+        });
+
+        it('returns independent snapshots of cached overlap results', () => {
+            const range1 = { start: '2024-01-01', end: '2024-01-15' };
+            const range2 = { start: '2024-01-10', end: '2024-01-20' };
+            const first = checkDateRangeOverlap(range1, range2);
+            (first.overlapRange!.start as Date).setUTCFullYear(2000);
+            first.overlaps = false;
+
+            const cached = checkDateRangeOverlap(range1, range2);
+            expect(cached.overlaps).toBe(true);
+            expect(cached.overlapRange!.start).toEqual(new Date('2024-01-10'));
+            (cached.overlapRange!.end as Date).setUTCFullYear(2000);
+            expect(checkDateRangeOverlap(range1, range2).overlapRange!.end).toEqual(new Date('2024-01-15'));
+        });
+
         it('should clear cache when requested', () => {
             const range1: DateRange = {
                 start: '2024-01-01',

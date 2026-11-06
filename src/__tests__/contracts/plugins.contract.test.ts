@@ -28,4 +28,12 @@ describe('extension inspection contract', () => {
     expect(() => markAsPlugin(plugin, { id: '', official: false })).toThrow(TypeError);
     expect(() => markAsPlugin(plugin, { name: '', official: true } as never)).toThrow(TypeError);
   });
+
+  test('loads every official plugin through the same public lazy-loading path', async () => {
+    const names = atemporal.getAvailablePlugins();
+    await atemporal.lazyLoadMultiple(names);
+
+    expect(atemporal.getLoadedPlugins().sort()).toEqual([...names].sort());
+    expect(names.every(name => atemporal.isPluginLoaded(name))).toBe(true);
+  });
 });

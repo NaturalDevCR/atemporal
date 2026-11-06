@@ -71,6 +71,8 @@ const tokenMap: { [key: string]: string } = {
   MMM: "([A-Za-z]+)",
 };
 
+const MAX_CUSTOM_PARSE_LENGTH = 4096;
+
 // Order tokens by length (longer ones first) to avoid parsing conflicts
 import { RegexCache } from "../RegexCache";
 
@@ -122,8 +124,8 @@ class FormatCache {
       );
 
       // The regex is anchored to ensure the entire string must match the format.
-      // Allow flexible whitespace matching by replacing spaces with \s+
-      const flexibleRegexString = regexString.replace(/ /g, "\\s+");
+      // Match a run of spaces once so adjacent quantifiers cannot backtrack over it.
+      const flexibleRegexString = regexString.replace(/ +/g, "\\s+");
 
       const valueRegex = new RegExp(`^${flexibleRegexString}$`);
 
@@ -301,6 +303,11 @@ export const resetCurrentDateFunction = () => {
  * @returns A string in ISO 8601 format or `null` if parsing fails.
  */
 function parseToISO(dateString: string, formatString: string): string | null {
+  if (typeof dateString !== 'string' || typeof formatString !== 'string' ||
+      dateString.length > MAX_CUSTOM_PARSE_LENGTH || formatString.length > MAX_CUSTOM_PARSE_LENGTH) {
+    return null;
+  }
+
   const cachedFormat = FormatCache.getRegexForFormat(formatString);
   if (!cachedFormat) {
     return null;

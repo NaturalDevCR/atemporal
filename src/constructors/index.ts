@@ -1,5 +1,5 @@
-import { Temporal } from '../core/temporal-api';
-import { hasExplicitOffset, hasTrailingTimeZoneAnnotation } from '../core/parsing/input-safety';
+import { isTemporalValue, Temporal } from '../core/temporal-api';
+import { getExplicitOffset, hasTrailingTimeZoneAnnotation, withFixedOffsetZone } from '../core/parsing/input-safety';
 import type { Temporal as TemporalTypes } from '@js-temporal/polyfill';
 import { InvalidDateError } from '../errors';
 import type { InstantInput, PlainDateInput, PlainDateTimeInput, ZonedDateTimeInput, ZonedDateTimeOptions } from '../types/temporal-inputs';
@@ -11,38 +11,59 @@ function invalid(name: string, error: unknown): never {
 
 export function instant(input: InstantInput): TemporalTypes.Instant {
   try {
-    if (input instanceof Temporal.Instant) return input;
     if (input instanceof Date) return Temporal.Instant.fromEpochMilliseconds(input.getTime());
     if (typeof input === 'number') {
       if (!Number.isFinite(input)) throw new TypeError('epoch milliseconds must be finite');
       return Temporal.Instant.fromEpochMilliseconds(input);
     }
-    if (!hasExplicitOffset(input)) throw new TypeError('ISO input requires Z or an explicit offset');
-    return Temporal.Instant.from(input);
+    if (typeof input === 'string') return Temporal.Instant.from(input);
+    if (isTemporalValue(input, 'Instant')) {
+      const epochNanoseconds = input.epochNanoseconds;
+      return input instanceof Temporal.Instant ? input : Temporal.Instant.fromEpochNanoseconds(epochNanoseconds);
+    }
+    throw new TypeError('Expected an instant, date, epoch milliseconds, or ISO string with an offset');
   } catch (error) { return invalid('instant', error); }
 }
 
 export function date(input: PlainDateInput): TemporalTypes.PlainDate {
-  try { return input instanceof Temporal.PlainDate ? input : Temporal.PlainDate.from(input, { overflow: 'reject' }); }
+  try {
+    if (input instanceof Temporal.PlainDate) return input;
+    return Temporal.PlainDate.from(isTemporalValue(input, 'PlainDate') ? String(input) : input, { overflow: 'reject' });
+  }
   catch (error) { return invalid('date', error); }
 }
 
 export function plainDateTime(input: PlainDateTimeInput): TemporalTypes.PlainDateTime {
-  try { return input instanceof Temporal.PlainDateTime ? input : Temporal.PlainDateTime.from(input, { overflow: 'reject' }); }
+  try {
+    if (input instanceof Temporal.PlainDateTime) return input;
+    return Temporal.PlainDateTime.from(isTemporalValue(input, 'PlainDateTime') ? String(input) : input, { overflow: 'reject' });
+  }
   catch (error) { return invalid('plainDateTime', error); }
 }
 
 export function zonedDateTime(input: ZonedDateTimeInput, options: ZonedDateTimeOptions = {}): TemporalTypes.ZonedDateTime {
   try {
     const policy = { disambiguation: options.disambiguation ?? 'reject', overflow: options.overflow ?? 'reject' } as const;
-    if (input instanceof Temporal.ZonedDateTime) return options.timeZone ? input.withTimeZone(options.timeZone) : input;
-    if (typeof input === 'string' && hasTrailingTimeZoneAnnotation(input)) return Temporal.ZonedDateTime.from(input, policy);
-    const plain = input instanceof Temporal.PlainDateTime ? input : Temporal.PlainDateTime.from(input, policy);
+    if (input instanceof Temporal.ZonedDateTime || isTemporalValue(input, 'ZonedDateTime') ||
+        (typeof input === 'string' && hasTrailingTimeZoneAnnotation(input))) {
+      const value = input instanceof Temporal.ZonedDateTime ? input : Temporal.ZonedDateTime.from(String(input), policy);
+      return options.timeZone ? value.withTimeZone(options.timeZone) : value;
+    }
+
+    if (typeof input === 'string') {
+      const offset = getExplicitOffset(input);
+      if (offset) {
+        const value = Temporal.ZonedDateTime.from(withFixedOffsetZone(input, offset), {
+          ...policy, offset: 'use',
+        });
+        return options.timeZone ? value.withTimeZone(options.timeZone) : value;
+      }
+    }
+
     if (!options.timeZone) throw new TypeError('timeZone is required for a local date-time');
-    return Temporal.ZonedDateTime.from({
-      year: plain.year, month: plain.month, day: plain.day, hour: plain.hour, minute: plain.minute,
-      second: plain.second, millisecond: plain.millisecond, microsecond: plain.microsecond,
-      nanosecond: plain.nanosecond, timeZone: options.timeZone,
-    }, policy);
+    const plain = input instanceof Temporal.PlainDateTime ? input : Temporal.PlainDateTime.from(
+      isTemporalValue(input, 'PlainDateTime') ? String(input) : input, policy,
+    );
+    return plain.toZonedDateTime(options.timeZone, policy);
   } catch (error) { return invalid('zonedDateTime', error); }
 }
