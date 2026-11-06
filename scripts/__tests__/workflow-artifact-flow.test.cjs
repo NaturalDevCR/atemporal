@@ -116,6 +116,7 @@ describe('release artifact workflow contracts', () => {
     expect(releaseJob).toContain('test "$RELEASE_VERSION" = "$package_version"');
     expect(releaseJob.split('run: |')[1]).not.toContain('${{ inputs.release_version }}');
     expect(releaseJob).toContain('test "$package_version" = "$manifest_version"');
+    expect(releaseJob).toContain('if [ "$release_sha" != "$GITHUB_SHA" ]; then');
     expect(releaseJob).toContain('version: ${{ steps.version.outputs.version }}');
   });
 
@@ -153,7 +154,7 @@ describe('release artifact workflow contracts', () => {
     expect(jobBlock(release, 'release-please')).toContain('skip-github-release: true');
     expect(attachSbom).toContain('needs: [plan-release, publish-npm]');
     expect(attachSbom).toContain("needs.publish-npm.result == 'success'");
-    expect(attachSbom).toContain('target_commitish: ${{ needs.plan-release.outputs.sha }}');
+    expect(attachSbom).toContain('target_commitish: ${{ github.sha }}');
   });
 
   test('package metadata emits an npm-valid local artifact path', () => {

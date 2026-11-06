@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      sha: ${{ steps.version.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -54,9 +53,11 @@ jobs:
             exit 0
           fi
 
-          test -n "$release_sha"
-          git show "${release_sha}:package.json" | node -e 'const fs = require("node:fs"); if (JSON.parse(fs.readFileSync(0, "utf8")).version !== process.argv[1]) process.exit(1)' "$package_version"
-          printf 'version=%s\nsha=%s\n' "$package_version" "$release_sha" >> "$GITHUB_OUTPUT"
+          if [ "$release_sha" != "$GITHUB_SHA" ]; then
+            echo 'Rerun the release workflow for the original version commit.' >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$package_version" >> "$GITHUB_OUTPUT"
 
   release-please:
     name: Prepare the release PR
@@ -78,13 +79,12 @@ jobs:
   release-validation:
     name: Validate the release tarball
     needs: plan-release
-    if: needs.plan-release.outputs.version != ''
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.plan-release.outputs.sha }}
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
         with:
@@ -179,7 +179,7 @@ jobs:
   publish-npm:
     name: Publish validated tarball to npm
     needs: [plan-release, release-validation]
-    if: needs.plan-release.outputs.version != '' && needs.release-validation.result == 'success'
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != '' && needs.release-validation.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -188,7 +188,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.plan-release.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
@@ -230,7 +229,7 @@ jobs:
   attach-sbom:
     name: Finalize GitHub Release and attach SBOM
     needs: [plan-release, publish-npm]
-    if: needs.plan-release.outputs.version != '' && needs.publish-npm.result == 'success'
+    if: github.ref == 'refs/heads/main' && needs.plan-release.outputs.version != '' && needs.publish-npm.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -238,7 +237,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.plan-release.outputs.sha }}
           persist-credentials: false
       - uses: pnpm/action-setup@v6.1.0
         with:
@@ -270,7 +268,7 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.plan-release.outputs.version }}
-          target_commitish: ${{ needs.plan-release.outputs.sha }}
+          target_commitish: ${{ github.sha }}
           body_path: ${{ steps.notes.outputs.path }}
           generate_release_notes: ${{ steps.notes.outputs.path == '' }}
           files: |
@@ -280,9 +278,8 @@ jobs:
       - name: Mark the merged release PR as tagged
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ needs.plan-release.outputs.sha }}
         run: |
-          pull_requests="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/pulls" --jq \
+          pull_requests="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq \
             '.[] | select(.merged_at and .base.ref == "main" and any(.labels[]; .name == "autorelease: pending")) | .number')"
           for pull_request in $pull_requests; do
             gh pr edit "$pull_request" --repo "$GITHUB_REPOSITORY" \

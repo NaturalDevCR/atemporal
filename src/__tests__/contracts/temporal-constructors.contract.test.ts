@@ -35,6 +35,19 @@ describe('explicit Temporal constructors', () => {
     expect(() => atemporal.instant('2026-07-15T10:00:00')).toThrow();
   });
 
+  test('accepts millisecond inputs and keeps the instant when changing an annotated zone', () => {
+    const instant = Temporal.Instant.fromEpochMilliseconds(999);
+    expect(atemporal.instant(instant)).toBe(instant);
+    expect(atemporal.instant(new Date(999)).equals(instant)).toBe(true);
+    expect(atemporal.instant(999).equals(instant)).toBe(true);
+    expect(() => atemporal.instant(Infinity)).toThrow();
+
+    const local = '2026-07-15T10:00:00-06:00[America/Costa_Rica]';
+    expect(atemporal.zonedDateTime(local, { timeZone: 'UTC' }).toInstant().toString())
+      .toBe('2026-07-15T16:00:00Z');
+    expect(() => atemporal.zonedDateTime('2026-07-15T10:00:00')).toThrow();
+  });
+
   test('preserves calendar annotations and local fields when attaching a timezone', () => {
     const local = Temporal.PlainDateTime.from('2026-07-15T10:00:00[u-ca=hebrew]');
     const zoned = atemporal.zonedDateTime(local, { timeZone: 'UTC' });

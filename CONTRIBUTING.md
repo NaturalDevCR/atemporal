@@ -189,9 +189,11 @@ the final registry operation.
 4. After npm publication succeeds, the workflow creates the GitHub release and
    attaches its SBOMs.
 
-If a release attempt fails, run the workflow from `main` with the version in
-`package.json`. If npm already has that version, the workflow checks that its
-integrity matches the validated tarball before finalizing the release.
+If a release attempt fails, rerun the workflow for the original version commit.
+While that commit is at the tip of `main`, you can also dispatch the workflow
+with the version in `package.json`. If npm already has that version, the
+workflow checks that its integrity matches the validated tarball before
+finalizing the release.
 
 Maintainers do not run a local publish command and no npm access token is
 stored in the repository or workflow configuration.
