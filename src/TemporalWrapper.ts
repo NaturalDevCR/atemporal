@@ -11,11 +11,7 @@ import type {DateInput, RangeOptions, TimeUnit, SettableUnit, StartOfUnit} from 
 import { InvalidAtemporalInstanceError } from './errors';
 import { FormattingEngine, legacyFormat } from './core/formatting';
 import type { FormattingOptions } from './core/formatting/formatting-types';
-
-// The import and require entry points have separate prototypes in Node.
-const wrapperInstancesKey = Symbol.for('atemporal.v2.wrapperInstances');
-const realm = globalThis as typeof globalThis & { [wrapperInstancesKey]?: WeakSet<object> };
-const wrapperInstances = realm[wrapperInstancesKey] ??= new WeakSet<object>();
+import { registerWrapper, wrapperRuntime } from './core/wrapper-brand';
 
 function calendarPeriodStart(date: Temporal.PlainDate, unit: 'year' | 'month' | 'week' | 'day'): Temporal.PlainDate {
     switch (unit) {
@@ -62,7 +58,7 @@ export class TemporalWrapper {
 
     static [Symbol.hasInstance](value: unknown): boolean {
         return Function.prototype[Symbol.hasInstance].call(this, value) ||
-            (this === TemporalWrapper && typeof value === 'object' && value !== null && wrapperInstances.has(value));
+            (this === TemporalWrapper && wrapperRuntime(value) !== undefined);
     }
 
     /**
@@ -80,7 +76,7 @@ export class TemporalWrapper {
             this._isValid = false;
             this._error = e instanceof Error ? e.message : String(e);
         }
-        wrapperInstances.add(this);
+        registerWrapper(this);
     }
 
     /**
@@ -182,7 +178,7 @@ export class TemporalWrapper {
      */
     private static _fromZonedDateTime(dateTime: Temporal.ZonedDateTime): TemporalWrapper {
         const wrapper = Object.create(TemporalWrapper.prototype);
-        wrapperInstances.add(wrapper);
+        registerWrapper(wrapper);
         try {
             wrapper._datetime = dateTime;
             wrapper._isValid = true;
