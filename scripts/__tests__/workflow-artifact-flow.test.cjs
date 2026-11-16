@@ -25,6 +25,15 @@ function jobBlock(workflowText, jobName) {
 }
 
 describe('release artifact workflow contracts', () => {
+  test('release manifest contains package versions without metadata entries', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, '.release-please-manifest.json'), 'utf8'));
+    const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+    expect(Object.keys(manifest)).toEqual(['.']);
+    expect(manifest['.']).toBe(packageJson.version);
+    expect(manifest['.']).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
   test('repository workflows install root dependencies through pnpm', () => {
     for (const name of ['ci.yml', 'integration.yml', 'hosted-baseline-capture.yml', 'mutation.yml', 'deploy-docs.yml']) {
       const source = workflow(name);

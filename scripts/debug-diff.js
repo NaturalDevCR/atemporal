@@ -5,7 +5,7 @@ function calculateDiff(d1, d2, unit) {
   try {
     const duration = d1.since(d2);
     console.log('Duration:', duration.toString());
-    const total = duration.total({ unit: normalizedUnit, relativeTo: d1 });
+    const total = duration.total({ unit: normalizedUnit, relativeTo: d2 });
     console.log('Total:', total);
     return total;
   } catch (error) {
