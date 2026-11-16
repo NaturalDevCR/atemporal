@@ -65,7 +65,8 @@ export class DiffCache {
       // Both d1 and d2 are guaranteed to come from the same Temporal implementation
       // (native or polyfill) because every module now uses ../temporal-api which
       // re-exports getCachedTemporalAPI(). No cross-implementation conversion needed.
-      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d1 });
+      // since() measures from d2 to d1, so calendar units must be anchored at d2.
+      return d1.since(d2).total({ unit: normalizedUnit, relativeTo: d2 });
     } catch (error) {
       debugLog('warn', `Failed to calculate diff for unit ${unit}`);
       return 0;

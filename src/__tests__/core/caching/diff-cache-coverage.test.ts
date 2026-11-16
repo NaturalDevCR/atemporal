@@ -21,13 +21,12 @@ describe('DiffCache Coverage Tests', () => {
   });
 
   test('keeps day differences separate across time zones for the same instants', () => {
-    const start = Temporal.ZonedDateTime.from('2024-03-09T05:00:00[UTC]');
-    const end = Temporal.ZonedDateTime.from('2024-03-10T05:00:00[UTC]');
+    const start = Temporal.ZonedDateTime.from('2024-03-10T05:00:00[UTC]');
+    const end = Temporal.ZonedDateTime.from('2024-03-11T05:00:00[UTC]');
     const localStart = start.withTimeZone('America/New_York');
     const localEnd = end.withTimeZone('America/New_York');
-    const localDays = localEnd.since(localStart).total({ unit: 'day', relativeTo: localEnd });
-
-    expect(localDays).not.toBe(1);
+    // Midnight to 01:00 the next day: one 23-hour day, then 1/24 of a day.
+    const localDays = 1 + 1 / 24;
     expect(DiffCache.getDiffResult(end, start, 'day')).toBe(1);
     expect(DiffCache.getDiffResult(localEnd, localStart, 'day')).toBe(localDays);
     expect(DiffCache.getDiffResult(end, start, 'day')).toBe(1);

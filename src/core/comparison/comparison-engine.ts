@@ -197,16 +197,16 @@ class DiffStrategy implements ComparisonStrategy {
       diffOptions.roundingMode = options.roundingMode;
     }
     
-    const duration = date1.until(date2, diffOptions);
+    // Numeric differences measure date1 - date2, anchored at date2. Preserve
+    // the existing date1-to-date2 direction when returning a raw duration.
+    const duration = options.unit
+      ? date1.since(date2, diffOptions)
+      : date1.until(date2, diffOptions);
     
     // If a specific unit is requested, return the value for that unit
     let result: number | Temporal.Duration = duration;
     if (options.unit) {
-      result = this.extractUnitValue(duration, options.unit);
-      // Negate the result to match expected behavior (negative when date1 < date2)
-      if (typeof result === 'number') {
-        result = -result;
-      }
+      result = this.extractUnitValue(duration, options.unit, date2);
     }
     
     return {
@@ -219,40 +219,40 @@ class DiffStrategy implements ComparisonStrategy {
     };
   }
   
-  private extractUnitValue(duration: Temporal.Duration, unit: TimeUnit): number {
+  private extractUnitValue(duration: Temporal.Duration, unit: TimeUnit, relativeTo: Temporal.ZonedDateTime): number {
     switch (unit) {
       case 'year':
       case 'years':
-        return duration.total({ unit: 'years' });
+        return duration.total({ unit: 'years', relativeTo });
       case 'month':
       case 'months':
-        return duration.total({ unit: 'months' });
+        return duration.total({ unit: 'months', relativeTo });
       case 'week':
       case 'weeks':
-        return duration.total({ unit: 'weeks' });
+        return duration.total({ unit: 'weeks', relativeTo });
       case 'day':
       case 'days':
-        return duration.total({ unit: 'days' });
+        return duration.total({ unit: 'days', relativeTo });
       case 'hour':
       case 'hours':
-        return duration.total({ unit: 'hours' });
+        return duration.total({ unit: 'hours', relativeTo });
       case 'minute':
       case 'minutes':
-        return duration.total({ unit: 'minutes' });
+        return duration.total({ unit: 'minutes', relativeTo });
       case 'second':
       case 'seconds':
-        return duration.total({ unit: 'seconds' });
+        return duration.total({ unit: 'seconds', relativeTo });
       case 'millisecond':
       case 'milliseconds':
-        return duration.total({ unit: 'milliseconds' });
+        return duration.total({ unit: 'milliseconds', relativeTo });
       case 'microsecond':
       case 'microseconds':
-        return duration.total({ unit: 'microseconds' });
+        return duration.total({ unit: 'microseconds', relativeTo });
       case 'nanosecond':
       case 'nanoseconds':
-        return duration.total({ unit: 'nanoseconds' });
+        return duration.total({ unit: 'nanoseconds', relativeTo });
       default:
-        return duration.total({ unit: 'seconds' });
+        return duration.total({ unit: 'seconds', relativeTo });
     }
   }
 }
@@ -492,13 +492,22 @@ export class ComparisonEngine {
   private static generateCacheKey(context: ComparisonContext): string {
     const { date1, date2, type, options } = context;
     
-    return CacheKeys.comparison(
-      date1.epochNanoseconds,
-      date2.epochNanoseconds,
-      type,
-      options.unit,
-      options.precision
-    );
+    return [
+      CacheKeys.comparison(
+        date1.epochNanoseconds,
+        date2.epochNanoseconds,
+        type,
+        options.unit,
+        options.precision
+      ),
+      date1.timeZoneId,
+      date1.calendarId,
+      date2.timeZoneId,
+      date2.calendarId,
+      options.largestUnit,
+      options.smallestUnit,
+      options.roundingMode
+    ].join('|');
   }
   
   /**

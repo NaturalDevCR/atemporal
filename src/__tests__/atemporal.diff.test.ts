@@ -26,6 +26,52 @@ describe('Difference Method (.diff)', () => {
         expect(d3.diff(d1, 'month')).toBe(13);
     });
 
+    it.each([
+        ['2023-03-01T00:00:00Z', '2023-02-01T00:00:00Z', 'month', 1],
+        ['2024-03-01T00:00:00Z', '2024-02-01T00:00:00Z', 'months', 1],
+        ['2023-02-01T00:00:00Z', '2023-04-01T00:00:00Z', 'month', -2],
+        ['2023-02-28T00:00:00Z', '2023-01-31T00:00:00Z', 'month', 1],
+        ['2024-01-01T00:00:00Z', '2023-01-01T00:00:00Z', 'year', 1],
+        ['2025-01-01T00:00:00Z', '2024-01-01T00:00:00Z', 'years', 1],
+        ['2023-01-01T00:00:00Z', '2024-01-01T00:00:00Z', 'year', -1],
+    ] as const)('should measure %s minus %s in %s as %s', (end, start, unit, expected) => {
+        const date = atemporal(end);
+        expect(date.diff(start, unit)).toBe(expected);
+        expect(date.diff(start, unit, true)).toBe(expected);
+    });
+
+    it('should preserve whole months and the remaining fractional month', () => {
+        const end = atemporal('1995-04-25T10:00:00Z');
+        const start = '1995-01-24T16:00:00Z';
+
+        expect(end.diff(start, 'month')).toBe(3);
+        // Three months to April 24, then 18 hours out of a 30-day month.
+        expect(end.diff(start, 'month', true)).toBeCloseTo(3.025, 12);
+    });
+
+    it.each([
+        ['2024-03-10', '2024-03-11', 23],
+        ['2024-11-03', '2024-11-04', 25],
+    ])('should count a calendar day across the DST transition on %s', (start, end, hours) => {
+        const from = atemporal(`${start}T00:00:00`, 'America/New_York');
+        const to = atemporal(`${end}T00:00:00`, 'America/New_York');
+
+        expect(to.diff(from, 'hour', true)).toBe(hours);
+        expect(to.diff(from, 'day')).toBe(1);
+        expect(to.diff(from, 'day', true)).toBe(1);
+        expect(from.diff(to, 'day', true)).toBe(-1);
+    });
+
+    it('should count calendar weeks across DST rather than fixed seven-day intervals', () => {
+        const start = atemporal('2024-03-09T00:00:00', 'America/New_York');
+        const end = start.add(1, 'week');
+
+        expect(end.diff(start, 'hour', true)).toBe(167);
+        expect(end.diff(start, 'week')).toBe(1);
+        expect(end.diff(start, 'weeks', true)).toBe(1);
+        expect(start.diff(end, 'week', true)).toBe(-1);
+    });
+
     it('should return NaN for an invalid instance', () => {
         expect(invalid.diff(d1)).toBeNaN();
     });

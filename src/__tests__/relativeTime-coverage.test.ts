@@ -345,19 +345,18 @@ describe('RelativeTime Plugin - Coverage Improvements', () => {
         it('should handle month to year threshold', () => {
             const now = atemporal();
             
-            // Test exactly 11 months (threshold)
+            const below11Months = now.subtract(10, 'months');
+            // At the 11-month threshold, relative time switches to years.
             const exactly11Months = now.subtract(11, 'months');
             const over11Months = now.subtract(13, 'months');
             
+            const result10 = below11Months.fromNow();
             const result11 = exactly11Months.fromNow();
             const result13 = over11Months.fromNow();
             
-            expect(typeof result11).toBe('string');
-            expect(typeof result13).toBe('string');
-            
-            // 11 months should use months, 13 months should use years
-            expect(result11).toContain('month');
-            expect(result13).toContain('year');
+            expect(result10).toBe('10 months ago');
+            expect(result11).toBe('last year');
+            expect(result13).toBe('last year');
         });
     });
 
