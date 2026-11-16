@@ -106,7 +106,11 @@ test('lockfiles contain the patched versions for the open Dependabot advisories'
   expect(rootLock).not.toContain('handlebars@4.7.9');
   expect(rootLock).not.toContain('fast-uri@3.1.5');
   expect(webpackLock.packages['node_modules/fast-uri'].version).toBe('3.1.9');
-  expect(nextLock.packages[''].dependencies.next).toBe('16.4.1');
+  const nextVersion = nextLock.packages['node_modules/next'].version;
+  expect(nextVersion).toBe(nextLock.packages[''].dependencies.next);
+  // GHSA-mfr8-8qww-v76h is fixed in 16.4.5; allow subsequent stable releases.
+  expect(nextVersion).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(nextVersion.localeCompare('16.4.5', 'en', { numeric: true })).toBeGreaterThanOrEqual(0);
   expect(nextLock.packages['node_modules/sharp'].version).toBe('0.35.5');
 
   for (const [location, metadata] of Object.entries(nextLock.packages)) {
