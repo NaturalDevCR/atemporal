@@ -120,6 +120,59 @@ describe('ComparisonEngine', () => {
         });
     });
 
+    describe('calendar differences', () => {
+        it.each([
+            ['2023-03-01T00:00:00[UTC]', '2023-02-01T00:00:00[UTC]', 'month', 1],
+            ['2023-02-01T00:00:00[UTC]', '2023-04-01T00:00:00[UTC]', 'months', -2],
+            ['2024-01-01T00:00:00[UTC]', '2023-01-01T00:00:00[UTC]', 'year', 1],
+            ['2025-01-01T00:00:00[UTC]', '2024-01-01T00:00:00[UTC]', 'years', 1],
+            ['1995-04-25T10:00:00[UTC]', '1995-01-24T16:00:00[UTC]', 'month', 3.025],
+            ['2024-03-11T00:00:00[America/New_York]', '2024-03-10T00:00:00[America/New_York]', 'day', 1],
+            ['2024-03-10T00:00:00[America/New_York]', '2024-03-11T00:00:00[America/New_York]', 'days', -1],
+            ['2024-03-16T00:00:00[America/New_York]', '2024-03-09T00:00:00[America/New_York]', 'week', 1],
+        ] as const)('should measure %s minus %s in %s', (end, start, unit, expected) => {
+            const result = ComparisonEngine.diff(
+                Temporal.ZonedDateTime.from(end), Temporal.ZonedDateTime.from(start), unit
+            );
+            expect(result).toBeCloseTo(expected, 12);
+        });
+
+        it('should total calendar durations in elapsed hours using the start date', () => {
+            const start = Temporal.ZonedDateTime.from('2024-03-09T12:00:00[America/New_York]');
+            const end = start.add({ days: 2 });
+
+            expect(ComparisonEngine.diff(end, start, 'hour', { largestUnit: 'day' })).toBe(47);
+        });
+
+        it('should keep calendar differences separate across time zones in the cache', () => {
+            const start = Temporal.ZonedDateTime.from('2024-03-10T05:00:00[UTC]');
+            const end = start.add({ hours: 24 });
+
+            expect(ComparisonEngine.diff(end, start, 'day')).toBe(1);
+            expect(ComparisonEngine.diff(
+                end.withTimeZone('America/New_York'), start.withTimeZone('America/New_York'), 'day'
+            )).toBeCloseTo(1 + 1 / 24, 12);
+            expect(ComparisonEngine.diff(end, start, 'day')).toBe(1);
+        });
+
+        it('should keep duration balancing and rounding options separate in the cache', () => {
+            const end = date1.add({ hours: 25, minutes: 30 });
+            const hours = ComparisonEngine.diff(date1, end, undefined, { largestUnit: 'hour' }) as Temporal.Duration;
+            const days = ComparisonEngine.diff(date1, end, undefined, { largestUnit: 'day' }) as Temporal.Duration;
+
+            expect(hours.hours).toBe(25);
+            expect(days.days).toBe(1);
+            expect(days.hours).toBe(1);
+            expect(ComparisonEngine.diff(end, date1, 'hour')).toBe(25.5);
+            expect(ComparisonEngine.diff(end, date1, 'hour', {
+                smallestUnit: 'hour', roundingMode: 'floor'
+            })).toBe(25);
+            expect(ComparisonEngine.diff(end, date1, 'hour', {
+                smallestUnit: 'hour', roundingMode: 'ceil'
+            })).toBe(26);
+        });
+    });
+
     describe('convenience methods', () => {
         it('should provide isBefore convenience method', () => {
             expect(ComparisonEngine.isBefore(date1, date2)).toBe(true);

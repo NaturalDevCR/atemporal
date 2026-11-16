@@ -153,8 +153,8 @@ describe('Behavioral Baseline Tests', () => {
                 const before = TemporalUtils.from('2024-03-09T12:00:00', 'America/New_York');
                 const after = TemporalUtils.from('2024-03-11T12:00:00', 'America/New_York');
                 const diff = TemporalUtils.diff(after, before, 'day');
-                // DST transition affects the calculation, resulting in slightly less than 2 days
-                expect(diff).toBeCloseTo(1.958, 2);
+                // Two calendar days span 47 elapsed hours across the DST transition.
+                expect(diff).toBe(2);
             });
             
             it('should handle negative differences', () => {
