@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/NaturalDevCR/atemporal/compare/v2.0.3...v2.1.0) (2026-11-16)
+
+### Bug Fixes
+
+- Anchor calendar differences at the comparison date so complete months and years, including leap years, are preserved in integer and fractional results ([#92](https://github.com/NaturalDevCR/atemporal/pull/92), fixes [#89](https://github.com/NaturalDevCR/atemporal/issues/89)).
+- Calculate days and weeks correctly across daylight saving transitions. Supply the calendar reference when totaling comparison-engine durations.
+- Isolate comparison-engine cache entries by time zone, calendar, duration balancing, and rounding options.
+
+### Security and Maintenance
+
+- Update the Next.js integration fixture to 16.4.5 to address the November security advisories ([#91](https://github.com/NaturalDevCR/atemporal/pull/91)).
+- Update Vite to 8.3.8, Vue to 3.5.45, and pnpm/action-setup to 6.1.1 ([#90](https://github.com/NaturalDevCR/atemporal/pull/90), [#87](https://github.com/NaturalDevCR/atemporal/pull/87), [#85](https://github.com/NaturalDevCR/atemporal/pull/85)).
+- Keep dependency checks compatible with patched releases and remove invalid metadata from the release manifest.
+
 ## [2.0.3](https://github.com/NaturalDevCR/atemporal/compare/v2.0.2...v2.0.3) (2026-11-06)
 
 ### Bug Fixes
