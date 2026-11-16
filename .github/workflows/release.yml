@@ -43,20 +43,15 @@ jobs:
           fi
 
           tag_ref="refs/tags/v${package_version}"
-          release_sha="$(git log -1 --first-parent --format=%H -- .release-please-manifest.json)"
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
             test "$RELEASE_VERSION" = "$package_version"
             if git show-ref --verify --quiet "$tag_ref"; then
-              release_sha="$(git rev-parse "${tag_ref}^{commit}")"
+              test "$(git rev-parse "${tag_ref}^{commit}")" = "$GITHUB_SHA"
             fi
           elif git show-ref --verify --quiet "$tag_ref"; then
             exit 0
           fi
 
-          if [ "$release_sha" != "$GITHUB_SHA" ]; then
-            echo 'Rerun the release workflow for the original version commit.' >&2
-            exit 1
-          fi
           printf 'version=%s\n' "$package_version" >> "$GITHUB_OUTPUT"
 
   release-please:

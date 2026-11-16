@@ -305,6 +305,28 @@ describe('CacheKeys', () => {
             expect(stringKey).toContain('string');
             expect(objectKey).toContain('object');
         });
+
+        it('separates the standard parse key by time zone, preservation policy and options', () => {
+            const input = '2023-01-01T00:00:00';
+            const defaults = {
+                timeZone: 'UTC',
+                preserveOriginalTimeZone: true,
+                enableFastPath: true,
+                enableCaching: true,
+                enableOptimization: true,
+                maxRetries: 3,
+                fallbackStrategy: 'fallback',
+            };
+            const keys = [
+                defaults,
+                { ...defaults, timeZone: 'America/Costa_Rica' },
+                { ...defaults, preserveOriginalTimeZone: false },
+                { ...defaults, maxRetries: 1 },
+            ].map(options => CacheKeys.parseKey(input, options));
+
+            expect(keys).not.toContain(undefined);
+            expect(new Set(keys).size).toBe(keys.length);
+        });
     });
 
     describe('formatCompilation', () => {

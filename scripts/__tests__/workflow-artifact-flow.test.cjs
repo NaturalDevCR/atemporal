@@ -116,7 +116,7 @@ describe('release artifact workflow contracts', () => {
     expect(releaseJob).toContain('test "$RELEASE_VERSION" = "$package_version"');
     expect(releaseJob.split('run: |')[1]).not.toContain('${{ inputs.release_version }}');
     expect(releaseJob).toContain('test "$package_version" = "$manifest_version"');
-    expect(releaseJob).toContain('if [ "$release_sha" != "$GITHUB_SHA" ]; then');
+    expect(releaseJob).toContain('test "$(git rev-parse "${tag_ref}^{commit}")" = "$GITHUB_SHA"');
     expect(releaseJob).toContain('version: ${{ steps.version.outputs.version }}');
   });
 

@@ -239,9 +239,23 @@ export class CacheKeys {
 
     // Methods and accessors can return different values even when object identity is unchanged.
     if (value === undefined) return undefined;
+    const fields = options as Record<string, unknown>;
+    const keys = Object.keys(fields);
+    const prefix = `parse|${kind}|${value.length}:${value}|`;
+    // The public factory supplies this option shape on every parse. Avoid
+    // sorting and serializing defaults that are already represented by the key.
+    if (keys.length === 7 && keys[0] === 'timeZone' && keys[1] === 'preserveOriginalTimeZone' &&
+        keys[2] === 'enableFastPath' && keys[3] === 'enableCaching' && keys[4] === 'enableOptimization' &&
+        keys[5] === 'maxRetries' && keys[6] === 'fallbackStrategy' &&
+        typeof fields.timeZone === 'string' && typeof fields.preserveOriginalTimeZone === 'boolean' &&
+        fields.enableFastPath === true && fields.enableCaching === true && fields.enableOptimization === true &&
+        fields.maxRetries === 3 && fields.fallbackStrategy === 'fallback') {
+      return `${prefix}default:${fields.preserveOriginalTimeZone ? 1 : 0}:${fields.timeZone}`;
+    }
+
     let optionKey = '';
-    for (const key of Object.keys(options).sort()) {
-      const option = (options as Record<string, unknown>)[key];
+    for (const key of keys.sort()) {
+      const option = fields[key];
       const type = typeof option;
       if (type !== 'undefined' && type !== 'string' && type !== 'boolean' && !Number.isFinite(option)) {
         return undefined;
@@ -249,7 +263,7 @@ export class CacheKeys {
       const field = String(option);
       optionKey += `${key.length}:${key}${type}${field.length}:${field}`;
     }
-    return `parse|${kind}|${value.length}:${value}|${optionKey}`;
+    return prefix + optionKey;
   }
 
   /**
