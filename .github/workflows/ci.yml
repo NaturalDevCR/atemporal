@@ -51,6 +51,11 @@ jobs:
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
         run: node scripts/measure-release-artifact.cjs
+      - name: Check native core source budgets and optional parser boundaries
+        id: core-size
+        if: always() && steps.pack.outcome == 'success'
+        continue-on-error: true
+        run: pnpm run size:core
       - name: Upload complete package artifact directory
         if: always()
         uses: actions/upload-artifact@v7
@@ -76,6 +81,7 @@ jobs:
           test "${{ steps.build.outcome }}" = success
           test "${{ steps.pack.outcome }}" = success
           test "${{ steps.size.outcome }}" = success
+          test "${{ steps.core-size.outcome }}" = success
 
   test:
     name: Tests (Node ${{ matrix.node-version }})

@@ -296,6 +296,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  ensureCanonicalDependencies,
   buildSizeReport,
   buildCanonicalBundles,
   gzipSize,

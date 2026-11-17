@@ -303,7 +303,8 @@
     "docs:dev": "node scripts/generate-llms-txt.js && vitepress dev docs",
     "docs:build": "node scripts/generate-llms-txt.js && vitepress build docs",
     "check:native": "node scripts/check-native-entry.cjs",
-    "check:loading": "node scripts/check-temporal-loading.cjs"
+    "check:loading": "node scripts/check-temporal-loading.cjs",
+    "size:core": "node scripts/measure-core-source.cjs --check"
   },
   "author": "Josue Orozco A.",
   "license": "MIT",
