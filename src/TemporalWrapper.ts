@@ -4,7 +4,7 @@
  * native Temporal.ZonedDateTime object to provide a more ergonomic API.
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './types/temporal';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import { TemporalUtils, IntlCache } from './TemporalUtils';
 import type {DateInput, RangeOptions, TimeUnit, SettableUnit, StartOfUnit} from './types';

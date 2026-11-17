@@ -1,6 +1,6 @@
 import { isTemporalValue, Temporal } from '../core/temporal-api';
 import { getExplicitOffset, hasTrailingTimeZoneAnnotation, withFixedOffsetZone } from '../core/parsing/input-safety';
-import type { Temporal as TemporalTypes } from '@js-temporal/polyfill';
+import type { Temporal as TemporalTypes } from '../types/temporal';
 import { InvalidDateError } from '../errors';
 import type { InstantInput, PlainDateInput, PlainDateTimeInput, ZonedDateTimeInput, ZonedDateTimeOptions } from '../types/temporal-inputs';
 

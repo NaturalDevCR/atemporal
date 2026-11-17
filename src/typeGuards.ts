@@ -1,6 +1,6 @@
 import { TemporalWrapper } from './TemporalWrapper';
 import { TemporalUtils } from './TemporalUtils';
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './types/temporal';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import type { OfficialPluginName, Plugin } from './types';
 

@@ -2,6 +2,13 @@
 
 The atemporal library automatically detects native Temporal API support, allowing seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
 
+In v3, the default ESM entry uses top-level await and dynamically imports the
+fallback only when Temporal is unavailable. CommonJS loads it synchronously on
+demand. Use `atemporal/compat` for ES2020 or tools without top-level await, or
+`atemporal/native` when global Temporal is guaranteed. Match the plugin import
+family to the factory. See the [loading guide](./guide/temporal-detection) and
+[v3 migration guide](./migration/v3) for the complete contract.
+
 ## How It Works
 
 The library automatically detects whether the native Temporal API is available in the current environment:
@@ -43,13 +50,15 @@ Native implementations are typically faster than polyfills.
 
 ### Seamless Transition
 
-No breaking changes — your existing code continues to work exactly the same.
+Date operations keep their behavior when the runtime gains native support.
+v3 changes the ESM loading requirement; use the migration guide when upgrading.
 
 ### Bundle Size
 
-The polyfill is a direct runtime dependency and is statically imported. Native
-selection changes which implementation runs, but does not by itself guarantee
-that a bundler removes polyfill code from an application bundle.
+The polyfill remains a direct runtime dependency. The default ESM entry imports
+it dynamically only on fallback; browser download savings require code splitting.
+`atemporal/compat` keeps a static fallback import, while `atemporal/native`
+excludes the fallback entirely.
 
 ## Runtime Support
 
@@ -95,7 +104,8 @@ The detection result is cached for performance:
 
 ### For Existing Users
 
-**No action required!** The detection system is backward compatible:
+For v3, review the [migration guide](./migration/v3) before upgrading. The
+default ESM entry now requires top-level await; the date API remains synchronous:
 
 ```javascript
 // This code works exactly the same as before
@@ -168,4 +178,4 @@ A: You can mock the global Temporal object in your tests to simulate native supp
 
 ---
 
-_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._
+_Use the distribution that matches your runtime and bundler requirements._

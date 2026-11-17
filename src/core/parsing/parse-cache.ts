@@ -2,7 +2,7 @@
  * @file Parse cache for optimized caching of parsing results
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type {
   TemporalInput,
   StrictParsingOptions

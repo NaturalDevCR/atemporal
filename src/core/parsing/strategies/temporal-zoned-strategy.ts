@@ -3,7 +3,7 @@
  */
 
 import { Temporal } from '../../temporal-api';
-import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
+import type { Temporal as TemporalNS } from '../../../types/temporal';
 import type { TemporalInput } from '../../../types/enhanced-types';
 import { TemporalParseError } from '../../../types/enhanced-types';
 import { DEFAULT_TEMPORAL_CONFIG } from '../../../types/index';

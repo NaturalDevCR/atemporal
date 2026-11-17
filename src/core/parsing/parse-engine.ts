@@ -2,7 +2,7 @@
  * @file Parse engine that orchestrates type-first parsing strategies for optimal performance
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type {
   TemporalInput,
   StrictParsingOptions
