@@ -11,4 +11,3 @@ export {
 } from "./plugins/dateRangeOverlap";
 export { default as businessDaysPlugin } from "./plugins/businessDays";
 export { default as timeSlotsPlugin } from "./plugins/timeSlots";
-

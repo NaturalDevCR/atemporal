@@ -12,7 +12,7 @@
 - Review the complete integration diff against `main` before merging the final
   release PR; the existing tarball validation/trusted publishing flow then releases it.
 
-## Planned PRs
+## Completed implementation
 
 1. **Conditional Temporal loading and independent types.** Default ESM loads
    fallback only when needed; CommonJS stays synchronous; compatibility/native
@@ -43,3 +43,16 @@ this sequence from measurements instead of assuming a target bundle size.
   different chunk must never be reported as removing them from the total build.
 - Performance gates retain the reviewed baseline instead of replacing it to
   hide a regression.
+
+## Integration record
+
+- [#95](https://github.com/NaturalDevCR/atemporal/pull/95): Temporal loading and independent types.
+- [#96](https://github.com/NaturalDevCR/atemporal/pull/96): parser boundaries, source attribution, and budgets.
+- [#97](https://github.com/NaturalDevCR/atemporal/pull/97): formatter and cache runtimes.
+- [#98](https://github.com/NaturalDevCR/atemporal/pull/98): explicit plugin boundaries and compat exports.
+- Final preparation sets the package and manifest to 3.0.0, finalizes release notes,
+  and validates asynchronous ESM benchmarks without changing the reviewed baseline.
+
+The final integration PR is [#94](https://github.com/NaturalDevCR/atemporal/pull/94).
+Merging it into `main` triggers validated npm publication and documentation deployment.
+See [the final review](reports/v3-release-review.md) and [migration guide](migration/v3.md).

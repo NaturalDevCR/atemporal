@@ -25,22 +25,22 @@ export class FormattingEngine {
     cacheHits: 0,
     totalFormatTime: 0
   };
-  
+
   /**
    * Initializes the formatting engine
    */
   static initialize(): void {
     if (this.isInitialized) return;
-    
+
     // Pre-compile common patterns
     TokenCompiler.precompileCommonPatterns();
-    
+
     // Register default token replacers
     this.registerDefaultTokenReplacers();
-    
+
     this.isInitialized = true;
   }
-  
+
   /**
    * Formats a date using the specified format string
    */
@@ -52,10 +52,10 @@ export class FormattingEngine {
     if (!this.isInitialized) {
       this.initialize();
     }
-    
+
     const startTime = performance.now();
     this.metrics.totalFormats++;
-    
+
     try {
       // Fast path for simple formats
       const fastResult = this.tryFastPath(date, formatString, options);
@@ -63,7 +63,7 @@ export class FormattingEngine {
         this.metrics.fastPathHits++;
         return fastResult;
       }
-      
+
       // Check formatting cache
       if (options.useCache !== false) {
         const cacheKey = CacheKeys.customFormat(formatString, options.locale || 'en-US', { timeZone: options.timeZone });
@@ -73,22 +73,22 @@ export class FormattingEngine {
           return cached;
         }
       }
-      
+
       // Full formatting path
       const result = this.formatWithCompilation(date, formatString, options);
-      
+
       // Cache the result
       if (options.useCache !== false) {
         const cacheKey = CacheKeys.customFormat(formatString, options.locale || 'en-US', { timeZone: options.timeZone });
         FormattingCache.set(cacheKey, date, result);
       }
-      
+
       return result;
     } finally {
       this.metrics.totalFormatTime += performance.now() - startTime;
     }
   }
-  
+
   /**
    * Attempts fast path formatting for common patterns
    */
@@ -101,28 +101,28 @@ export class FormattingEngine {
     if (options.locale && options.locale !== 'en-US') {
       return null;
     }
-    
+
     switch (formatString) {
       case 'YYYY-MM-DD':
         return `${date.year.toString().padStart(4, '0')}-${date.month.toString().padStart(2, '0')}-${date.day.toString().padStart(2, '0')}`;
-      
+
       case 'HH:mm:ss':
         return `${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}:${date.second.toString().padStart(2, '0')}`;
-      
+
       case 'YYYY-MM-DDTHH:mm:ss':
         return `${date.year.toString().padStart(4, '0')}-${date.month.toString().padStart(2, '0')}-${date.day.toString().padStart(2, '0')}T${date.hour.toString().padStart(2, '0')}:${date.minute.toString().padStart(2, '0')}:${date.second.toString().padStart(2, '0')}`;
-      
+
       case 'MM/DD/YYYY':
         return `${date.month.toString().padStart(2, '0')}/${date.day.toString().padStart(2, '0')}/${date.year}`;
-      
+
       case 'DD/MM/YYYY':
         return `${date.day.toString().padStart(2, '0')}/${date.month.toString().padStart(2, '0')}/${date.year}`;
-      
+
       default:
         return null;
     }
   }
-  
+
   /**
    * Formats using full compilation and token processing
    */
@@ -133,11 +133,11 @@ export class FormattingEngine {
   ): string {
     // Compile the format string
     const compilation = TokenCompiler.compile(formatString);
-    
+
     if (compilation.errors.length > 0) {
       throw new Error(`Format compilation failed: ${compilation.errors.join(', ')}`);
     }
-    
+
     // Create formatting context
     const context: FormattingContext = {
       date,
@@ -146,18 +146,18 @@ export class FormattingEngine {
       options,
       compiledFormat: compilation.compiled
     };
-    
+
     // Format using tokens
     return this.formatWithTokens(context);
   }
-  
+
   /**
    * Formats using compiled tokens
    */
   private static formatWithTokens(context: FormattingContext): string {
     const { compiledFormat } = context;
     const parts: string[] = [];
-    
+
     // Compiled tokens belong to the compiler cache and need no temporary pool.
     for (const token of compiledFormat.tokens) {
       parts.push(this.formatToken(token, context));
@@ -170,57 +170,57 @@ export class FormattingEngine {
    */
   private static formatToken(token: FormatToken, context: FormattingContext): string {
     const { date, locale } = context;
-    
+
     // Use custom formatter if available
     if (token.formatter) {
       return token.formatter(context.date);
     }
-    
+
     // Handle literal tokens
     if (token.type === 'literal') {
       return token.value || token.pattern;
     }
-    
+
     // Format based on token type
     switch (token.type) {
       case 'year':
         return this.formatYear(date, token.pattern);
-      
+
       case 'month':
         return this.formatMonth(date, token.pattern, locale);
-      
+
       case 'day':
         return this.formatDay(date, token.pattern);
-      
+
       case 'hour':
         return this.formatHour(date, token.pattern);
-      
+
       case 'minute':
         return this.formatMinute(date, token.pattern);
-      
+
       case 'second':
         return this.formatSecond(date, token.pattern);
-      
+
       case 'millisecond':
         return this.formatMillisecond(date, token.pattern);
-      
+
       case 'weekday':
         return this.formatWeekday(date, token.pattern, locale);
-      
+
       case 'era':
         return this.formatEra(date, token.pattern);
-      
+
       case 'timezone':
         return this.formatTimeZone(date, token.pattern);
-      
+
       case 'offset':
         return this.formatOffset(date, token.pattern);
-      
+
       default:
         return token.pattern;
     }
   }
-  
+
   /**
    * Formats year tokens
    */
@@ -234,7 +234,7 @@ export class FormattingEngine {
         return date.year.toString();
     }
   }
-  
+
   /**
    * Formats month tokens
    */
@@ -252,7 +252,7 @@ export class FormattingEngine {
         return date.month.toString();
     }
   }
-  
+
   /**
    * Formats day tokens
    */
@@ -266,7 +266,7 @@ export class FormattingEngine {
         return date.day.toString();
     }
   }
-  
+
   /**
    * Formats hour tokens
    */
@@ -288,7 +288,7 @@ export class FormattingEngine {
         return date.hour.toString();
     }
   }
-  
+
   /**
    * Formats minute tokens
    */
@@ -302,7 +302,7 @@ export class FormattingEngine {
         return date.minute.toString();
     }
   }
-  
+
   /**
    * Formats second tokens
    */
@@ -316,7 +316,7 @@ export class FormattingEngine {
         return date.second.toString();
     }
   }
-  
+
   /**
    * Formats millisecond tokens
    */
@@ -333,7 +333,7 @@ export class FormattingEngine {
         return ms.toString();
     }
   }
-  
+
   /**
    * Formats weekday tokens
    */
@@ -351,7 +351,7 @@ export class FormattingEngine {
         return date.dayOfWeek.toString();
     }
   }
-  
+
   /**
    * Formats era tokens (AM/PM)
    */
@@ -366,7 +366,7 @@ export class FormattingEngine {
         return isAM ? 'AM' : 'PM';
     }
   }
-  
+
   /**
    * Formats timezone tokens
    */
@@ -382,7 +382,7 @@ export class FormattingEngine {
         return date.timeZoneId;
     }
   }
-  
+
   /**
    * Formats offset tokens
    */
@@ -393,7 +393,7 @@ export class FormattingEngine {
     const hours = Math.floor(Math.abs(offsetMinutes) / 60);
     const minutes = Math.abs(offsetMinutes) % 60;
     const sign = offsetMinutes >= 0 ? '+' : '-';
-    
+
     switch (pattern) {
       case 'Z':
         return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
@@ -403,7 +403,7 @@ export class FormattingEngine {
         return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
   }
-  
+
   /**
    * Registers default token replacers
    */
@@ -411,7 +411,7 @@ export class FormattingEngine {
     // Custom replacers can be registered here for specialized formatting
     // This is a placeholder for future extensibility
   }
-  
+
   /**
    * Gets formatting performance metrics
    */
@@ -434,7 +434,7 @@ export class FormattingEngine {
       }
     };
   }
-  
+
   /**
    * Resets all metrics and caches
    */
@@ -445,13 +445,13 @@ export class FormattingEngine {
       cacheHits: 0,
       totalFormatTime: 0
     };
-    
+
     TokenCompiler.reset();
     FormattingCache.clear();
-    
+
     this.isInitialized = false;
   }
-  
+
   /**
    * Clears all formatting caches
    */
@@ -466,11 +466,11 @@ export class FormattingEngine {
   static getCacheStats() {
     const cacheStats = FormattingCache.getStats();
     const compilerStats = TokenCompiler.getStats();
-    
+
     return {
       totalCacheSize: cacheStats.size + compilerStats.cacheSize,
       maxCacheSize: cacheStats.maxSize + compilerStats.cacheMaxSize,
-      hitRatio: (cacheStats.hits + compilerStats.cacheHits) / 
+      hitRatio: (cacheStats.hits + compilerStats.cacheHits) /
                 (cacheStats.hits + cacheStats.misses + compilerStats.cacheHits + compilerStats.cacheMisses || 1)
     };
   }
