@@ -23,17 +23,28 @@ atemporal ships with a **plugin system** with two load modes:
    installs the plugin and patches the `TemporalWrapper` prototype
    with the plugin's methods.
 2. **Dynamic (`atemporal.lazyLoad(name)`)** — returns a `Promise`
-   that resolves to the loaded plugin. Used for code splitting
+   that resolves after installation (`Promise<void>`). Used for code splitting
    and to keep the main bundle small.
 
-A plugin is a function `(wrapperClass, options?) => void`. The
-function may add methods to the prototype, may add static helpers
-to the factory, and may return cleanup hooks.
+A plugin is a function `(wrapperClass, atemporalFactory, options?) => void`.
+It may add prototype methods or factory helpers. `extend()` does not use a
+return value as a cleanup hook.
 
 Each official plugin is exported as a separate subpath
 (`atemporal/plugins/relativeTime`) so consumers can import only
 what they use. Webpack, Rollup, and tsup can tree-shake unused
 plugins from the main bundle.
+
+### v3 import boundary
+
+Keep the factory and plugins in the same entry family: `atemporal`,
+`atemporal/compat`, or `atemporal/native`. Default/native roots no longer
+re-export the three previously bundled plugins or overlap helpers/errors;
+compat preserves those legacy named exports. The default ESM graph requires
+ES2022/top-level await; see [Migrating to v3](../migration/v3.md).
+
+The original core-size target above is a design goal. Current reproducible
+measurements are in [the v3 release review](../reports/v3-release-review.md).
 
 ## Consequences
 

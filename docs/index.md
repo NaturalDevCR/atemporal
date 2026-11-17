@@ -48,3 +48,15 @@ features:
 | **timeSlots** | Find free time slots in a busy schedule |
 
 [Browse all plugins →](/plugins/)
+
+## v3 integration requirements
+
+Default ESM requires ES2022 with top-level await and conditionally loads the
+Temporal fallback. Use `atemporal/compat` for ES2020/IIFE or tools without
+top-level await, and `atemporal/native` only when the runtime supplies complete
+Temporal support. Keep plugin imports in the same family as the factory.
+
+- [Choose the public API](./guide/choosing-an-api): raw Temporal constructors,
+  strict parsing, and the chainable wrapper.
+- [Migrating to v3](./migration/v3): every changed import and fallback policy.
+- [Concise LLM guide](/atemporal/llms.txt) and [complete LLM reference](/atemporal/llms-full.txt).

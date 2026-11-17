@@ -25,7 +25,9 @@ npm install atemporal
 > runtime dependency of `atemporal`, so your package manager installs it with
 > the package. It is not a separate plugin or peer dependency.
 
-Atemporal ships with full TypeScript declarations. Autocompletion and type checking work out of the box.
+Atemporal ships with self-contained Temporal declarations for TypeScript 5.4+.
+Autocompletion and type checking work without importing the polyfill or declaring
+a global Temporal object. Keep factory and plugin imports in the same entry family.
 
 ## Quick Start
 
@@ -119,7 +121,7 @@ const now = atemporal();
 const future = now.add(twoHours);
 
 // Subtract with a duration
-const past = now.subtract({ hours: 1, minutes: 15 });
+const past = now.subtract(atemporal.duration({ hours: 1, minutes: 15 }));
 ```
 
 ### Global Configuration
@@ -158,7 +160,7 @@ const date = atemporal("2025-07-09T14:30:00Z");
 
 // Token-based formatting
 date.format("YYYY-MM-DD");                     // "2025-07-09"
-date.format("dddd, MMMM Do YYYY [at] HH:mm"); // "Wednesday, July 9th 2025 at 14:30"
+date.format("dddd, MMMM D YYYY [at] HH:mm"); // "Wednesday, July 9 2025 at 14:30"
 
 // Intl-based formatting
 date.format({ dateStyle: "full" }, "es-CR");   // "miércoles, 9 de julio de 2025"
@@ -166,6 +168,8 @@ date.format({ dateStyle: "full" }, "es-CR");   // "miércoles, 9 de julio de 202
 
 ## Next Steps
 
+- [Choosing the Public API](./choosing-an-api) — Raw Temporal constructors, strict parsing, and the chainable wrapper
+- [Migrating to v3](../migration/v3) — Entry families, changed plugin imports, and build requirements
 - [Core Concepts](./core-concepts) — Understand immutability, plugins, input types, and architecture
 - [API Reference](/api/) — Complete reference for all methods
 - [Plugins](/plugins/) — Explore all 8 official plugins

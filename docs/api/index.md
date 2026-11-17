@@ -24,9 +24,16 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | `atemporal(input, tz?)` | Create from any `DateInput` |
 | `atemporal.from(input, tz?)` | Alias for `atemporal(input, tz?)` |
 | `atemporal.unix(seconds)` | Create from Unix timestamp (seconds) |
+| `atemporal.instant(value)` | Raw `Temporal.Instant`; numeric input is epoch milliseconds |
+| `atemporal.date(value)` | Raw `Temporal.PlainDate`, without a time or zone |
+| `atemporal.plainDateTime(value)` | Raw `Temporal.PlainDateTime`, without a zone |
+| `atemporal.zonedDateTime(value, options?)` | Raw `Temporal.ZonedDateTime`; local input requires an explicit zone |
 | `atemporal.duration(like)` | Create a `Temporal.Duration` from an object or ISO string |
 | `atemporal.parse(input, options?)` | Strict parsing; throws `InvalidDateError` for invalid or ambiguous local input by default |
 | `atemporal.tryParse(input, options?)` | Strict parsing that returns `null` instead of throwing |
+
+The four explicit Temporal constructors return raw values. Use `parse()` or
+`tryParse()` when you need the chainable wrapper and its `.format()`/plugin methods.
 
 ### Validation
 

@@ -48,7 +48,7 @@ export async function audit(opts: {
       occurredAt: now.toDate(),
       actorId: opts.actorId,
       action: opts.action,
-      originTz: opts.originTz ?? atemporal.getDefaultTimeZone?.() ?? 'UTC',
+      originTz: opts.originTz ?? now.timeZoneId,
       meta: opts.meta ?? {},
     },
   });

@@ -47,3 +47,10 @@ The [formatter runtime size report](../reports/v3-formatting-runtime-size) recor
 the next reduction. Formatting retains shared caches and metrics while optional
 analysis helpers remain separate. Deprecated pool counters are zero because
 compiled tokens belong to the compiler cache rather than a temporary pool.
+
+The [complete v3 review](../reports/v3-release-review) combines the parser,
+formatter, and [plugin-boundary](../reports/v3-plugin-boundaries) results. The
+unchanged native source fixture falls from 38,118 to 31,151 initial gzip bytes
+(18.3%). These numbers exclude the fallback and differ from production-artifact
+or tarball measurements. Default ESM download savings require code splitting;
+`atemporal/native` excludes fallback code entirely.

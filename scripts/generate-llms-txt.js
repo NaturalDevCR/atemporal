@@ -120,12 +120,11 @@ const SECTIONS = [
 ];
 
 /**
- * Build a method index by scanning the source for `atemporal.*` static
- * methods and the public `TemporalWrapper` instance methods.
+ * Build a curated method index for the public factory and wrapper surface.
  *
  * Kept simple — we want a *signal*, not a complete AST extraction.
- * The JSDoc-style definitions below mirror the source exactly; if you
- * add a method, add it here too.
+ * The entries below are maintained with the public API; documentation
+ * contracts execute the recipes and check the advertised member names.
  *
  * @returns {string} the index as a Markdown section
  */
@@ -133,8 +132,12 @@ function buildMethodIndex() {
   /** @type {{ kind: 'static' | 'instance', name: string, sig: string, note: string }[]} */
   const entries = [
     // ---- atemporal.* (static / factory) ------------------------------
-    { kind: 'static', name: 'atemporal(input?, timeZone?)', sig: '(input?: DateInput, timeZone?: string) => TemporalWrapper', note: 'Create an instance. input may be ISO string, Date, Unix ms, Unix s, [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper.' },
-    { kind: 'static', name: 'atemporal.try(input?, timeZone?)', sig: '(input?: DateInput, timeZone?: string) => TemporalWrapper | null', note: 'Same as atemporal(input) but returns null instead of throwing on invalid input.' },
+    { kind: 'static', name: 'atemporal(input?, timeZone?)', sig: '(input?: DateInput, timeZone?: string) => TemporalWrapper', note: 'Create an instance. input may be ISO string, Date, epoch milliseconds (use .unix() for seconds), [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper.' },
+    { kind: 'static', name: 'atemporal.try(input?, timeZone?)', sig: '(input?: DateInput, timeZone?: string) => TemporalWrapper | null', note: 'Compatibility parsing that returns null for invalid input instead of an invalid wrapper.' },
+    { kind: 'static', name: 'atemporal.instant(input)', sig: '(InstantInput) => Temporal.Instant', note: 'Raw instant; accepts an offset-bearing ISO string, epoch milliseconds, Date, or an instant. Throws InvalidDateError.' },
+    { kind: 'static', name: 'atemporal.date(input)', sig: '(PlainDateInput) => Temporal.PlainDate', note: 'Raw date-only value; rejects calendar overflow.' },
+    { kind: 'static', name: 'atemporal.plainDateTime(input)', sig: '(PlainDateTimeInput) => Temporal.PlainDateTime', note: 'Raw civil date-time with no time zone.' },
+    { kind: 'static', name: 'atemporal.zonedDateTime(input, options?)', sig: '(ZonedDateTimeInput, ZonedDateTimeOptions?) => Temporal.ZonedDateTime', note: 'Raw zoned value; local input requires timeZone. Defaults to rejecting DST ambiguity and calendar overflow.' },
     { kind: 'static', name: 'atemporal.parse(input, options?)', sig: '(input: DateInput, options?: ParseOptions) => TemporalWrapper', note: 'Strict boundary parser. Defaults to disambiguation: "reject" and overflow: "reject"; throws InvalidDateError.' },
     { kind: 'static', name: 'atemporal.tryParse(input, options?)', sig: '(input: DateInput, options?: ParseOptions) => TemporalWrapper | null', note: 'Strict parser that returns null for every invalid input.' },
     { kind: 'static', name: 'atemporal.iso(input?, timeZone?)', sig: '(input?: DateInput, timeZone?: string) => string | null', note: 'Try to parse and return an ISO 8601 string, or null. Does not throw.' },
@@ -149,8 +152,8 @@ function buildMethodIndex() {
     { kind: 'static', name: 'atemporal.isDuration(x)', sig: '(x) => boolean', note: 'True if x is a Temporal.Duration.' },
     { kind: 'static', name: 'atemporal.isValidTimeZone(tz)', sig: '(tz: string) => boolean', note: 'True if tz is a valid IANA time zone.' },
     { kind: 'static', name: 'atemporal.isValidLocale(loc)', sig: '(loc: string) => boolean', note: 'True if loc is a valid BCP-47 locale.' },
-    { kind: 'static', name: 'atemporal.isPlugin(x)', sig: '(x) => boolean', note: 'True if x is a Plugin object (has .name and an install hook).' },
-    { kind: 'static', name: 'atemporal.extend(plugin, options?)', sig: '(plugin, options?) => void', note: 'Install a plugin synchronously. Options are passed to the plugin.install() hook.' },
+    { kind: 'static', name: 'atemporal.isPlugin(x)', sig: '(x) => boolean', note: 'Checks the plugin function marker, with legacy function-shape recognition.' },
+    { kind: 'static', name: 'atemporal.extend(plugin, options?)', sig: '(plugin, options?) => void', note: 'Install a plugin synchronously. Calls plugin(Atemporal, atemporal, options); repeated installation of the same function is ignored.' },
     { kind: 'static', name: 'atemporal.lazyLoad(pluginName, options?)', sig: 'async (...) => Promise<void>', note: 'Install one official plugin by name on demand. Resolves after the plugin is applied.' },
     { kind: 'static', name: 'atemporal.lazyLoadMultiple(pluginNames, options?)', sig: 'async (...) => Promise<void>', note: 'Install several official plugins by name.' },
     { kind: 'static', name: 'atemporal.isPluginLoaded(name)', sig: '(name: string) => boolean', note: 'Has the named official plugin been installed yet?' },
@@ -163,22 +166,22 @@ function buildMethodIndex() {
     { kind: 'static', name: 'atemporal.resetDiagnostics()', sig: '() => void', note: 'Clear caches and parser/formatter metrics while retaining defaults.' },
     { kind: 'static', name: 'atemporal.prewarm(options?)', sig: '({ formatPatterns?: string[] }) => void', note: 'Initialize formatting and compile known hot format patterns.' },
     { kind: 'static', name: 'atemporal.setDefaultLocale(loc)', sig: '(loc: string) => void', note: 'Set the global default locale (BCP-47).' },
-    { kind: 'static', name: 'atemporal.setDefaultTimeZone(tz)', sig: '(tz: string) => void', note: 'Set the global default IANA time zone. Pass "system" to reset to the host TZ.' },
+    { kind: 'static', name: 'atemporal.setDefaultTimeZone(tz)', sig: '(tz: string) => void', note: 'Set the global default IANA time zone. Use "UTC" to restore the initial default.' },
     { kind: 'static', name: 'atemporal.getDefaultLocale()', sig: '() => string', note: 'Current default locale.' },
-    { kind: 'static', name: 'atemporal.presets.ISO', sig: 'string', note: '"YYYY-MM-DDTHH:mm:ss.SSSZ" — canonical ISO 8601 with milliseconds.' },
+    { kind: 'static', name: 'atemporal.presets.ISO', sig: 'string', note: '"YYYY-MM-DDTHH:mm:ss.sssZ" — ISO 8601 with milliseconds.' },
     { kind: 'static', name: 'atemporal.presets.ISO_DATE', sig: 'string', note: '"YYYY-MM-DD".' },
-    { kind: 'static', name: 'atemporal.presets.ISO_TIME', sig: 'string', note: '"HH:mm:ss".' },
-    { kind: 'static', name: 'atemporal.presets.RFC2822', sig: 'string', note: '"ddd, DD MMM YYYY HH:mm:ss Z".' },
-    { kind: 'static', name: 'atemporal.presets.SQL', sig: 'string', note: '"YYYY-MM-DD HH:mm:ss.SSS".' },
-    { kind: 'static', name: 'atemporal.setStrictMode(flags)', sig: '() => void', note: 'Enable strict-mode checks. See ADR 0004 + src/core/strict-mode.ts.' },
+    { kind: 'static', name: 'atemporal.presets.ISO_TIME', sig: 'string', note: '"HH:mm:ss.sss".' },
+    { kind: 'static', name: 'atemporal.presets.RFC2822', sig: 'string', note: '"ddd, DD MMM YYYY HH:mm:ss ZZ".' },
+    { kind: 'static', name: 'atemporal.presets.SQL_DATETIME', sig: 'string', note: '"YYYY-MM-DD HH:mm:ss.SSS".' },
+    { kind: 'static', name: 'atemporal.setStrictMode(onOrFlags)', sig: '(boolean | Partial<StrictModeFlags>) => void', note: 'Enable strict-mode checks. Warning configuration; use parse()/tryParse() for strict input validation.' },
     { kind: 'static', name: 'atemporal.isStrictMode()', sig: '() => boolean', note: 'Is strict mode currently on?' },
     { kind: 'static', name: 'atemporal.getStrictModeFlags()', sig: '() => StrictModeFlags', note: 'Current strict-mode flags.' },
     { kind: 'static', name: 'atemporal.clearStrictWarnings()', sig: '() => void', note: 'Reset the accumulated strict-mode warnings.' },
 
     // ---- TemporalWrapper instance methods -------------------------
-    { kind: 'instance', name: 't.add(value, unit?) | t.add(duration)', sig: '(number|"year"|"month"|"week"|"day"|"hour"|"minute"|"second"|"millisecond", unit) => TemporalWrapper', note: 'Immutably add. Returns a new instance; never mutates the receiver.' },
-    { kind: 'instance', name: 't.subtract(value, unit?) | t.subtract(duration)', sig: '(same as add) => TemporalWrapper', note: 'Immutably subtract.' },
-    { kind: 'instance', name: 't.set(unit, value)', sig: '("year"|"month"|"day"|"hour"|"minute"|"second"|"millisecond"|"week"|"dayOfWeek", number) => TemporalWrapper', note: 'Set a single field. Returns a new instance.' },
+    { kind: 'instance', name: 't.add(value, unit) | t.add(duration)', sig: '(number, TimeUnit) or (Temporal.Duration) => TemporalWrapper', note: 'Immutably add. Returns a new instance; never mutates the receiver.' },
+    { kind: 'instance', name: 't.subtract(value, unit) | t.subtract(duration)', sig: '(same as add) => TemporalWrapper', note: 'Immutably subtract.' },
+    { kind: 'instance', name: 't.set(unit, value)', sig: '(SettableUnit, number) => TemporalWrapper', note: 'Set a single field. Returns a new instance.' },
     { kind: 'instance', name: 't.startOf(unit)', sig: '("year"|"month"|"week"|"day"|"hour"|"minute"|"second") => TemporalWrapper', note: 'Snap down to the start of the given unit.' },
     { kind: 'instance', name: 't.endOf(unit)', sig: '(same as startOf) => TemporalWrapper', note: 'Snap up to the end of the given unit.' },
     { kind: 'instance', name: 't.get(unit)', sig: '(SettableUnit) => number', note: 'Read a single field as a number.' },
@@ -190,21 +193,25 @@ function buildMethodIndex() {
     { kind: 'instance', name: 't.isAfter(other)', sig: '(input) => boolean', note: 'Strict greater-than.' },
     { kind: 'instance', name: 't.isSameOrBefore(other)', sig: '(input) => boolean', note: 'Less-than-or-equal.' },
     { kind: 'instance', name: 't.isSameOrAfter(other)', sig: '(input) => boolean', note: 'Greater-than-or-equal.' },
-    { kind: 'instance', name: 't.isSame(other, unit?)', sig: '(input, unit="millisecond") => boolean', note: 'Equality in the given unit. isSame(a,"day") is true if they fall on the same calendar day in the default TZ.' },
+    { kind: 'instance', name: 't.isSame(other, unit?)', sig: '(DateInput, unit?: "year" | "month" | "day") => boolean', note: 'Without a unit, compares exact instants; calendar units use the receiver time zone.' },
     { kind: 'instance', name: 't.isSameDay(other)', sig: '(input) => boolean', note: 'Convenience for isSame(other, "day").' },
     { kind: 'instance', name: 't.isLeapYear()', sig: '() => boolean', note: 'True for leap years (Gregorian).' },
     { kind: 'instance', name: 't.isValid()', sig: '() => boolean', note: 'True if the wrapper represents a real, parseable instant.' },
-    { kind: 'instance', name: 't.timeZone([tz?])', sig: '() => string | (tz: string) => TemporalWrapper', note: 'Get the IANA TZ when called with no arg; convert immutably with one arg.' },
+    { kind: 'instance', name: 't.timeZone(tz)', sig: '(tz: string) => TemporalWrapper', note: 'Convert immutably to a zone. Read t.timeZoneId or t.raw.timeZoneId to inspect it.' },
     { kind: 'instance', name: 't.clone()', sig: '() => TemporalWrapper', note: 'Returns a new instance with the same value.' },
-    { kind: 'instance', name: 't.toDate()', sig: '() => Date', note: 'Native JS Date in the wrapper\'s TZ.' },
-    { kind: 'instance', name: 't.toString()', sig: '() => string', note: 'ISO 8601 representation in the wrapper\'s TZ.' },
+    { kind: 'instance', name: 't.raw', sig: 'Temporal.ZonedDateTime', note: 'Raw underlying value with full precision; throws for an invalid wrapper.' },
+    { kind: 'instance', name: 't.timeZoneId', sig: 'string', note: 'Read the current time-zone identifier.' },
+    { kind: 'instance', name: 't.range(end, unit, options?)', sig: '(DateInput, TimeUnit, RangeOptions?) => TemporalWrapper[] | string[]', note: 'Generate a range; supplying options.format produces formatted strings.' },
+    { kind: 'instance', name: 't.isBetween(start, end, inclusivity?)', sig: '(DateInput, DateInput, inclusivity="[]") => boolean', note: 'Compare bounds with (), [], (], or [) inclusivity.' },
+    { kind: 'instance', name: 't.toDate()', sig: '() => Date', note: 'Legacy Date representing the same instant, with millisecond precision; Date does not retain the IANA zone.' },
+    { kind: 'instance', name: 't.toString()', sig: '() => string', note: 'ISO string with offset; use t.raw.toString() to preserve the zone annotation and full nanoseconds.' },
   ];
 
   const statics = entries.filter((e) => e.kind === 'static');
   const instances = entries.filter((e) => e.kind === 'instance');
 
   const rowFmt = (e) =>
-    `| \`${e.name}\` | \`${e.sig}\` | ${e.note} |`;
+    `| \`${e.name.replace(/\|/g, '\\|')}\` | \`${e.sig.replace(/\|/g, '\\|')}\` | ${e.note} |`;
 
   const head = `| Method | Signature | Notes |
 | --- | --- | --- |`;
@@ -212,7 +219,7 @@ function buildMethodIndex() {
   return [
     '## Method index',
     '',
-    '> A flat alphabetised (by section) index of the public surface. Use this as a quick reference before reading the long-form guides below.',
+    '> A curated index of the public factory, wrapper, and plugin surface. Use this as a quick reference before reading the long-form guides below.',
     '',
     '### Static / factory (`atemporal.*`)',
     '',
@@ -228,14 +235,34 @@ function buildMethodIndex() {
     '',
     '| Plugin | Extends with | Import path |',
     '| --- | --- | --- |',
-    '| relativeTime | `.fromNow()`, `.toNow()`, `.from(other)`, `.to(other)` | `atemporal/plugins/relativeTime` |',
-    '| customParseFormat | `.fromFormat(str, pattern)` (instance + static) | `atemporal/plugins/customParseFormat` |',
+    '| relativeTime | `.fromNow()`, `.toNow()` | `atemporal/plugins/relativeTime` |',
+    '| customParseFormat | `atemporal.fromFormat(str, pattern, timeZone?)` | `atemporal/plugins/customParseFormat` |',
     '| advancedFormat | Format tokens `Do`, `Qo`, `zzz`, `zzzz` in `.format()` | `atemporal/plugins/advancedFormat` |',
-    '| weekDay | `.weekday()`, `.weekday(d)`, `.startOf("isoWeek")`, locale-aware week starts | `atemporal/plugins/weekDay` |',
-    '| durationHumanizer | `atemporal.duration().humanize()` | `atemporal/plugins/durationHumanizer` |',
-    '| dateRangeOverlap | `atemporal.overlapRanges(a, b)` and `.overlaps(other)` | `atemporal/plugins/dateRangeOverlap` |',
+    '| weekDay | `.weekday()`, `atemporal.setWeekStartsOn(day)`, `.startOf("week")`, `.endOf("week")` | `atemporal/plugins/weekDay` |',
+    '| durationHumanizer | `atemporal.humanize(durationLike, options?)` | `atemporal/plugins/durationHumanizer` |',
+    '| dateRangeOverlap | `atemporal.checkDateRangeOverlap(a, b)`, `.rangeOverlapsWith(range)`, `.to(end)` | `atemporal/plugins/dateRangeOverlap` |',
     '| businessDays | `.isBusinessDay()`, `.isHoliday()`, `.isWeekend()`, `.addBusinessDays(n)`, `.subtractBusinessDays(n)`, `.nextBusinessDay()` | `atemporal/plugins/businessDays` |',
     '| timeSlots | `atemporal.findAvailableSlots({ range, duration, interval?, busySlots })` | `atemporal/plugins/timeSlots` |',
+    '',
+  ].join('\n');
+}
+
+function buildEntryContract() {
+  return [
+    '## v3 entry contract',
+    '',
+    '| Factory entry | Build/runtime requirement | Matching plugin prefix |',
+    '| --- | --- | --- |',
+    '| `atemporal` (ESM) | ES2022 and top-level await; conditional fallback import | `atemporal/plugins/` |',
+    '| `atemporal` (CommonJS) | Synchronous require; fallback only when needed | `atemporal/plugins/` |',
+    '| `atemporal/compat` | ES2020/IIFE; static fallback import | `atemporal/compat/plugins/` |',
+    '| `atemporal/native` | ES2020; complete global Temporal required | `atemporal/native/plugins/` |',
+    '',
+    'Use the same entry family for the factory, named errors/helpers, and plugins. Date operations stay synchronous after import. Default browser download savings require code splitting; total output still includes optional fallback/plugin chunks. Native entry builds exclude fallback code, while the installed package retains its direct polyfill dependency. Leave globalThis.Temporal unchanged after initialization.',
+    '',
+    'Default/native roots no longer export `dateRangeOverlapPlugin`, `businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`, `InvalidDateRangeError`, or `OverlapDetectionError`. Import plugins/helpers from their matching subpaths. The compat root preserves all six legacy named exports. No Temporal runtime object is exported from the root. Public Temporal types are self-contained for TypeScript 5.4+.',
+    '',
+    'See [Migrating to v3](https://naturaldevcr.github.io/atemporal/migration/v3.html) for complete examples.',
     '',
   ].join('\n');
 }
@@ -248,8 +275,8 @@ function buildTldr() {
   return [
     '# Atemporal — LLM-friendly documentation',
     '',
-    '> This file is a curated concatenation of the atemporal documentation,',
-    '> ordered for coding agents. It is regenerated on every docs build by',
+    '> Concise operational guide for the v3 public API. Read `llms-full.txt` for',
+    '> the complete reference. Both files are regenerated on every docs build by',
     '> `scripts/generate-llms-txt.js`. Do not edit it by hand.',
     '',
     '## TL;DR for coding agents',
@@ -260,34 +287,45 @@ function buildTldr() {
     '- **Construct:** `atemporal()` (now) / `atemporal(input, tz?)` / `atemporal.unix(s)` / `atemporal.validate(x)`. At untrusted-input boundaries use `atemporal.parse(input, options)` or `atemporal.tryParse(input, options)`.',
     '- **Strict parsing:** `atemporal.parse` defaults to `disambiguation: "reject"` and `overflow: "reject"`; explicitly choose `"earlier"`, `"later"`, or `"compatible"` only when your domain policy requires it.',
     '- **Model and compatibility:** the principal representation is `Temporal.ZonedDateTime`. The API is Day.js-inspired but does not promise full Day.js compatibility; check the compatibility matrix before a migration.',
-    '- **Immutable:** every mutator returns a NEW `TemporalWrapper`. Never use `let` to "update" a date — use `const next = current.add(1, "day");`.',
+    '- **Immutable:** every mutator returns a NEW `TemporalWrapper`. Assign the returned value, for example `const next = current.add(1, "day");`.',
     '- **Plugins:** synchronously install any plugin with `atemporal.extend(plugin)`. Lazy loading accepts an official plugin name: `await atemporal.lazyLoad("relativeTime")`. `getLoadedPlugins()` reports only official plugins; use `getAppliedExtensions()` to inspect explicitly identified third-party extensions too.',
-    '- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code.',
-    '- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.',
-    '- **Temporal runtime:** call `atemporal.getTemporalInfo()` to inspect the implementation. Do not assume `globalThis.Temporal` exists. The default ESM entry requires ES2022/top-level await and dynamically imports the polyfill only when Temporal is missing or incomplete. CommonJS remains synchronous and requires the polyfill only on fallback. Date methods stay synchronous after import. Use `atemporal/compat` and matching plugins for ES2020/IIFE or tools without top-level await. Use `atemporal/native` and matching plugins to require global Temporal with no fallback. Keep factory and plugin imports in the same family. Public types are self-contained (TypeScript 5.4+). Without code splitting, runtime selection does not by itself remove it from an application bundle.',
+    '- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code. Deprecated `Atemporal.getFormattingMetrics().tokenPoolStats` fields are zero in v3; prewarm still compiles formats.',
+    '- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. The configured default starts at UTC; specify the domain zone before calendar operations.',
+    '- **Temporal runtime:** call `atemporal.getTemporalInfo()` to inspect the implementation. Do not assume `globalThis.Temporal` exists. Choose the v3 entry contract below; date operations remain synchronous after import.',
     '- **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.',
-    '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.',
-    '- **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.',
+    '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from the same entry family as the factory. Catch on the boundary, not deep in business logic.',
+    '- **Value categories:** `instant()`, `date()`, `plainDateTime()`, and `zonedDateTime()` return raw Temporal values. Use `parse()`/`tryParse()` for a chainable wrapper with `.format()` and plugin methods. Create wrapper duration arguments with `atemporal.duration(like)`.',
     '- **Size:** See `size-report.md` in the `package-artifact-reports` artifact on [GitHub Actions](https://github.com/NaturalDevCR/atemporal/actions/workflows/ci.yml). It reports core, packed-tarball, and application-bundle measurements separately, including the application-bundle cost of `@js-temporal/polyfill`.',
-    '- **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.',
+    '- **License and releases:** MIT, with the Temporal declaration attribution in LICENSE. Releases use npm trusted publishing, provenance, and SPDX/CycloneDX SBOMs.',
     '',
-    '### Common recipes (1-liners)',
+    buildEntryContract(),
+    '### Common recipes',
     '',
     '```ts',
-    '// Today, midnight, in a specific TZ',
-    'atemporal().startOf("day").timeZone("America/New_York")',
+    'import atemporal from "atemporal";',
     '',
-    '// Add 30 days, excluding weekends and a holiday list',
-    'atemporal("2025-01-01").add(30, "day") /* then plugin: .addBusinessDays(30) */',
+    '// Convert to the business zone before finding its midnight',
+    'const midnight = atemporal().timeZone("America/New_York").startOf("day");',
     '',
-    '// Human-readable diff',
-    'atemporal.duration({ hours: 2, minutes: 30 }).humanize() // "2.5 hours"',
+    '// Preserve a timestamp at nanosecond precision with a raw instant',
+    'const instant = atemporal.instant("2026-07-15T10:00:00.123456789Z");',
+    'const timestamp = instant.toString();',
     '',
-    '// Validate untrusted input without throwing',
-    'const ok = atemporal.try(userInput)?.isValid() ?? false;',
+    '// Add business days with an explicit holiday configuration',
+    'await atemporal.lazyLoad("businessDays");',
+    'atemporal.setBusinessDaysConfig({ holidays: ["2026-07-20"] });',
+    'const deadline = atemporal("2026-07-17", "America/Costa_Rica").addBusinessDays(1);',
     '',
-    '// Format in any BCP-47 locale',
-    'atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")',
+    '// Humanize a duration after installing the official plugin',
+    'await atemporal.lazyLoad("durationHumanizer");',
+    'const duration = atemporal.duration({ hours: 2, minutes: 30 });',
+    'const humanized = atemporal.humanize(duration, { locale: "en" });',
+    '',
+    '// Validate untrusted input with a strict, explicit DST policy',
+    'const parsed = atemporal.tryParse("not a date", { timeZone: "America/Costa_Rica" });',
+    '',
+    '// Format a valid wrapper in a chosen locale',
+    'const formatted = atemporal.parse("2026-07-15T10:00:00Z").format({ dateStyle: "full" }, "es-CR");',
     '```',
     '',
   ].join('\n');
@@ -308,19 +346,19 @@ function buildConciseGuide() {
     '',
     '| Case | Public API | Timezone rule | Failure result |',
     '| --- | --- | --- | --- |',
-    '| Event instant | `atemporal.parse` with an offset-bearing input | Do not guess a zone | `InvalidDateError` / `null` |',
-    '| Scheduled event | `atemporal.parse(input, { timeZone })` | Explicit IANA zone | Reject DST ambiguity by default |',
-    '| Local civil date-time | `atemporal.parse` | Always provide an IANA zone | `InvalidDateError` / `null` |',
-    '| Date-only value | `atemporal.parse` | Provide the business zone when a time is implied | `InvalidDateError` / `null` |',
-    '| Trusted boundary parsing | `atemporal.parse` | Explicit zone for local input | Throws `InvalidDateError` |',
+    '| Event instant | `atemporal.instant(value)` | Offset-bearing string or exact instant | `InvalidDateError` |',
+    '| Scheduled event | `atemporal.zonedDateTime(value, { timeZone })` | Explicit zone required for local input | `InvalidDateError`; rejects DST ambiguity |',
+    '| Local civil date-time | `atemporal.plainDateTime(value)` | Zone-free raw value | `InvalidDateError` |',
+    '| Date-only value | `atemporal.date(value)` | Zone-free raw value | `InvalidDateError` |',
+    '| Chainable strict wrapper | `atemporal.parse` / `tryParse` | Choose a domain zone for local input | `InvalidDateError` / `null` |',
     '| Compatibility parsing | `atemporal(input)` | Optional zone preserves v1 behavior | Invalid wrapper |',
-    '| Formatting | `value.format(pattern)` | Format in the value zone or convert first | Throws for invalid wrapper |',
+    '| Formatting | `wrapper.format(pattern)` | Convert the wrapper to the domain zone first | Invalid wrappers format as `"Invalid Date"` |',
     '| Duration | `atemporal.duration(like)` | No zone | Temporal conversion error |',
     '| Range | `value.range(...)` | Keep both ends in a known zone | Invalid wrapper/error |',
     '| Official plugin | `extend(plugin)` / `lazyLoad(name)` | No zone | Plugin load error |',
     '| Third-party extension | `extend(markAsPlugin(...))` | No zone | Extension error |',
     '',
-    'For complete API signatures, migration matrices, plugin guides, and cookbook recipes read `llms-full.txt`.',
+    'Raw Temporal values do not have wrapper `.format()`, range, or plugin methods. For complete API signatures, migration matrices, plugin guides, and cookbook recipes read `llms-full.txt`.',
     '',
   ].join('\n');
 }
@@ -331,6 +369,7 @@ function buildFullGuide() {
   out.push('');
   out.push('> Generated from public consumer documentation. Use `llms.txt` for the concise operational guide.');
   out.push('');
+  out.push(buildEntryContract());
   out.push(buildMethodIndex());
   out.push(
     [

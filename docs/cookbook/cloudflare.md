@@ -102,7 +102,7 @@ export default {
     const next = atemporal()
       .add(1, 'day')
       .startOf('day')
-      .set({ hour: 9, minute: 0 });
+      .set('hour', 9).set('minute', 0);
 
     ctx.waitUntil(env.QUEUE.send({ runAt: next.toString() }));
   },
