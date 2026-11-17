@@ -101,7 +101,7 @@ function enforceBudget(report) {
   }
   for (const input of budget.excludedModules) {
     assert.ok(!report.inputs.some((value) => value.input === input && value.totalBytes > 0),
-      `Optional parser machinery entered the core bundle: ${input}`);
+      `Optional machinery entered the core bundle: ${input}`);
   }
 }
 

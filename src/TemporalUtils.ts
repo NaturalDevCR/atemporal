@@ -11,7 +11,7 @@ import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
 import { InvalidTimeZoneError, InvalidDateError } from './errors';
 import { ParseEngine } from './core/parsing/parse-engine';
 import { createRuntimeEngineConfig } from './core/parsing/engine-config';
-import { FormattingEngine } from './core/formatting/formatting-engine';
+import { FormattingEngine } from './core/formatting/formatting-runtime';
 import { DiffCache } from './core/caching/diff-cache';
 import { TemporalParseError } from './types/enhanced-types';
 

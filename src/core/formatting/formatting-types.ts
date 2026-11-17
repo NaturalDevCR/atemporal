@@ -43,6 +43,7 @@ export interface FormattingOptions {
   calendar?: string;
   numberingSystem?: string;
   useCache?: boolean;
+  /** @deprecated Compiled tokens are cache-owned; token pooling is no longer used. */
   poolTokens?: boolean;
 }
 
@@ -96,6 +97,7 @@ export interface FormattingMetrics {
   cacheMisses: number;
   fastPathHits: number;
   averageFormatTime: number;
+  /** @deprecated Retained for compatibility; the formatting runtime reports zero pool usage. */
   tokenPoolStats: TokenPoolStats;
   compilationStats: {
     totalCompilations: number;

@@ -38,6 +38,12 @@ For release-size and benchmark policy, see the repository's generated reports. A
 Maintainers can run `pnpm run size:core` for a pinned-esbuild source attribution
 and budget check. It excludes the polyfill, keeps optional chunks separate, and
 reports initial versus total bytes in `reports/core-source-size.json`. The check
-also rejects the async coordinator and optimizer entering the factory graph.
+also rejects async coordination, optional formatter/cache analysis, and token
+pooling entering the factory graph.
 See [the v3 core size report](../reports/v3-core-size) for the fixture and measured
 parsing-runtime change. The reviewed baseline is never rewritten by this command.
+
+The [formatter runtime size report](../reports/v3-formatting-runtime-size) records
+the next reduction. Formatting retains shared caches and metrics while optional
+analysis helpers remain separate. Deprecated pool counters are zero because
+compiled tokens belong to the compiler cache rather than a temporary pool.

@@ -5,24 +5,44 @@
   "mode": "native-core-source",
   "target": "es2020",
   "previous": {
-    "initialBytes": 149911,
-    "initialGzip": 38118,
-    "totalBytes": 170602
-  },
-  "baseline": {
     "initialBytes": 139873,
     "initialGzip": 35556,
     "totalBytes": 160564
   },
+  "baseline": {
+    "initialBytes": 132589,
+    "initialGzip": 33744,
+    "totalBytes": 153280
+  },
   "limits": {
-    "initialBytes": 143360,
-    "initialGzip": 36864,
-    "totalBytes": 163840
+    "initialBytes": 134144,
+    "initialGzip": 34816,
+    "totalBytes": 155648
   },
   "excludedModules": [
     "src/core/parsing/parse-coordinator.ts",
-    "src/core/parsing/parse-optimizer.ts"
+    "src/core/parsing/parse-optimizer.ts",
+    "src/core/formatting/formatting-engine.ts",
+    "src/core/formatting/formatting-cache.ts",
+    "src/core/formatting/token-pool.ts"
   ],
-  "rationale": "The synchronous factory uses ParseEngine directly. Async coordination and optimizer reporting remain outside its dependency graph. Limits preserve the measured reduction with explicit headroom.",
-  "previousRef": "9ffd2896b275bf33e1c151d615557fdd65ae33ed"
+  "rationale": "The default graph uses the shared synchronous parser and lean formatter/cache runtimes. Optional coordination, analysis facades, and unused token pooling stay outside every output chunk. Limits preserve the measured reductions with explicit headroom.",
+  "previousRef": "efc2dd46a009628ac8e41a4faa6859f88c0f7d58",
+  "history": [
+    {
+      "change": "Lean synchronous parser (PR #96)",
+      "beforeRef": "9ffd2896b275bf33e1c151d615557fdd65ae33ed",
+      "afterRef": "efc2dd46a009628ac8e41a4faa6859f88c0f7d58",
+      "previous": {
+        "initialBytes": 149911,
+        "initialGzip": 38118,
+        "totalBytes": 170602
+      },
+      "baseline": {
+        "initialBytes": 139873,
+        "initialGzip": 35556,
+        "totalBytes": 160564
+      }
+    }
+  ]
 }
