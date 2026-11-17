@@ -28,7 +28,7 @@ describe('release artifact workflow contracts', () => {
   test('v3 receives CI while publication stays on the stable branch', () => {
     const ci = workflow('ci.yml');
     expect(ci).toMatch(/push:\s+branches: \[main, codex\/v3\.0\.0\]/);
-    expect(ci).toMatch(/pull_request:\s+branches: \[main, codex\/v3\.0\.0\]/);
+    expect(ci).toMatch(/pull_request:\s+branches: \[main, codex\/v3\.0\.0, 'codex\/v3-\*'\]/);
     expect(workflow('release.yml')).toMatch(/push:\s+branches: \[main\]/);
     expect(jobBlock(workflow('release.yml'), 'publish-npm')).toContain("github.ref == 'refs/heads/main'");
   });

@@ -2,8 +2,8 @@
  * @file Types and interfaces for the type-first parsing strategy system
  */
 
-import '@js-temporal/polyfill';
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
+import { Temporal as TemporalAPI } from '../temporal-api';
 import type {
   TemporalInput,
   TemporalError,
@@ -526,19 +526,19 @@ export function inferStrategyType(input: TemporalInput): { type: ParseStrategyTy
   }
   
   // Check for Temporal types
-  if (input instanceof Temporal.ZonedDateTime) {
+  if (input instanceof TemporalAPI.ZonedDateTime) {
     return { type: 'temporal-zoned', confidence: 1 };
   }
   
-  if (input instanceof Temporal.Instant) {
+  if (input instanceof TemporalAPI.Instant) {
     return { type: 'temporal-instant', confidence: 1 };
   }
   
-  if (input instanceof Temporal.PlainDateTime) {
+  if (input instanceof TemporalAPI.PlainDateTime) {
     return { type: 'temporal-plain-datetime', confidence: 1 };
   }
   
-  if (input instanceof Temporal.PlainDate) {
+  if (input instanceof TemporalAPI.PlainDate) {
     return { type: 'temporal-plain-date', confidence: 1 };
   }
   

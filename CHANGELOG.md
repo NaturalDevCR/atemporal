@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0] (unreleased)
+
+### Breaking Changes
+
+- The default ESM entry and ESM plugin subpaths now require top-level await
+  (ES2022). Atemporal imports the Temporal polyfill dynamically only when a
+  complete global Temporal implementation is unavailable. Date operations remain
+  synchronous after import. Use `atemporal/compat` and matching
+  `atemporal/compat/plugins/*` paths for ES2020 and tools without top-level await.
+- CommonJS remains synchronous and requires the polyfill only on the fallback
+  path. `atemporal/native` and matching plugin subpaths require global Temporal
+  and never import the polyfill.
+
+### Improvements
+
+- Publish self-contained Temporal types compatible with TypeScript 5.4+.
+- Preserve plugin declaration merging in CommonJS and ESM declarations.
+- Verify implementation loading, native and fallback runtime paths, package
+  contracts, and initial versus total browser bundle sizes.
+
 ## [2.1.0](https://github.com/NaturalDevCR/atemporal/compare/v2.0.3...v2.1.0) (2026-11-16)
 
 ### Bug Fixes

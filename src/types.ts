@@ -1,6 +1,6 @@
 import { TemporalWrapper } from "./TemporalWrapper";
 // Import Temporal types for TypeScript compilation
-import type { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from './types/temporal';
 
 /**
  * Represents a plain object that can be used to construct a date-time.

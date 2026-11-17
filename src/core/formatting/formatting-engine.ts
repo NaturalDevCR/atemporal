@@ -2,7 +2,7 @@
  * @file High-performance formatting engine with token compilation and pooling
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type {
   FormattingOptions,
   FormattingContext,

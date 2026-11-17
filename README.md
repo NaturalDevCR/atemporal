@@ -65,14 +65,38 @@ For full guides and API reference, please visit:
 ## Installation
 
 **Node.js 22 or newer is required.** Atemporal supports Node 22, 24, and 26;
-browser compatibility continues through Temporal runtime detection and the
-published bundler fixtures.
+the default ESM entry requires ES2022 with top-level await. CommonJS remains
+synchronous. See [Migrating to v3](docs/migration/v3.md) for the loading contract.
 
 ```bash
 npm install atemporal
 # or
 pnpm add atemporal
 ```
+
+The default entry loads `@js-temporal/polyfill` only when a complete global
+Temporal implementation is unavailable. In ESM, initialization finishes before
+importers run; date operations stay synchronous. Browser bundlers with code
+splitting can keep the fallback in a separate, conditionally downloaded chunk.
+In CommonJS, the polyfill is required synchronously only on the fallback path.
+
+For ES2020 builds or tools without top-level await, use the compatibility entry:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+Deployments that guarantee `globalThis.Temporal` can use `atemporal/native`
+and `atemporal/native/plugins/*` to exclude the fallback entirely. The native
+entry throws at import time when Temporal is unavailable. Use the same entry
+family for the factory and its plugins. All eight plugins and `lazyLoad()` are
+available in each distribution.
+
+The polyfill remains installed for automatic fallback. Public Temporal types
+are self-contained and support TypeScript 5.4+ without global Temporal types.
 
 ## Quick Start
 

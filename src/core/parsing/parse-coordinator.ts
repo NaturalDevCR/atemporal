@@ -2,9 +2,8 @@
  * @file Parse coordinator for orchestrating the entire parsing system
  */
 
-import '@js-temporal/polyfill';
 import { Temporal as TemporalRuntime } from '../temporal-api';
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type {
   TemporalInput,
   StrictParsingOptions

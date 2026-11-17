@@ -2,7 +2,7 @@
  * @file Formatting cache for compiled formats and results
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import { ResizableLRUCache } from '../caching/lru-cache';
 import { CacheKeys } from '../caching/cache-keys';
 

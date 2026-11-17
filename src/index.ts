@@ -7,7 +7,7 @@
 import {
   getTemporalInfo,
 } from "./core/temporal-detection";
-import type { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from './types/temporal';
 
 import { Temporal as TemporalAPI } from "./core/temporal-api";
 import { TemporalWrapper } from "./TemporalWrapper";
@@ -78,6 +78,8 @@ export type {
   ParseOptions,
   AppliedExtension,
   AtemporalDiagnostics,
+  AtemporalFactory,
+  AtemporalFunction,
 } from "./types";
 export type {
   InstantInput,

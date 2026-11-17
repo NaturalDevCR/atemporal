@@ -84,3 +84,10 @@ v2 raises the Node.js floor from 18 to **22**. It supports Node 22, 24, and
 26. Browser support remains available through the packaged Temporal runtime
 detection path and bundler fixtures. Upgrade the runtime before adopting v2;
 the existing callable wrapper facade remains available during the migration.
+
+## Upgrading to v3
+
+v3 loads the polyfill only on fallback in the default entry. ESM consumers need
+ES2022 and top-level await; CommonJS remains synchronous. Use `atemporal/compat`
+and matching plugin paths to keep ES2020/IIFE builds. See the
+[v3 migration guide](v3.md) for code splitting, native deployments, and types.

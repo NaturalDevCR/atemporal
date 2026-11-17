@@ -2,7 +2,7 @@
  * @file Main input parser implementing the strategy pattern for optimized parsing
  */
 
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type { TemporalInput, StrictParsingOptions } from '../../types/enhanced-types';
 import { TemporalParseError } from '../../types/enhanced-types';
 import type {

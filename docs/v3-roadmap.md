@@ -4,6 +4,8 @@
 
 - `main` stays on stable 2.x while `codex/v3.0.0` integrates reviewed v3 work.
 - Each improvement gets a focused `codex/*` branch and PR targeting integration.
+- Dependent PRs may temporarily target an unmerged parent feature branch, then
+  retarget integration after the parent merges. CI covers stacked PRs too.
 - CI runs on both lines; publishing and hosted docs deployment stay on `main`.
 - Keep the stable package/manifest version during development. The final release
   PR sets both to 3.0.0 and finalizes the changelog and supported-version table.

@@ -2,7 +2,7 @@
  * @file Type definitions for comparison operations
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 
 /**
  * Time units for comparison operations

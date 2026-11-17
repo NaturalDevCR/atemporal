@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, codex/v3.0.0]
   pull_request:
-    branches: [main, codex/v3.0.0]
+    branches: [main, codex/v3.0.0, 'codex/v3-*']
   workflow_dispatch:
 
 permissions:
@@ -103,11 +103,25 @@ jobs:
           TZ: UTC
           CI: 'true'
         run: pnpm run test:ci --verbose
+      - name: Verify default conditional Temporal loading and browser chunks
+        run: pnpm run check:loading
+      - name: Verify native entry isolation, declarations, and bundle size
+        run: pnpm run check:native
       - name: Verify native Temporal against the production artifact
         if: matrix.node-version == '26.x'
         env:
           TZ: UTC
         run: node scripts/check-native-temporal.cjs
+      - name: Upload native entry bundle report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-entry-node-${{ matrix.node-version }}
+          path: |
+            reports/native-entry.json
+            reports/temporal-loading.json
+          if-no-files-found: warn
+          retention-days: 7
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})

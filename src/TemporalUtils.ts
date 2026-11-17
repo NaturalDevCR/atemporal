@@ -4,7 +4,7 @@
  * engine for the atemporal library, handling parsing, formatting, and comparisons.
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './types/temporal';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import { isForeignWrapper } from './core/wrapper-brand';
 import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
