@@ -2,9 +2,9 @@ name: Atemporal CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/v3.0.0]
   pull_request:
-    branches: [main]
+    branches: [main, codex/v3.0.0]
   workflow_dispatch:
 
 permissions:
