@@ -12,8 +12,8 @@ atemporal.extend(weekDay);
 
 const date = atemporal("2024-05-15"); // Wednesday
 
-// Get weekday number (0 for Sunday, 1 for Monday, etc. — based on week start config)
-console.log(date.weekday()); // 3 (Wednesday, assuming default ISO week)
+// Get the zero-based offset from the configured week start (Monday by default)
+console.log(date.weekday()); // 2 (Wednesday is two days after Monday)
 
 // Configure start of week globally
 atemporal.setWeekStartsOn(1); // 1 = Monday (0 = Sunday)

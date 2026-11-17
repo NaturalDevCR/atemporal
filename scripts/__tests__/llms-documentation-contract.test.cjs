@@ -67,7 +67,7 @@ test('LLM guide states the consumer integration contract', () => {
   expect(guide).toContain('Temporal.ZonedDateTime');
   expect(guide).toContain('getTemporalInfo()');
   expect(guide).toContain('direct runtime dependency');
-  expect(guide).toContain('does not by itself remove it from an application bundle');
+  expect(guide).toContain('total output still includes optional fallback/plugin chunks');
   expect(guide).toContain('Do not assume `globalThis.Temporal` exists.');
   expect(guide).toContain('**Compatibility contract:**');
   expect(guide).toContain('Node 22, 24, and 26');
@@ -79,6 +79,35 @@ test('LLM guide states the consumer integration contract', () => {
   expect(guide).toContain('## Choose the public API');
   expect(fullGuide).toContain('# Atemporal — complete LLM reference');
   expect(fullGuide).toContain('Day.js compatibility matrix');
+});
+
+test('both LLM guides surface the v3 entry and migration contract before examples', () => {
+  for (const file of [sourceOutput, sourceFullOutput]) {
+    const guide = fs.readFileSync(file, 'utf8');
+    const header = guide.slice(0, guide.indexOf('### Common recipes') === -1
+      ? guide.indexOf('## Method index') : guide.indexOf('### Common recipes'));
+    expect(header).toContain('## v3 entry contract');
+    expect(header).toContain('ES2022 and top-level await');
+    expect(header).toContain('atemporal/compat/plugins/');
+    expect(header).toContain('atemporal/native/plugins/');
+    expect(header).toContain('code splitting');
+    expect(header).toContain('Public Temporal types are self-contained');
+    for (const name of ['dateRangeOverlapPlugin', 'businessDaysPlugin', 'timeSlotsPlugin',
+      'checkDateRangeOverlap', 'InvalidDateRangeError', 'OverlapDetectionError']) {
+      expect(header).toContain(name);
+    }
+    expect(guide).not.toContain('duration().humanize()');
+    expect(guide).not.toContain('overlapRanges(');
+    expect(guide).not.toContain('plugin.install()');
+  }
+});
+
+test('LLM method-index union signatures retain their Markdown table columns', () => {
+  const guide = fs.readFileSync(sourceFullOutput, 'utf8');
+  const index = guide.split('## Method index')[1].split('# Full documentation')[0];
+  const rows = index.split('\n').filter((line) => line.startsWith('|'));
+  expect(rows.length).toBeGreaterThan(60);
+  for (const row of rows) expect(row.split(/(?<!\\)\|/)).toHaveLength(5);
 });
 
 test('consumer documentation never uses unsupported source-path imports', () => {

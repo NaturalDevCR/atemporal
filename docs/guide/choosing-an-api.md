@@ -4,16 +4,22 @@ Choose the smallest public API that matches the temporal value you actually have
 
 | Case | Public API | Timezone rule | Failure result |
 | --- | --- | --- | --- |
-| Event instant | `atemporal.parse` with an offset-bearing ISO string | Never invent a zone | `InvalidDateError` or `null` |
-| Scheduled event | `atemporal.parse(input, { timeZone })` | Explicit IANA zone required for local input | Reject DST ambiguity by default |
-| Local civil date-time | `atemporal.parse` | Explicit IANA zone required | `InvalidDateError` or `null` |
-| Date-only value | `atemporal.parse` | Use the business zone only if a time will be added | `InvalidDateError` or `null` |
-| Trusted boundary parsing | `atemporal.parse` | Explicit zone for local input | Throws `InvalidDateError` |
+| Event instant | `atemporal.instant(value)` | Offset-bearing string or exact instant | `InvalidDateError` |
+| Scheduled event | `atemporal.zonedDateTime(value, { timeZone })` | Explicit IANA zone required for local input | `InvalidDateError`; rejects DST ambiguity |
+| Local civil date-time | `atemporal.plainDateTime(value)` | Zone-free raw value | `InvalidDateError` |
+| Date-only value | `atemporal.date(value)` | Zone-free raw value | `InvalidDateError` |
+| Chainable strict wrapper | `atemporal.parse` / `tryParse` | Choose a domain zone for local input | `InvalidDateError` / `null` |
 | Compatibility parsing | `atemporal(input)` | Optional zone; preserves compatibility behavior | Invalid wrapper |
-| Formatting | `value.format(pattern)` | Format in the value zone or convert with `.timeZone()` | Throws for invalid wrapper |
+| Formatting | `value.format(pattern)` | Format in the value zone or convert with `.timeZone(zone)` | Invalid wrappers format as `"Invalid Date"` |
 | Duration | `atemporal.duration(like)` | No zone | Temporal conversion error |
 | Range | `value.range(...)` | Keep both ends in an explicit, known zone | Invalid wrapper/error |
 | Official plugin | `atemporal.extend(plugin)` or `lazyLoad(name)` | No zone | Plugin load error |
 | Third-party extension | `atemporal.extend(markAsPlugin(...))` | No zone | Extension error |
 
 Use `atemporal.tryParse` instead of catching errors only when `null` is the correct result for malformed input. A DST policy is still required: its default is `disambiguation: "reject"`.
+
+The four explicit constructors return raw Temporal values, which expose Temporal
+methods such as `.toString()` and `.toLocaleString()`. The chainable wrapper from
+`parse()`, `tryParse()`, or the callable factory provides `.format()`, ranges, and
+installed plugin methods. Use `.raw` on a valid wrapper for its underlying
+`Temporal.ZonedDateTime` and full nanosecond precision.

@@ -2,11 +2,12 @@
 
 You can create an `atemporal` instance from various input types:
 
-> In v2, prefer the explicit constructors for new code when the value category
+> In v3, prefer the explicit constructors for new code when the value category
 > is known: `atemporal.instant()` for instants, `atemporal.date()` for dates,
 > `atemporal.plainDateTime()` for zone-free civil times, and
 > `atemporal.zonedDateTime()` for scheduled values. The callable wrapper below
-> remains available as a deprecated compatibility facade.
+> remains available as a deprecated compatibility facade. Raw constructor results
+> use Temporal methods; `.format()` and installed plugins belong to wrappers.
 
 ```ts
 const instant = atemporal.instant("2026-07-15T10:00:00Z");
@@ -102,7 +103,9 @@ atemporal(undefined); // Current time
 
 ## Error Behavior
 
-Atemporal does **not** throw exceptions for invalid inputs. Instead, an invalid instance is created. Check validity with `.isValid()`:
+The callable compatibility factory creates an invalid wrapper for malformed date
+input. Check validity with `.isValid()`. Explicit constructors and `parse()` throw
+`InvalidDateError`; `tryParse()` returns `null`:
 
 ```ts
 const maybeDate = atemporal("not a valid date");

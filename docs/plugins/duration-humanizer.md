@@ -1,6 +1,9 @@
 # durationHumanizer
 
-Converts `Temporal.Duration` objects into human-readable, localized strings.
+Adds `atemporal.humanize(duration, options?)` for human-readable, localized strings.
+It accepts a raw `Temporal.Duration` from `atemporal.duration()` or a duration-like
+object. Install the plugin before calling the factory method; it does not add a
+`.humanize()` method to `Temporal.Duration` objects.
 
 ## Usage
 
@@ -10,7 +13,7 @@ import durationHumanizer from "atemporal/plugins/durationHumanizer";
 
 atemporal.extend(durationHumanizer);
 
-const duration = { hours: 2, minutes: 30 };
+const duration = atemporal.duration({ hours: 2, minutes: 30 });
 console.log(atemporal.humanize(duration)); // "2 hours and 30 minutes"
 ```
 
@@ -48,18 +51,19 @@ interface HumanizeOptions {
 const dur = { hours: 3, minutes: 45, seconds: 30 };
 
 atemporal.humanize(dur, { listStyle: "long" });   // "3 hours, 45 minutes, and 30 seconds"
-atemporal.humanize(dur, { listStyle: "short" });  // "3 hr, 45 min, and 30 sec"
-atemporal.humanize(dur, { listStyle: "narrow" }); // "3h 45m 30s"
+atemporal.humanize(dur, { listStyle: "short" });  // Shorter list joining; unit labels stay long
+atemporal.humanize(dur, { listStyle: "narrow" }); // Narrow list joining; unit labels stay long
 ```
 
-**`unitDisplay`** controls individual unit labels:
+**`unitDisplay`** controls individual unit labels independently of `listStyle`
+(the exact joining punctuation depends on the locale and Intl implementation):
 
 ```ts
 const dur = { hours: 2, minutes: 30 };
 
 atemporal.humanize(dur, { unitDisplay: "long" });  // "2 hours and 30 minutes"
 atemporal.humanize(dur, { unitDisplay: "short" }); // "2 hr and 30 min"
-atemporal.humanize(dur, { unitDisplay: "narrow" });// "2h 30m"
+atemporal.humanize(dur, { unitDisplay: "narrow" });// "2h and 30m"
 ```
 
 ## Edge Cases
@@ -72,7 +76,7 @@ atemporal.humanize({ hours: 0 }); // "0 seconds"
 atemporal.humanize({}); // "0 seconds"
 
 // Very large durations
-atemporal.humanize({ days: 400 }); // "1 year, 1 month, and 5 days" (approx.)
+atemporal.humanize({ days: 400 }); // "400 days" (the plugin keeps the supplied units)
 
 // Only one unit
 atemporal.humanize({ minutes: 45 }); // "45 minutes"
