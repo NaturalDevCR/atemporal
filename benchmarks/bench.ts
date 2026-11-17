@@ -5,7 +5,7 @@
  *   node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 100000
  */
 import os from 'node:os';
-import atemporal from '../dist/index.mjs';
+let atemporal: (typeof import('../dist/index.mjs'))['default'];
 
 const OPS = Number(process.argv[2] || 100_000);
 const WARMUP_RUNS = 1;
@@ -101,23 +101,34 @@ function benchValidate(): number {
   return performance.now() - t0;
 }
 
-const results = {
-  schemaVersion: 1,
-  nodeVersion: process.version,
-  architecture: process.arch,
-  os: `${os.platform()} ${os.release()}`,
-  githubActionsImageVersion: process.env.ImageVersion || null,
-  ops: OPS,
-  warmupRuns: WARMUP_RUNS,
-  samplesPerPath: SAMPLES_PER_PATH,
-  timeoutPolicy: { jobTimeoutMinutes: JOB_TIMEOUT_MINUTES },
-  tolerance: TOLERANCE,
-  timestamp: new Date().toISOString(),
-  parse: runBenchmark(benchParse),
-  format: runBenchmark(benchFormat),
-  add: runBenchmark(benchAdd),
-  diff: runBenchmark(benchDiff),
-  validate: runBenchmark(benchValidate),
-};
+async function main(): Promise<void> {
+  // ts-node launches this file as CommonJS; native import() can initialize the
+  // ES2022 entry without requiring an asynchronous ESM graph synchronously.
+  // Loading stays outside every timed sample, as in the original benchmark.
+  atemporal = (await import('../dist/index.mjs')).default;
+  const results = {
+    schemaVersion: 1,
+    nodeVersion: process.version,
+    architecture: process.arch,
+    os: `${os.platform()} ${os.release()}`,
+    githubActionsImageVersion: process.env.ImageVersion || null,
+    ops: OPS,
+    warmupRuns: WARMUP_RUNS,
+    samplesPerPath: SAMPLES_PER_PATH,
+    timeoutPolicy: { jobTimeoutMinutes: JOB_TIMEOUT_MINUTES },
+    tolerance: TOLERANCE,
+    timestamp: new Date().toISOString(),
+    parse: runBenchmark(benchParse),
+    format: runBenchmark(benchFormat),
+    add: runBenchmark(benchAdd),
+    diff: runBenchmark(benchDiff),
+    validate: runBenchmark(benchValidate),
+  };
 
-console.log(JSON.stringify(results, null, 2));
+  console.log(JSON.stringify(results, null, 2));
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

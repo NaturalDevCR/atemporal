@@ -41,6 +41,13 @@ jobs:
         if: always() && steps.typecheck.outcome == 'success'
         continue-on-error: true
         run: pnpm run build
+      - name: Smoke test the production ESM benchmark entry
+        id: benchmark-smoke
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 1 > reports/benchmark-smoke.json
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
@@ -79,6 +86,7 @@ jobs:
         run: |
           test "${{ steps.typecheck.outcome }}" = success
           test "${{ steps.build.outcome }}" = success
+          test "${{ steps.benchmark-smoke.outcome }}" = success
           test "${{ steps.pack.outcome }}" = success
           test "${{ steps.size.outcome }}" = success
           test "${{ steps.core-size.outcome }}" = success

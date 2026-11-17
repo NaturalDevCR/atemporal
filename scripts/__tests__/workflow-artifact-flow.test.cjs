@@ -111,6 +111,18 @@ describe('release artifact workflow contracts', () => {
     expect(ci).toContain("if: matrix.node-version == '26.x'");
   });
 
+  test('the production benchmark can initialize asynchronous ESM before measuring', () => {
+    const build = jobBlock(workflow('ci.yml'), 'build');
+    expect(build).toContain('benchmarks/bench.ts 1 > reports/benchmark-smoke.json');
+    expect(build).toContain('test "${{ steps.benchmark-smoke.outcome }}" = success');
+    for (const name of ['integration.yml', 'release.yml']) {
+      const contents = workflow(name);
+      expect(contents).toContain('pnpm run check:loading');
+      expect(contents).toContain('pnpm run check:native');
+      expect(contents).toContain('test "${{ steps.temporal.outcome }}" = success');
+    }
+  });
+
   test('release validates and publishes its single packed artifact', () => {
     const release = workflow('release.yml');
 

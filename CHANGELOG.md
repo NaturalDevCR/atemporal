@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [3.0.0] (unreleased)
+## [3.0.0] (2026-11-17)
 
 ### Breaking Changes
 
@@ -29,6 +29,12 @@ All notable changes to this project will be documented in this file. See [standa
   excluding async coordination and optimization reports from the default core.
   Add pinned source attribution and initial/total core size gates.
 
+- Reduce the pinned native source fixture from 149,911 to 126,742 initial
+  minified bytes (15.5%) and from 38,118 to 31,151 initial gzip bytes (18.3%).
+  Total minified output falls from 170,602 to 152,914 bytes (10.4%); optional
+  plugin chunks remain available. These measurements exclude the Temporal fallback.
+- Keep production ESM benchmarks compatible with asynchronous module initialization
+  and check loading/declarations during weekly and release validation.
 - Publish self-contained Temporal types compatible with TypeScript 5.4+.
 - Preserve plugin declaration merging in CommonJS and ESM declarations.
 - Verify implementation loading, native and fallback runtime paths, package

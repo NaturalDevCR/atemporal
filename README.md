@@ -93,7 +93,8 @@ Deployments that guarantee `globalThis.Temporal` can use `atemporal/native`
 and `atemporal/native/plugins/*` to exclude the fallback entirely. The native
 entry throws at import time when Temporal is unavailable. Use the same entry
 family for the factory and its plugins. All eight plugins and `lazyLoad()` are
-available in each distribution.
+available in each distribution. Import plugins and overlap helpers from their
+explicit `plugins/*` subpaths; the compat root retains the legacy named exports.
 
 The polyfill remains installed for automatic fallback. Public Temporal types
 are self-contained and support TypeScript 5.4+ without global Temporal types.
