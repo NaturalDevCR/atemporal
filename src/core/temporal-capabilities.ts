@@ -57,4 +57,3 @@ export function isNativeTemporalAvailable(): boolean {
     return false;
   }
 }
-
