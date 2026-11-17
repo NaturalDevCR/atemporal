@@ -86,6 +86,17 @@ pnpm run build            # builds CJS+ESM bundles to dist/
 
 All three commands should succeed with **zero errors and zero warnings**.
 
+## v3 integration workflow
+
+Develop v3 through focused PRs targeting `codex/v3.0.0`. Create feature branches
+from integration and use the `codex/` prefix. `main` remains the stable 2.x line.
+Keep the current stable package/manifest version during development and record
+v3 changes in the unreleased changelog. The final release PR sets 3.0.0 and
+finalizes release notes and supported versions. Publishing runs only from `main`.
+Dependent PRs may temporarily target their unmerged parent feature branch; retarget
+them to integration once the parent merges. CI also covers these stacked PRs.
+See [the v3 roadmap](docs/v3-roadmap.md) for the PR sequence and validation gates.
+
 ## Workflow
 
 1. **Open an issue first** for non-trivial changes. Discuss the design

@@ -4,12 +4,13 @@
  * native Temporal.ZonedDateTime object to provide a more ergonomic API.
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './types/temporal';
 import { Temporal as TemporalAPI } from './core/temporal-api';
 import { TemporalUtils, IntlCache } from './TemporalUtils';
 import type {DateInput, RangeOptions, TimeUnit, SettableUnit, StartOfUnit} from './types';
 import { InvalidAtemporalInstanceError } from './errors';
-import { FormattingEngine, legacyFormat } from './core/formatting';
+import { FormattingEngine } from './core/formatting/formatting-runtime';
+import { legacyFormat } from './core/formatting/legacy-formatter';
 import type { FormattingOptions } from './core/formatting/formatting-types';
 import { registerWrapper, wrapperRuntime } from './core/wrapper-brand';
 
@@ -554,8 +555,7 @@ export class TemporalWrapper {
             const formattingOptions: FormattingOptions = {
                 locale: localeCode || TemporalUtils.getDefaultLocale(),
                 timeZone: this.datetime.timeZoneId,
-                useCache: true,
-                poolTokens: true
+                useCache: true
             };
             
             try {

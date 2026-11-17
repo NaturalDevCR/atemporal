@@ -2,9 +2,9 @@ name: Atemporal CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/v3.0.0]
   pull_request:
-    branches: [main]
+    branches: [main, codex/v3.0.0, 'codex/v3-*']
   workflow_dispatch:
 
 permissions:
@@ -41,6 +41,13 @@ jobs:
         if: always() && steps.typecheck.outcome == 'success'
         continue-on-error: true
         run: pnpm run build
+      - name: Smoke test the production ESM benchmark entry
+        id: benchmark-smoke
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          node --expose-gc -r ts-node/register/transpile-only benchmarks/bench.ts 1 > reports/benchmark-smoke.json
       - name: Pack exactly one npm artifact
         id: pack
         if: always() && steps.build.outcome == 'success'
@@ -51,6 +58,11 @@ jobs:
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
         run: node scripts/measure-release-artifact.cjs
+      - name: Check native core source budgets and optional runtime boundaries
+        id: core-size
+        if: always() && steps.pack.outcome == 'success'
+        continue-on-error: true
+        run: pnpm run size:core
       - name: Upload complete package artifact directory
         if: always()
         uses: actions/upload-artifact@v7
@@ -74,8 +86,10 @@ jobs:
         run: |
           test "${{ steps.typecheck.outcome }}" = success
           test "${{ steps.build.outcome }}" = success
+          test "${{ steps.benchmark-smoke.outcome }}" = success
           test "${{ steps.pack.outcome }}" = success
           test "${{ steps.size.outcome }}" = success
+          test "${{ steps.core-size.outcome }}" = success
 
   test:
     name: Tests (Node ${{ matrix.node-version }})
@@ -103,11 +117,25 @@ jobs:
           TZ: UTC
           CI: 'true'
         run: pnpm run test:ci --verbose
+      - name: Verify default conditional Temporal loading and browser chunks
+        run: pnpm run check:loading
+      - name: Verify native entry isolation, declarations, and bundle size
+        run: pnpm run check:native
       - name: Verify native Temporal against the production artifact
         if: matrix.node-version == '26.x'
         env:
           TZ: UTC
         run: node scripts/check-native-temporal.cjs
+      - name: Upload native entry bundle report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-entry-node-${{ matrix.node-version }}
+          path: |
+            reports/native-entry.json
+            reports/temporal-loading.json
+          if-no-files-found: warn
+          retention-days: 7
 
   contract-fixtures:
     name: Packed artifact contracts (TypeScript ${{ matrix.typescript-version }})

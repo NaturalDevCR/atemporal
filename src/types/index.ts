@@ -38,8 +38,7 @@ export type {
   PerformanceMetrics
 } from './enhanced-types';
 
-// Import Temporal polyfill
-import { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './temporal';
 
 // Import error classes, types, and type guards for use in assertion functions
 import {
@@ -105,7 +104,7 @@ export {
 } from './type-registry';
 
 // Re-export commonly used Temporal types for convenience
-export { Temporal } from '@js-temporal/polyfill';
+export { Temporal } from '../core/temporal-api';
 
 /**
  * Type utility functions for better developer experience

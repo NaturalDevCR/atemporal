@@ -30,7 +30,7 @@ import type {
 } from './enhanced-types';
 
 import { Temporal } from '../core/temporal-api';
-import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
+import type { Temporal as TemporalNS } from './temporal';
 
 /**
  * Type validation result

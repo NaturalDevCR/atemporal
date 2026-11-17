@@ -2,9 +2,8 @@
  * @file Fallback parsing strategy for handling inputs that other strategies cannot handle
  */
 
-import '@js-temporal/polyfill';
 import { Temporal } from '../../temporal-api';
-import type { Temporal as TemporalNS } from '@js-temporal/polyfill';
+import type { Temporal as TemporalNS } from '../../../types/temporal';
 import type {
   TemporalInput,
   StrictParsingOptions

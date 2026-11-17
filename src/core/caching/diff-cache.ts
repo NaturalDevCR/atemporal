@@ -3,7 +3,7 @@
  */
 
 import { Temporal as TemporalRuntime } from '../temporal-api';
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import { ResizableLRUCache, CacheMetrics } from './lru-cache';
 import { CacheKeys } from './cache-keys';
 import { CacheOptimizer } from './cache-optimizer';

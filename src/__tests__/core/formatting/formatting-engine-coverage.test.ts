@@ -224,12 +224,11 @@ describe('FormattingEngine Coverage Tests', () => {
       expect(analysis.recommendations).toContain('Consider pre-compiling frequently used format patterns');
     });
 
-    test('should generate recommendations for low token pool hit ratio', () => {
+    test('should not recommend prewarming an unused token pool', () => {
       FormattingEngine.reset();
       
-      // This would typically require mocking TokenPool stats
       const analysis = FormattingEngine.getPerformanceAnalysis();
-      expect(Array.isArray(analysis.recommendations)).toBe(true);
+      expect(analysis.recommendations).not.toContain('Token pool hit ratio is low - consider pre-warming with common tokens');
     });
 
     test('should generate recommendations for low fast path ratio', () => {

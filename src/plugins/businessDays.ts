@@ -4,7 +4,7 @@
  * and handling holidays and custom weekends.
  */
 
-import type { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from '../types/temporal';
 import { TemporalWrapper } from "../TemporalWrapper";
 import type { Plugin, AtemporalFactory } from "../types";
 import { markAsPlugin } from '../typeGuards';

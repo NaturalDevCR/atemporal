@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "packageManager": "pnpm@11.13.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
@@ -100,10 +100,190 @@
         "types": "./dist/plugins/dateRangeOverlap.d.ts",
         "default": "./dist/plugins/dateRangeOverlap.js"
       }
+    },
+    "./native": {
+      "import": {
+        "types": "./dist/native/index.d.mts",
+        "default": "./dist/native/index.mjs"
+      },
+      "require": {
+        "types": "./dist/native/index.d.ts",
+        "default": "./dist/native/index.js"
+      }
+    },
+    "./native/plugins/relativeTime": {
+      "import": {
+        "types": "./dist/native/plugins/relativeTime.d.mts",
+        "default": "./dist/native/plugins/relativeTime.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/relativeTime.d.ts",
+        "default": "./dist/native/plugins/relativeTime.js"
+      }
+    },
+    "./native/plugins/customParseFormat": {
+      "import": {
+        "types": "./dist/native/plugins/customParseFormat.d.mts",
+        "default": "./dist/native/plugins/customParseFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/customParseFormat.d.ts",
+        "default": "./dist/native/plugins/customParseFormat.js"
+      }
+    },
+    "./native/plugins/advancedFormat": {
+      "import": {
+        "types": "./dist/native/plugins/advancedFormat.d.mts",
+        "default": "./dist/native/plugins/advancedFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/advancedFormat.d.ts",
+        "default": "./dist/native/plugins/advancedFormat.js"
+      }
+    },
+    "./native/plugins/durationHumanizer": {
+      "import": {
+        "types": "./dist/native/plugins/durationHumanizer.d.mts",
+        "default": "./dist/native/plugins/durationHumanizer.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/durationHumanizer.d.ts",
+        "default": "./dist/native/plugins/durationHumanizer.js"
+      }
+    },
+    "./native/plugins/weekDay": {
+      "import": {
+        "types": "./dist/native/plugins/weekDay.d.mts",
+        "default": "./dist/native/plugins/weekDay.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/weekDay.d.ts",
+        "default": "./dist/native/plugins/weekDay.js"
+      }
+    },
+    "./native/plugins/businessDays": {
+      "import": {
+        "types": "./dist/native/plugins/businessDays.d.mts",
+        "default": "./dist/native/plugins/businessDays.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/businessDays.d.ts",
+        "default": "./dist/native/plugins/businessDays.js"
+      }
+    },
+    "./native/plugins/timeSlots": {
+      "import": {
+        "types": "./dist/native/plugins/timeSlots.d.mts",
+        "default": "./dist/native/plugins/timeSlots.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/timeSlots.d.ts",
+        "default": "./dist/native/plugins/timeSlots.js"
+      }
+    },
+    "./native/plugins/dateRangeOverlap": {
+      "import": {
+        "types": "./dist/native/plugins/dateRangeOverlap.d.mts",
+        "default": "./dist/native/plugins/dateRangeOverlap.mjs"
+      },
+      "require": {
+        "types": "./dist/native/plugins/dateRangeOverlap.d.ts",
+        "default": "./dist/native/plugins/dateRangeOverlap.js"
+      }
+    },
+    "./compat": {
+      "import": {
+        "types": "./dist/compat/index-compat.d.mts",
+        "default": "./dist/compat/index.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/index-compat.d.ts",
+        "default": "./dist/compat/index.js"
+      }
+    },
+    "./compat/plugins/relativeTime": {
+      "import": {
+        "types": "./dist/compat/plugins/relativeTime.d.mts",
+        "default": "./dist/compat/plugins/relativeTime.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/relativeTime.d.ts",
+        "default": "./dist/compat/plugins/relativeTime.js"
+      }
+    },
+    "./compat/plugins/customParseFormat": {
+      "import": {
+        "types": "./dist/compat/plugins/customParseFormat.d.mts",
+        "default": "./dist/compat/plugins/customParseFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/customParseFormat.d.ts",
+        "default": "./dist/compat/plugins/customParseFormat.js"
+      }
+    },
+    "./compat/plugins/advancedFormat": {
+      "import": {
+        "types": "./dist/compat/plugins/advancedFormat.d.mts",
+        "default": "./dist/compat/plugins/advancedFormat.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/advancedFormat.d.ts",
+        "default": "./dist/compat/plugins/advancedFormat.js"
+      }
+    },
+    "./compat/plugins/durationHumanizer": {
+      "import": {
+        "types": "./dist/compat/plugins/durationHumanizer.d.mts",
+        "default": "./dist/compat/plugins/durationHumanizer.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/durationHumanizer.d.ts",
+        "default": "./dist/compat/plugins/durationHumanizer.js"
+      }
+    },
+    "./compat/plugins/weekDay": {
+      "import": {
+        "types": "./dist/compat/plugins/weekDay.d.mts",
+        "default": "./dist/compat/plugins/weekDay.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/weekDay.d.ts",
+        "default": "./dist/compat/plugins/weekDay.js"
+      }
+    },
+    "./compat/plugins/businessDays": {
+      "import": {
+        "types": "./dist/compat/plugins/businessDays.d.mts",
+        "default": "./dist/compat/plugins/businessDays.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/businessDays.d.ts",
+        "default": "./dist/compat/plugins/businessDays.js"
+      }
+    },
+    "./compat/plugins/timeSlots": {
+      "import": {
+        "types": "./dist/compat/plugins/timeSlots.d.mts",
+        "default": "./dist/compat/plugins/timeSlots.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/timeSlots.d.ts",
+        "default": "./dist/compat/plugins/timeSlots.js"
+      }
+    },
+    "./compat/plugins/dateRangeOverlap": {
+      "import": {
+        "types": "./dist/compat/plugins/dateRangeOverlap.d.mts",
+        "default": "./dist/compat/plugins/dateRangeOverlap.mjs"
+      },
+      "require": {
+        "types": "./dist/compat/plugins/dateRangeOverlap.d.ts",
+        "default": "./dist/compat/plugins/dateRangeOverlap.js"
+      }
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "node scripts/build.cjs",
     "pack:artifact": "node scripts/create-package-artifact.cjs",
     "fixtures:contract": "node scripts/run-fixtures.cjs contract",
     "fixtures:extended": "node scripts/run-fixtures.cjs extended",
@@ -121,28 +301,10 @@
     "links:check": "lychee --config .lychee.toml --no-progress --exclude-loopback 'docs/**/*.md' 'README.md' 'CHANGELOG.md' 'SECURITY.md' 'CONTRIBUTING.md'",
     "supply-chain": "pnpm run licenses:check && pnpm audit --audit-level=high",
     "docs:dev": "node scripts/generate-llms-txt.js && vitepress dev docs",
-    "docs:build": "node scripts/generate-llms-txt.js && vitepress build docs"
-  },
-  "tsup": {
-    "entry": [
-      "src/index.ts",
-      "src/plugins/relativeTime.ts",
-      "src/plugins/advancedFormat.ts",
-      "src/plugins/customParseFormat.ts",
-      "src/plugins/durationHumanizer.ts",
-      "src/plugins/weekDay.ts",
-      "src/plugins/dateRangeOverlap.ts",
-      "src/plugins/businessDays.ts",
-      "src/plugins/timeSlots.ts"
-    ],
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "splitting": true,
-    "sourcemap": true,
-    "clean": true
+    "docs:build": "node scripts/generate-llms-txt.js && vitepress build docs",
+    "check:native": "node scripts/check-native-entry.cjs",
+    "check:loading": "node scripts/check-temporal-loading.cjs",
+    "size:core": "node scripts/measure-core-source.cjs --check"
   },
   "author": "Josue Orozco A.",
   "license": "MIT",

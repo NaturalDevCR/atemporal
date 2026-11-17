@@ -7,8 +7,9 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 ## Installation
 
 > **Node.js 22 or newer is required.** The supported Node lines are 22, 24,
-> and 26. Browser consumers continue to use the packaged native/polyfill
-> runtime detection path.
+> and 26. The default ESM entry requires ES2022 with top-level await. Use
+> `atemporal/compat` and matching plugins for ES2020 or tools without top-level
+> await. See [Migrating to v3](../migration/v3) for the full loading contract.
 
 Install `atemporal` with your package manager:
 

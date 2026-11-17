@@ -192,8 +192,9 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 ## Installation
 
 > **Node.js 22 or newer is required.** The supported Node lines are 22, 24,
-> and 26. Browser consumers continue to use the packaged native/polyfill
-> runtime detection path.
+> and 26. The default ESM entry requires ES2022 with top-level await. Use
+> `atemporal/compat` and matching plugins for ES2020 or tools without top-level
+> await. See [Migrating to v3](../migration/v3) for the full loading contract.
 
 Install `atemporal` with your package manager:
 
@@ -578,7 +579,7 @@ const info = atemporal.getTemporalInfo();
 Under the hood, Atemporal is powered by several high-performance subsystems:
 
 - **ParseCoordinator**: Type-first parsing engine with 12 strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects). Uses intelligent caching and auto-optimization.
-- **FormattingEngine**: Token-based formatter with token compilation, object pooling, and multi-level caching for high-throughput scenarios.
+- **Formatting runtime**: Token-based formatting with shared compilation/result caches. Optional analysis and tuning helpers stay outside the normal runtime graph.
 - **ComparisonEngine**: Optimized date comparison logic with its own cache layer.
 - **DiffCache**: LRU-based cache for `diff()` calculations between recurring date pairs.
 - **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to reduce GC pressure.
@@ -652,6 +653,21 @@ Diagnostics are intentionally observational: no cache or parsing engine is publi
 
 For release-size and benchmark policy, see the repository's generated reports. Application bundles depend on the bundler, your imports, and whether the Temporal polyfill is included; treat those as separate measurements from the distributed core size.
 
+## Measuring the v3 core
+
+Maintainers can run `pnpm run size:core` for a pinned-esbuild source attribution
+and budget check. It excludes the polyfill, keeps optional chunks separate, and
+reports initial versus total bytes in `reports/core-source-size.json`. The check
+also rejects async coordination, optional formatter/cache analysis, and token
+pooling entering the factory graph.
+See [the v3 core size report](../reports/v3-core-size) for the fixture and measured
+parsing-runtime change. The reviewed baseline is never rewritten by this command.
+
+The [formatter runtime size report](../reports/v3-formatting-runtime-size) records
+the next reduction. Formatting retains shared caches and metrics while optional
+analysis helpers remain separate. Deprecated pool counters are zero because
+compiled tokens belong to the compiler cache rather than a temporary pool.
+
 
 
 --- FILE: guide/temporal-detection.md (Temporal native vs polyfill detection) ---
@@ -674,6 +690,64 @@ guide. Check it with `atemporal.getTemporalInfo()` in the environment you
 deploy. CI validates the native path on Node 26 and validates the polyfill path
 across the supported Node matrix.
 
+## Loading Contract in v3
+
+| Entry | Initialization | Polyfill behavior |
+| --- | --- | --- |
+| `atemporal` with ESM | ES2022, top-level await | Dynamically imported only when Temporal is unavailable |
+| `atemporal` with CommonJS | Synchronous, Node 22+ | Required only when Temporal is unavailable |
+| `atemporal/compat` | Synchronous, ES2020 | Static fallback import for legacy bundlers |
+| `atemporal/native` | Synchronous, ES2020 | No fallback; requires global Temporal |
+
+For the default ESM entry, module initialization completes before an importing
+module executes. The public date API stays synchronous: no `init()` call or
+`await atemporal(...)` is needed. Import failures propagate to the importer.
+Both entry formats select one implementation and share it with their plugins.
+
+With browser code splitting enabled, the dynamic import keeps the polyfill in
+its own chunk. Environments with native Temporal do not request that chunk.
+Without code splitting, a bundler may still include it in the same file; its
+initialization remains conditional. The total build can include fallback bytes
+even when the initial download excludes them.
+
+ES2020 builds, IIFE output, and tools without top-level await should use:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+## Excluding the Polyfill from a Bundle
+
+Deployments that guarantee `globalThis.Temporal` can exclude the fallback
+entirely, including from the total build:
+
+```ts
+import atemporal from 'atemporal/native';
+import relativeTime from 'atemporal/native/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+console.log(atemporal.getTemporalInfo().isNative); // true
+```
+
+All eight plugins and `lazyLoad()` are available in each distribution. Keep
+factory and plugin imports in the same family: `atemporal/plugins/*`,
+`atemporal/compat/plugins/*`, or `atemporal/native/plugins/*`. Each distribution
+owns its runtime, caches, and plugin state.
+
+The native entry throws during import if Temporal is missing or incomplete.
+The polyfill remains an installed dependency for the automatic fallback entries.
+Public declarations include a local Temporal contract; TypeScript 5.4+ consumers
+do not resolve declarations from the polyfill or require global Temporal types.
+Keep `globalThis.Temporal` unchanged after initialization.
+
+Run `pnpm run check:loading` after building to verify conditional loading and
+initial versus total browser bundle sizes. The report is
+`reports/temporal-loading.json`. `pnpm run check:native` verifies the strict
+native distribution and compiles isolated consumers without polyfill packages.
+
 ## Checking the Implementation
 
 ```ts
@@ -690,11 +764,11 @@ console.log(info);
 
 ## Benefits
 
-- **No code changes required**: Your existing atemporal code works identically whether native or polyfill
+- **Synchronous date operations**: Native and fallback implementations use the same public API.
 - **Automatic performance**: Native Temporal is faster than the polyfill, and you get it for free
-- **Stable fallback**: Native and polyfill selection happens at runtime. The
-  polyfill remains a direct dependency, so native availability alone does not
-  guarantee that a bundler removes it from an application bundle.
+- **Conditional fallback**: The default entry loads the polyfill only when needed.
+  Browser download savings depend on code splitting; total build size still
+  includes the fallback.
 - **Seamless migration**: As more browsers adopt Temporal, your app automatically benefits
 
 ## Runtime Support
@@ -706,7 +780,8 @@ native and polyfill paths.
 
 ## Migration
 
-**No action is required.** The detection system is fully backward compatible. Your code continues to work regardless of which Temporal implementation is active:
+v3 changes the default ESM loading contract. Check the [v3 migration guide](../migration/v3)
+for ES2020, IIFE, and bundler requirements. Date operations keep their existing behavior:
 
 ```ts
 // This works identically with both native and polyfill Temporal
@@ -2299,10 +2374,10 @@ The plugin offers both a standalone static function and instance methods.
 
 ### Standalone Function
 
-`checkDateRangeOverlap` is exported directly from the `atemporal` package — no plugin extension needed for the static function:
+`checkDateRangeOverlap` is exported from the plugin subpath; the standalone function does not require plugin installation:
 
 ```ts
-import atemporal, { checkDateRangeOverlap } from "atemporal";
+import { checkDateRangeOverlap } from "atemporal/plugins/dateRangeOverlap";
 
 const range1 = { start: "2024-01-01", end: "2024-01-15" };
 const range2 = { start: "2024-01-10", end: "2024-01-20" };
@@ -2388,14 +2463,13 @@ Results are cached via `OverlapCache` (LRU-based, max 200 entries) for repeated 
 
 ## Error Types
 
-The plugin exports custom error classes available both from the plugin and the main package:
+The plugin subpath exports custom error classes. The `atemporal/compat` root also retains their legacy exports:
 
 ```ts
 import {
   InvalidDateRangeError,
   OverlapDetectionError,
-} from "atemporal";
-// (also available from "atemporal/plugins/dateRangeOverlap")
+} from "atemporal/plugins/dateRangeOverlap";
 ```
 
 
@@ -3861,6 +3935,13 @@ v2 raises the Node.js floor from 18 to **22**. It supports Node 22, 24, and
 detection path and bundler fixtures. Upgrade the runtime before adopting v2;
 the existing callable wrapper facade remains available during the migration.
 
+## Upgrading to v3
+
+v3 loads the polyfill only on fallback in the default entry. ESM consumers need
+ES2022 and top-level await; CommonJS remains synchronous. Use `atemporal/compat`
+and matching plugin paths to keep ES2020/IIFE builds. See the
+[v3 migration guide](v3.md) for code splitting, native deployments, and types.
+
 
 
 --- FILE: migration/dayjs.md (Migration — from Day.js) ---
@@ -4475,6 +4556,129 @@ const event = atemporal.zonedDateTime("2026-11-01T01:30:00", {
 
 
 
+--- FILE: migration/v3.md (Migration — to v3) ---
+
+
+# Migrating to v3
+
+v3 changes how the Temporal fallback is loaded. Date parsing, formatting,
+constructors, time-zone policies, and installed plugin methods keep their existing behavior.
+Node 22, 24, and 26 remain supported; Temporal need not be native in the runtime.
+
+## Default ESM Entry
+
+```ts
+import atemporal from 'atemporal';
+import relativeTime from 'atemporal/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+const date = atemporal('2026-07-15T10:00:00Z');
+```
+
+The ESM graph requires ES2022 and top-level await. Module initialization waits
+for the fallback only when a complete global Temporal implementation is absent.
+All date methods remain synchronous once the import completes. No separate
+initialization call is needed. A fallback import failure rejects module loading.
+
+Browser builds should enable code splitting to put the polyfill in a separate
+chunk. Runtimes with native Temporal then avoid requesting that chunk. A
+single-file build can still contain the polyfill bytes; conditional execution
+alone does not reduce its download size. The package keeps the polyfill as a
+regular dependency to guarantee fallback availability.
+
+## CommonJS
+
+```js
+const { default: atemporal } = require('atemporal');
+```
+
+CommonJS remains synchronous. The polyfill is required only when Temporal is
+unavailable. A native runtime does not resolve or load the polyfill package.
+Prefer the package's `require` export over requiring its ESM file directly:
+Node cannot synchronously require an ESM graph containing top-level await.
+
+## Keep ES2020 or IIFE Builds
+
+If your bundler targets ES2020, emits IIFE, or cannot process top-level await,
+switch the factory and plugin imports together:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+This distribution preserves synchronous initialization and the static polyfill
+fallback used in v2. It still selects native Temporal for operations when
+available, but its polyfill import remains part of the static dependency graph.
+For a bundler error mentioning top-level await, use this entry or adopt an
+ES2022 ESM build. Do not force the bundler to claim unsupported syntax is safe.
+
+## Native Deployments
+
+```ts
+import atemporal from 'atemporal/native';
+import relativeTime from 'atemporal/native/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+This ES2020 distribution excludes the fallback entirely and throws at import
+time if global Temporal is missing or incomplete.
+
+## Plugins and Types
+
+All eight plugins and `lazyLoad()` work in every distribution. Keep each
+factory and its plugins in the same entry family to share runtime, caches,
+and plugin state. Leave `globalThis.Temporal` unchanged after initialization.
+
+The default and native roots no longer re-export `dateRangeOverlapPlugin`,
+`businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`,
+`InvalidDateRangeError`, or `OverlapDetectionError`. Import them explicitly:
+
+```ts
+import atemporal from 'atemporal';
+import businessDays from 'atemporal/plugins/businessDays';
+import timeSlots from 'atemporal/plugins/timeSlots';
+import dateRangeOverlap, {
+  checkDateRangeOverlap,
+  InvalidDateRangeError,
+  OverlapDetectionError,
+} from 'atemporal/plugins/dateRangeOverlap';
+
+atemporal.extend(businessDays);
+atemporal.extend(timeSlots);
+atemporal.extend(dateRangeOverlap);
+```
+
+For native deployments, prefix the plugin paths with `atemporal/native/plugins/`.
+The `atemporal/compat` root retains all six legacy named exports. This explicit
+boundary keeps unused plugins out of the initial graph; `lazyLoad()` still emits
+optional plugin chunks, so total output includes their bytes.
+
+Temporal declarations are included in the package and support TypeScript 5.4+.
+Consumers do not need the polyfill's declarations or native global Temporal
+types. There is no runtime Temporal export from the root; raw values remain
+available from the explicit constructors and `.raw`.
+
+## Formatting Diagnostics
+
+Formatting still shares its result cache, compilation cache, and counters with
+public diagnostics and prewarming. The previous token pool was prewarmed but
+never supplied tokens to the formatter. v3 removes that allocation and keeps
+`getFormattingMetrics().tokenPoolStats` fields as deprecated zero-valued counters
+for compatibility. `prewarm()` continues to compile common and requested formats.
+
+## Release Validation
+
+`pnpm run check:loading` checks native and fallback imports, CommonJS, plugins,
+and initial versus total browser payloads. `pnpm run check:native` also compiles
+isolated type consumers without installed polyfill packages. The packed artifact
+contracts and Vite, Webpack, and Next.js fixtures verify the distributed package.
+
+
+
 --- FILE: security/index.md (Security — overview) ---
 
 
@@ -4699,6 +4903,13 @@ discovered or a mitigation lands.
 
 The atemporal library automatically detects native Temporal API support, allowing seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
 
+In v3, the default ESM entry uses top-level await and dynamically imports the
+fallback only when Temporal is unavailable. CommonJS loads it synchronously on
+demand. Use `atemporal/compat` for ES2020 or tools without top-level await, or
+`atemporal/native` when global Temporal is guaranteed. Match the plugin import
+family to the factory. See the [loading guide](./guide/temporal-detection) and
+[v3 migration guide](./migration/v3) for the complete contract.
+
 ## How It Works
 
 The library automatically detects whether the native Temporal API is available in the current environment:
@@ -4740,13 +4951,15 @@ Native implementations are typically faster than polyfills.
 
 ### Seamless Transition
 
-No breaking changes — your existing code continues to work exactly the same.
+Date operations keep their behavior when the runtime gains native support.
+v3 changes the ESM loading requirement; use the migration guide when upgrading.
 
 ### Bundle Size
 
-The polyfill is a direct runtime dependency and is statically imported. Native
-selection changes which implementation runs, but does not by itself guarantee
-that a bundler removes polyfill code from an application bundle.
+The polyfill remains a direct runtime dependency. The default ESM entry imports
+it dynamically only on fallback; browser download savings require code splitting.
+`atemporal/compat` keeps a static fallback import, while `atemporal/native`
+excludes the fallback entirely.
 
 ## Runtime Support
 
@@ -4792,7 +5005,8 @@ The detection result is cached for performance:
 
 ### For Existing Users
 
-**No action required!** The detection system is backward compatible:
+For v3, review the [migration guide](./migration/v3) before upgrading. The
+default ESM entry now requires top-level await; the date API remains synchronous:
 
 ```javascript
 // This code works exactly the same as before
@@ -4865,7 +5079,7 @@ A: You can mock the global Temporal object in your tests to simulate native supp
 
 ---
 
-_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._
+_Use the distribution that matches your runtime and bundler requirements._
 
 
 
@@ -4979,6 +5193,14 @@ replacement for it. The library:
 3. Wraps the raw `Temporal.*` values in a `TemporalWrapper` class
    that provides fluent chaining, ergonomic format strings, and
    the plugin system.
+4. Provides an opt-in `atemporal/native` distribution, including matching
+   plugin paths, that requires native Temporal and contains no polyfill import.
+   The default ESM entry uses top-level await and dynamic fallback loading;
+   CommonJS requires the fallback synchronously on demand. `atemporal/compat`
+   preserves synchronous ES2020 loading for legacy bundlers. All distributions
+   publish a local, structural Temporal type contract derived from the 0.5.1
+   declarations with attribution, so public types do not require the polyfill
+   package or TypeScript's newer native Temporal definitions.
 
 ## Consequences
 
@@ -5002,6 +5224,8 @@ replacement for it. The library:
 - The freedom to redesign the date API. We are constrained by
   the spec's type model.
 - Smaller bundle size in the polyfill path. (Mitigated by tree-shaking.)
+  The native entry avoids the polyfill entirely when the deployment can
+  guarantee native Temporal, at the cost of additional distributions in the tarball.
 
 ## Alternatives considered
 
