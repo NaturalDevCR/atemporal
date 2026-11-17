@@ -210,8 +210,9 @@ function buildMethodIndex() {
   const statics = entries.filter((e) => e.kind === 'static');
   const instances = entries.filter((e) => e.kind === 'instance');
 
+  const tableCode = (value) => value.replace(/[\\|]/g, '\\$&');
   const rowFmt = (e) =>
-    `| \`${e.name.replace(/\|/g, '\\|')}\` | \`${e.sig.replace(/\|/g, '\\|')}\` | ${e.note} |`;
+    `| \`${tableCode(e.name)}\` | \`${tableCode(e.sig)}\` | ${e.note} |`;
 
   const head = `| Method | Signature | Notes |
 | --- | --- | --- |`;

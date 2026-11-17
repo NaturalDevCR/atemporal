@@ -102,6 +102,14 @@ test('both LLM guides surface the v3 entry and migration contract before example
   }
 });
 
+test('LLM method-index union signatures retain their Markdown table columns', () => {
+  const guide = fs.readFileSync(sourceFullOutput, 'utf8');
+  const index = guide.split('## Method index')[1].split('# Full documentation')[0];
+  const rows = index.split('\n').filter((line) => line.startsWith('|'));
+  expect(rows.length).toBeGreaterThan(60);
+  for (const row of rows) expect(row.split(/(?<!\\)\|/)).toHaveLength(5);
+});
+
 test('consumer documentation never uses unsupported source-path imports', () => {
   for (const file of markdownFilesUnder(sourceDocs)) {
     if (!file.includes(`${path.sep}superpowers${path.sep}`)) {

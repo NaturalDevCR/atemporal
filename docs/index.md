@@ -59,4 +59,4 @@ Temporal support. Keep plugin imports in the same family as the factory.
 - [Choose the public API](./guide/choosing-an-api): raw Temporal constructors,
   strict parsing, and the chainable wrapper.
 - [Migrating to v3](./migration/v3): every changed import and fallback policy.
-- [Concise LLM guide](/atemporal/llms.txt) and [complete LLM reference](/atemporal/llms-full.txt).
+- [Concise LLM guide](https://naturaldevcr.github.io/atemporal/llms.txt) and [complete LLM reference](https://naturaldevcr.github.io/atemporal/llms-full.txt).
