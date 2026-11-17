@@ -27,7 +27,7 @@ function emitDeclarations() {
     declarationMap: false,
     noEmit: false,
   };
-  const program = ts.createProgram(entry.map((file) => path.join(root, file)), options);
+  const program = ts.createProgram([...entry, 'src/index-compat.ts'].map((file) => path.join(root, file)), options);
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)];
   if (diagnostics.length) {
     throw new Error(ts.formatDiagnosticsWithColorAndContext(diagnostics, {
@@ -103,7 +103,10 @@ async function buildPackage() {
     esbuildPlugins: [fallbackPlugin('temporal-fallback-auto.mts')],
   });
   await build({
-    ...shared, target: 'es2020', outDir: 'dist/compat',
+    ...shared, entry: Object.fromEntries(entry.map((file) => [
+      file.replace(/^src\//, '').replace(/\.ts$/, ''),
+      file === 'src/index.ts' ? 'src/index-compat.ts' : file,
+    ])), target: 'es2020', outDir: 'dist/compat',
     esbuildPlugins: [fallbackPlugin('temporal-fallback-compat.ts')],
   });
   await build({

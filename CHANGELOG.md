@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. See [standa
   path. `atemporal/native` and matching plugin subpaths require global Temporal
   and never import the polyfill.
 
+- Default and native roots no longer re-export the three bundled plugins or
+  overlap helpers/errors. Use explicit `plugins/*` imports; `atemporal/compat`
+  retains the legacy root exports. Installed methods and lazy loading are unchanged.
+
 ### Improvements
 
 - Separate formatter/cache runtime state from optional analysis and tuning tools.

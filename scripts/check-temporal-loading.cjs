@@ -120,6 +120,49 @@ function checkRuntime() {
   return cases;
 }
 
+function checkPluginBoundaries() {
+  const cases = [];
+  for (const entry of ['atemporal', 'atemporal/native', 'atemporal/compat']) {
+    for (const format of ['require', 'import']) {
+      runChild(`
+        const assert = require('node:assert/strict');
+        // Seed native-only tests on Node versions without native Temporal.
+        globalThis.Temporal ||= require('@js-temporal/polyfill').Temporal;
+        (async () => {
+          const load = ${format === 'require' ? 'async (entry) => require(entry)' : '(entry) => import(entry)'};
+          const root = await load('${entry}');
+          const factory = root.default;
+          const overlap = await load('${entry}/plugins/dateRangeOverlap');
+          const business = await load('${entry}/plugins/businessDays');
+          const slots = await load('${entry}/plugins/timeSlots');
+          const legacy = {
+            dateRangeOverlapPlugin: overlap.default, businessDaysPlugin: business.default,
+            timeSlotsPlugin: slots.default, checkDateRangeOverlap: overlap.checkDateRangeOverlap,
+            InvalidDateRangeError: overlap.InvalidDateRangeError, OverlapDetectionError: overlap.OverlapDetectionError,
+          };
+          for (const [name, value] of Object.entries(legacy)) {
+            assert.equal(Object.hasOwn(root, name), ${entry === 'atemporal/compat'});
+            ${entry === 'atemporal/compat' ? 'assert.equal(root[name], value);' : ''}
+          }
+          assert.deepEqual(factory.getLoadedPlugins(), []);
+          const range = { start: '2026-07-15', end: '2026-07-16' };
+          assert.equal(overlap.checkDateRangeOverlap(range, range).overlaps, true);
+          assert.throws(() => overlap.checkDateRangeOverlap(null, range), overlap.InvalidDateRangeError);
+          factory.extend(overlap.default);
+          factory.extend(business.default);
+          factory.extend(slots.default);
+          assert.equal(factory.checkDateRangeOverlap, overlap.checkDateRangeOverlap);
+          assert.equal(factory('2026-07-17').addBusinessDays(1).format('YYYY-MM-DD'), '2026-07-20');
+          await factory.lazyLoadMultiple(${JSON.stringify(plugins)});
+          assert.equal(factory.getLoadedPlugins().length, ${plugins.length});
+        })().catch(error => { console.error(error); process.exitCode = 1; });
+      `);
+      cases.push({ entry, format, legacyRootExports: entry === 'atemporal/compat', plugins: plugins.length });
+    }
+  }
+  return cases;
+}
+
 function measureBrowserBundles() {
   fs.writeFileSync(path.join(temporary, 'package.json'), '{"type":"module"}');
   const measurements = {};
@@ -233,7 +276,7 @@ function checkLegacyIife() {
 
 try {
   const report = { node: process.version, esbuild: require('esbuild').version,
-    runtimeCases: checkRuntime(), browserBundles: measureBrowserBundles(), legacy: checkLegacyIife() };
+    runtimeCases: checkRuntime(), pluginCases: checkPluginBoundaries(), browserBundles: measureBrowserBundles(), legacy: checkLegacyIife() };
   fs.mkdirSync(path.join(root, 'reports'), { recursive: true });
   fs.writeFileSync(path.join(root, 'reports/temporal-loading.json'), JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report, null, 2));

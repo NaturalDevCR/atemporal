@@ -2374,10 +2374,10 @@ The plugin offers both a standalone static function and instance methods.
 
 ### Standalone Function
 
-`checkDateRangeOverlap` is exported directly from the `atemporal` package — no plugin extension needed for the static function:
+`checkDateRangeOverlap` is exported from the plugin subpath; the standalone function does not require plugin installation:
 
 ```ts
-import atemporal, { checkDateRangeOverlap } from "atemporal";
+import { checkDateRangeOverlap } from "atemporal/plugins/dateRangeOverlap";
 
 const range1 = { start: "2024-01-01", end: "2024-01-15" };
 const range2 = { start: "2024-01-10", end: "2024-01-20" };
@@ -2463,14 +2463,13 @@ Results are cached via `OverlapCache` (LRU-based, max 200 entries) for repeated 
 
 ## Error Types
 
-The plugin exports custom error classes available both from the plugin and the main package:
+The plugin subpath exports custom error classes. The `atemporal/compat` root also retains their legacy exports:
 
 ```ts
 import {
   InvalidDateRangeError,
   OverlapDetectionError,
-} from "atemporal";
-// (also available from "atemporal/plugins/dateRangeOverlap")
+} from "atemporal/plugins/dateRangeOverlap";
 ```
 
 
@@ -4563,7 +4562,7 @@ const event = atemporal.zonedDateTime("2026-11-01T01:30:00", {
 # Migrating to v3
 
 v3 changes how the Temporal fallback is loaded. Date parsing, formatting,
-constructors, time-zone policies, and plugin APIs keep their existing behavior.
+constructors, time-zone policies, and installed plugin methods keep their existing behavior.
 Node 22, 24, and 26 remain supported; Temporal need not be native in the runtime.
 
 ## Default ESM Entry
@@ -4633,6 +4632,30 @@ time if global Temporal is missing or incomplete.
 All eight plugins and `lazyLoad()` work in every distribution. Keep each
 factory and its plugins in the same entry family to share runtime, caches,
 and plugin state. Leave `globalThis.Temporal` unchanged after initialization.
+
+The default and native roots no longer re-export `dateRangeOverlapPlugin`,
+`businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`,
+`InvalidDateRangeError`, or `OverlapDetectionError`. Import them explicitly:
+
+```ts
+import atemporal from 'atemporal';
+import businessDays from 'atemporal/plugins/businessDays';
+import timeSlots from 'atemporal/plugins/timeSlots';
+import dateRangeOverlap, {
+  checkDateRangeOverlap,
+  InvalidDateRangeError,
+  OverlapDetectionError,
+} from 'atemporal/plugins/dateRangeOverlap';
+
+atemporal.extend(businessDays);
+atemporal.extend(timeSlots);
+atemporal.extend(dateRangeOverlap);
+```
+
+For native deployments, prefix the plugin paths with `atemporal/native/plugins/`.
+The `atemporal/compat` root retains all six legacy named exports. This explicit
+boundary keeps unused plugins out of the initial graph; `lazyLoad()` still emits
+optional plugin chunks, so total output includes their bytes.
 
 Temporal declarations are included in the package and support TypeScript 5.4+.
 Consumers do not need the polyfill's declarations or native global Temporal

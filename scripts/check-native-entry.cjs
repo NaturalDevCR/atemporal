@@ -87,6 +87,22 @@ function checkIsolatedTypes() {
         fs.writeFileSync(source, ['atemporal', 'atemporal/native', 'atemporal/compat'].map((entry, index) => `
           import atemporal${index}, { type AtemporalFactory as Factory${index} } from '${entry}';
           ${plugins.map((name) => `import ${name}${index} from '${entry}/plugins/${name}';`).join('\n')}
+          ${entry === 'atemporal/compat' ? `
+            import { businessDaysPlugin, timeSlotsPlugin, dateRangeOverlapPlugin,
+              checkDateRangeOverlap, InvalidDateRangeError, OverlapDetectionError } from '${entry}';
+            const legacyPlugins: [typeof businessDays${index}, typeof timeSlots${index}, typeof dateRangeOverlap${index}]
+              = [businessDaysPlugin, timeSlotsPlugin, dateRangeOverlapPlugin];
+            const result = checkDateRangeOverlap({ start: '2026-07-15', end: '2026-07-16' },
+              { start: '2026-07-15', end: '2026-07-17' });
+            const overlap: boolean = result.overlaps;
+          ` : `
+            import * as rootNamespace${index} from '${entry}';
+            ${['dateRangeOverlapPlugin', 'businessDaysPlugin', 'timeSlotsPlugin', 'checkDateRangeOverlap',
+              'InvalidDateRangeError', 'OverlapDetectionError'].map((name) => `
+              // @ts-expect-error v3 plugins must be imported from explicit subpaths.
+              rootNamespace${index}.${name};
+            `).join('\n')}
+          `}
           const factory${index}: Factory${index} = atemporal${index};
           ${plugins.map((name) => `factory${index}.extend(${name}${index});`).join('\n')}
           const instant${index}: bigint = factory${index}.instant('2026-07-15T10:00:00Z').epochNanoseconds;
