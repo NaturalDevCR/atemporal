@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "bundlerVersion": "0.25.12",
+  "fixtureSha256": "00ae8295cd97d4edaf9a524baae7bd2d02a6390b3cde2c7b4b5b3c0cc02a4185",
+  "mode": "native-core-source",
+  "target": "es2020",
+  "previous": {
+    "initialBytes": 149911,
+    "initialGzip": 38118,
+    "totalBytes": 170602
+  },
+  "baseline": {
+    "initialBytes": 139873,
+    "initialGzip": 35556,
+    "totalBytes": 160564
+  },
+  "limits": {
+    "initialBytes": 143360,
+    "initialGzip": 36864,
+    "totalBytes": 163840
+  },
+  "excludedModules": [
+    "src/core/parsing/parse-coordinator.ts",
+    "src/core/parsing/parse-optimizer.ts"
+  ],
+  "rationale": "The synchronous factory uses ParseEngine directly. Async coordination and optimizer reporting remain outside its dependency graph. Limits preserve the measured reduction with explicit headroom.",
+  "previousRef": "9ffd2896b275bf33e1c151d615557fdd65ae33ed"
+}

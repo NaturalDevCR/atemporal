@@ -9,7 +9,8 @@ import { Temporal as TemporalAPI } from './core/temporal-api';
 import { isForeignWrapper } from './core/wrapper-brand';
 import type { DateInput, TimeUnit, PlainDateTimeObject } from './types';
 import { InvalidTimeZoneError, InvalidDateError } from './errors';
-import { ParseCoordinator } from './core/parsing/index';
+import { ParseEngine } from './core/parsing/parse-engine';
+import { createRuntimeEngineConfig } from './core/parsing/engine-config';
 import { FormattingEngine } from './core/formatting/formatting-engine';
 import { DiffCache } from './core/caching/diff-cache';
 import { TemporalParseError } from './types/enhanced-types';
@@ -28,22 +29,14 @@ export class TemporalUtils {
      */
     private static _globalTimeZoneSet: boolean = false;
     
-    // Static parse coordinator instance for optimized parsing (lazy initialization)
-    private static _parseCoordinator: ParseCoordinator | null = null;
-    
-    /**
-     * Get or create the parse coordinator instance (lazy initialization to avoid circular dependencies)
-     */
-    private static getParseCoordinator(): ParseCoordinator {
-        if (!this._parseCoordinator) {
-            this._parseCoordinator = new ParseCoordinator({
-                enableAutoOptimization: true,
-                autoOptimizationInterval: 60000,
-                maxStrategyAttempts: 3,
-                enableDetailedMetrics: false
-            });
+    // The public date path needs only the synchronous engine, cache, and metrics.
+    private static _parseEngine: ParseEngine | null = null;
+
+    private static getParseEngine(): ParseEngine {
+        if (!this._parseEngine) {
+            this._parseEngine = new ParseEngine(createRuntimeEngineConfig(false));
         }
-        return this._parseCoordinator;
+        return this._parseEngine;
     }
 
     /**
@@ -94,17 +87,17 @@ export class TemporalUtils {
     }
     
     /**
-     * Resets the parse coordinator instance to ensure test isolation.
+     * Resets the shared parsing engine to ensure test isolation.
      * Used primarily for testing.
      * @internal
      */
     static resetParseCoordinator() {
-        TemporalUtils._parseCoordinator = null;
+        TemporalUtils._parseEngine = null;
     }
 
     /**
      * The core parsing engine, optimized for performance with strategy pattern and caching.
-     * Uses the new ParseCoordinator for 40-60% performance improvement over the legacy implementation.
+     * Shares one synchronous parsing engine with the public cache diagnostics.
      */
     static from(input?: DateInput, timeZone?: string): Temporal.ZonedDateTime {
         const tz = timeZone || TemporalUtils.defaultTimeZone;
@@ -121,25 +114,19 @@ export class TemporalUtils {
             return timeZone ? zoned.withTimeZone(timeZone) : zoned;
         }
 
-        // Use new ParseCoordinator-based parsing system
-        return this._parseWithCoordinator(input, tz, timeZone);
+        // Use the shared synchronous parsing engine
+        return this._parseWithEngine(input, tz, timeZone);
     }
 
     /**
-     * New parsing implementation using ParseCoordinator system.
+     * Synchronous parsing through the shared engine.
      * Provides better performance and maintainability through modular strategies.
      * @internal
      */
-    private static _parseWithCoordinator(input: DateInput, tz: string, originalTimeZone?: string): Temporal.ZonedDateTime {
+    private static _parseWithEngine(input: DateInput, tz: string, originalTimeZone?: string): Temporal.ZonedDateTime {
         try {
-            const coordinator = this.getParseCoordinator();
-            
-            // Use the coordinator's synchronous parsing through the engine.
-            const parseEngine = coordinator.getParseEngine();
-            if (!parseEngine) {
-                throw new InvalidDateError('ParseEngine not available');
-            }
-            
+            const parseEngine = this.getParseEngine();
+
             // First validate the input to catch unsupported types early
             const validation = parseEngine.validate(input as any, {
                 timeZone: tz,
@@ -335,54 +322,21 @@ export class TemporalUtils {
      * Gets performance metrics from the parsing system.
      */
     static getParsingMetrics() {
-        return this.getParseCoordinator().getMetrics();
-    }
-
-    /**
-     * Gets a comprehensive performance report from the parsing system.
-     */
-    static getParsingPerformanceReport() {
-        return this.getParseCoordinator().generatePerformanceReport();
+        return this.getParseEngine().getMetrics();
     }
 
     /**
      * Clears the parsing cache. Useful for testing or memory management.
      */
     static clearParsingCache(): void {
-        this.getParseCoordinator().clearCache();
+        this.getParseEngine().clearCache();
     }
 
     /**
      * Resets parsing metrics. Useful for benchmarking.
      */
     static resetParsingMetrics(): void {
-        this.getParseCoordinator().resetMetrics();
-    }
-
-    /**
-     * Updates the parsing system configuration.
-     */
-    static updateParsingConfig(config: Partial<{
-        enableAutoOptimization: boolean;
-        autoOptimizationInterval: number;
-        maxStrategyAttempts: number;
-        enableDetailedMetrics: boolean;
-    }>): void {
-        this.getParseCoordinator().updateConfig(config);
-    }
-
-    /**
-     * Benchmarks parsing performance for different input types.
-     */
-    static benchmarkParsing(
-        testInputs: Array<{ input: any; description: string }> = [
-            { input: '2023-01-01', description: 'ISO date string' },
-            { input: new Date(), description: 'JavaScript Date' },
-            { input: Date.now(), description: 'Timestamp number' }
-        ],
-        iterations: number = 100
-    ) {
-        return this.getParseCoordinator().benchmark(testInputs, iterations);
+        this.getParseEngine().resetMetrics();
     }
 }
 

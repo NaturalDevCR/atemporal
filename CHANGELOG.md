@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Improvements
 
+- Route synchronous construction directly through the shared parse engine,
+  excluding async coordination and optimization reports from the default core.
+  Add pinned source attribution and initial/total core size gates.
+
 - Publish self-contained Temporal types compatible with TypeScript 5.4+.
 - Preserve plugin declaration merging in CommonJS and ESM declarations.
 - Verify implementation loading, native and fallback runtime paths, package

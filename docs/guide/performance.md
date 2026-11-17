@@ -32,3 +32,12 @@ Use `prewarm` only for a small, stable set of hot patterns. It is usually best c
 Diagnostics are intentionally observational: no cache or parsing engine is public API. Do not mutate the snapshot, retain assumptions about its internal counters, or import `atemporal/src/...` in application code.
 
 For release-size and benchmark policy, see the repository's generated reports. Application bundles depend on the bundler, your imports, and whether the Temporal polyfill is included; treat those as separate measurements from the distributed core size.
+
+## Measuring the v3 core
+
+Maintainers can run `pnpm run size:core` for a pinned-esbuild source attribution
+and budget check. It excludes the polyfill, keeps optional chunks separate, and
+reports initial versus total bytes in `reports/core-source-size.json`. The check
+also rejects the async coordinator and optimizer entering the factory graph.
+See [the v3 core size report](../reports/v3-core-size) for the fixture and measured
+parsing-runtime change. The reviewed baseline is never rewritten by this command.
