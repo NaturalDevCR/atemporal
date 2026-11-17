@@ -579,7 +579,7 @@ const info = atemporal.getTemporalInfo();
 Under the hood, Atemporal is powered by several high-performance subsystems:
 
 - **ParseCoordinator**: Type-first parsing engine with 12 strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects). Uses intelligent caching and auto-optimization.
-- **FormattingEngine**: Token-based formatter with token compilation, object pooling, and multi-level caching for high-throughput scenarios.
+- **Formatting runtime**: Token-based formatting with shared compilation/result caches. Optional analysis and tuning helpers stay outside the normal runtime graph.
 - **ComparisonEngine**: Optimized date comparison logic with its own cache layer.
 - **DiffCache**: LRU-based cache for `diff()` calculations between recurring date pairs.
 - **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to reduce GC pressure.
@@ -658,9 +658,15 @@ For release-size and benchmark policy, see the repository's generated reports. A
 Maintainers can run `pnpm run size:core` for a pinned-esbuild source attribution
 and budget check. It excludes the polyfill, keeps optional chunks separate, and
 reports initial versus total bytes in `reports/core-source-size.json`. The check
-also rejects the async coordinator and optimizer entering the factory graph.
+also rejects async coordination, optional formatter/cache analysis, and token
+pooling entering the factory graph.
 See [the v3 core size report](../reports/v3-core-size) for the fixture and measured
 parsing-runtime change. The reviewed baseline is never rewritten by this command.
+
+The [formatter runtime size report](../reports/v3-formatting-runtime-size) records
+the next reduction. Formatting retains shared caches and metrics while optional
+analysis helpers remain separate. Deprecated pool counters are zero because
+compiled tokens belong to the compiler cache rather than a temporary pool.
 
 
 
@@ -4632,6 +4638,14 @@ Temporal declarations are included in the package and support TypeScript 5.4+.
 Consumers do not need the polyfill's declarations or native global Temporal
 types. There is no runtime Temporal export from the root; raw values remain
 available from the explicit constructors and `.raw`.
+
+## Formatting Diagnostics
+
+Formatting still shares its result cache, compilation cache, and counters with
+public diagnostics and prewarming. The previous token pool was prewarmed but
+never supplied tokens to the formatter. v3 removes that allocation and keeps
+`getFormattingMetrics().tokenPoolStats` fields as deprecated zero-valued counters
+for compatibility. `prewarm()` continues to compile common and requested formats.
 
 ## Release Validation
 

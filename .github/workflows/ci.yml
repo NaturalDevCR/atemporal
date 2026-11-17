@@ -51,7 +51,7 @@ jobs:
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
         run: node scripts/measure-release-artifact.cjs
-      - name: Check native core source budgets and optional parser boundaries
+      - name: Check native core source budgets and optional runtime boundaries
         id: core-size
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true

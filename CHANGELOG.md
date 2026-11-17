@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Improvements
 
+- Separate formatter/cache runtime state from optional analysis and tuning tools.
+  Remove unused token pooling and empty per-format scopes; preserve diagnostic
+  field names with deprecated zero-valued pool statistics.
+
 - Route synchronous construction directly through the shared parse engine,
   excluding async coordination and optimization reports from the default core.
   Add pinned source attribution and initial/total core size gates.
