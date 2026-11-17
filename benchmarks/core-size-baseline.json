@@ -5,19 +5,19 @@
   "mode": "native-core-source",
   "target": "es2020",
   "previous": {
-    "initialBytes": 139873,
-    "initialGzip": 35556,
-    "totalBytes": 160564
-  },
-  "baseline": {
     "initialBytes": 132589,
     "initialGzip": 33744,
     "totalBytes": 153280
   },
+  "baseline": {
+    "initialBytes": 126742,
+    "initialGzip": 31151,
+    "totalBytes": 152914
+  },
   "limits": {
-    "initialBytes": 134144,
-    "initialGzip": 34816,
-    "totalBytes": 155648
+    "initialBytes": 128000,
+    "initialGzip": 32256,
+    "totalBytes": 155000
   },
   "excludedModules": [
     "src/core/parsing/parse-coordinator.ts",
@@ -26,8 +26,8 @@
     "src/core/formatting/formatting-cache.ts",
     "src/core/formatting/token-pool.ts"
   ],
-  "rationale": "The default graph uses the shared synchronous parser and lean formatter/cache runtimes. Optional coordination, analysis facades, and unused token pooling stay outside every output chunk. Limits preserve the measured reductions with explicit headroom.",
-  "previousRef": "efc2dd46a009628ac8e41a4faa6859f88c0f7d58",
+  "rationale": "The lean source fixture excludes optional parser/formatter machinery from all chunks and every plugin from the initial static graph. Plugins remain available through explicit subpaths and dynamic loading; compat preserves legacy root exports. Limits keep measured reductions with explicit headroom.",
+  "previousRef": "95503a688985a2b1928c2c5d4375a48100132d29",
   "history": [
     {
       "change": "Lean synchronous parser (PR #96)",
@@ -43,6 +43,24 @@
         "initialGzip": 35556,
         "totalBytes": 160564
       }
+    },
+    {
+      "change": "Lean formatter/cache runtime (PR #97)",
+      "beforeRef": "efc2dd46a009628ac8e41a4faa6859f88c0f7d58",
+      "afterRef": "33c52f51907f53b52fbe4ab8fd3a154abd7704bd",
+      "previous": {
+        "initialBytes": 139873,
+        "initialGzip": 35556,
+        "totalBytes": 160564
+      },
+      "baseline": {
+        "initialBytes": 132589,
+        "initialGzip": 33744,
+        "totalBytes": 153280
+      }
     }
+  ],
+  "excludedInitialPrefixes": [
+    "src/plugins/"
   ]
 }

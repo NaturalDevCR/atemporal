@@ -112,16 +112,6 @@ export {
 };
 export type { ExtensionMetadata, OfficialPluginMetadata } from './typeGuards';
 
-// Export the dateRangeOverlap plugin and related utilities
-export {
-  default as dateRangeOverlapPlugin,
-  checkDateRangeOverlap,
-  InvalidDateRangeError,
-  OverlapDetectionError,
-} from "./plugins/dateRangeOverlap";
-export { default as businessDaysPlugin } from "./plugins/businessDays";
-export { default as timeSlotsPlugin } from "./plugins/timeSlots";
-
 // Re-export format presets
 export { FORMAT_PRESETS as presets, listPresets, getPreset } from "./core/formatting/presets";
 export type { ValidationResult } from "./core/formatting/presets";

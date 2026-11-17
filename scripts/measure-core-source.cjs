@@ -99,6 +99,10 @@ function enforceBudget(report) {
   for (const [measurement, limit] of Object.entries(budget.limits)) {
     assert.ok(report[measurement] <= limit, `${measurement}: ${report[measurement]} exceeds ${limit}`);
   }
+  for (const prefix of budget.excludedInitialPrefixes || []) {
+    assert.ok(!report.inputs.some((value) => value.input.startsWith(prefix) && value.initialBytes > 0),
+      `Optional module entered the initial core graph: ${prefix}`);
+  }
   for (const input of budget.excludedModules) {
     assert.ok(!report.inputs.some((value) => value.input === input && value.totalBytes > 0),
       `Optional machinery entered the core bundle: ${input}`);

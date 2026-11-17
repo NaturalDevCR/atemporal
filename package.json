@@ -193,11 +193,11 @@
     },
     "./compat": {
       "import": {
-        "types": "./dist/compat/index.d.mts",
+        "types": "./dist/compat/index-compat.d.mts",
         "default": "./dist/compat/index.mjs"
       },
       "require": {
-        "types": "./dist/compat/index.d.ts",
+        "types": "./dist/compat/index-compat.d.ts",
         "default": "./dist/compat/index.js"
       }
     },
