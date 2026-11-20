@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- Add `.toISOString()` for UTC serialization matching native `Date.toISOString()`,
+  and document how it differs from offset-preserving `.toString()` when storing
+  and sorting date strings (fixes [#102](https://github.com/NaturalDevCR/atemporal/issues/102)).
+
 ## [3.0.0] (2026-11-17)
 
 ### Breaking Changes

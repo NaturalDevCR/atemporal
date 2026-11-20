@@ -107,6 +107,12 @@ date.isLeapYear(); // true (2024 is a leap year)
 date.isValid(); // true
 date.toDate(); // Convert to a JS `Date` object
 date.toString(); // '2024-08-14T10:30:45.123Z'
+date.toISOString(); // '2024-08-14T10:30:45.123Z' (always UTC)
 date.raw; // Access the underlying `Temporal.ZonedDateTime` object
 date.datetime; // Same as `.raw` — the `Temporal.ZonedDateTime` object
 ```
+
+`.toString()` preserves the instance's local time and offset; `.toISOString()`
+normalizes to UTC, like native `Date.toISOString()`. See
+[ISO serialization](./formatting.md#iso-serialization) before storing or sorting
+date strings.

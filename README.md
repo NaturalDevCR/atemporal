@@ -181,6 +181,27 @@ const past = now.subtract(5, "minutes");
 console.log(past.fromNow()); // "5 minutes ago"
 ```
 
+## Formatting and serialization
+
+`.toString()` preserves the instance's local time and UTC offset. For the UTC
+`Z` string returned by native `Date.toISOString()`, use `.toISOString()`:
+
+```ts
+const start = atemporal('2026-12-08T18:00:00', 'America/Puerto_Rico');
+
+start.toString(); // '2026-12-08T18:00:00-04:00'
+start.toISOString(); // '2026-12-08T22:00:00.000Z'
+start.toDate().toISOString(); // Same UTC result; also works in earlier versions
+```
+
+When storing dates as strings for comparison or sorting (for example, Firestore
+`orderBy('startsAt')`), use a consistent UTC format. Mixing offsets or fractional
+second widths can break chronological ordering by string comparison.
+`.toISOString()` always includes three millisecond digits, discards
+sub-millisecond precision, and throws `RangeError` for an invalid instance,
+matching native `Date.toISOString()`. `.toString()` returns `'Invalid Date'`
+for invalid instances. See the [serialization reference](./docs/api/formatting.md#iso-serialization).
+
 ## Choose a value and parsing policy
 
 When the value category is known, explicit constructors return raw Temporal

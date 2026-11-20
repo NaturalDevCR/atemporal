@@ -632,9 +632,24 @@ export class TemporalWrapper {
     }
 
     /**
-     * Returns the canonical ISO 8601 string representation of the date-time.
-     * Uses 'Z' for UTC and includes a zero-padded three-digit millisecond part if applicable.
-     * @returns The formatted ISO string.
+     * Serializes the instant in UTC, exactly like `toDate().toISOString()`.
+     * Always includes three millisecond digits and a trailing 'Z'. Sub-millisecond
+     * precision is discarded by the conversion to a JavaScript `Date`.
+     * @returns The UTC ISO string, regardless of the instance's time zone.
+     * @throws {RangeError} If the instance cannot be represented as a valid `Date`.
+     * @example
+     * atemporal('2026-12-08T18:00:00', 'America/Puerto_Rico').toISOString();
+     * // => '2026-12-08T22:00:00.000Z'
+     */
+    toISOString(): string {
+        return this.toDate().toISOString();
+    }
+
+    /**
+     * Returns an ISO 8601 string preserving the instance's local time and UTC offset.
+     * Uses 'Z' for the UTC time zone and includes three millisecond digits if applicable.
+     * For UTC serialization compatible with `Date.toISOString()`, use `toISOString()`.
+     * @returns The offset-preserving ISO string, or 'Invalid Date' for an invalid instance.
      */
     toString(): string {
         if (!this.isValid()) return 'Invalid Date';
