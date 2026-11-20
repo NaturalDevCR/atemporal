@@ -2,6 +2,35 @@
 
 The `.format()` method is very versatile. It accepts a token string or an `Intl` options object.
 
+## ISO Serialization
+
+Use `.toISOString()` to serialize an instant in UTC with a trailing `Z` and
+exactly three millisecond digits. It is equivalent to `.toDate().toISOString()`
+and matches native `Date.toISOString()` regardless of the instance's time zone.
+
+`.toString()` preserves the local time and offset instead. It omits the time-zone
+annotation and omits fractional seconds when they are zero; UTC instances use `Z`.
+
+```ts
+const start = atemporal('2026-12-08T18:00:00', 'America/Puerto_Rico');
+
+start.toString(); // '2026-12-08T18:00:00-04:00'
+start.toISOString(); // '2026-12-08T22:00:00.000Z'
+start.toDate().toISOString(); // Same result; available in earlier versions
+```
+
+For database fields sorted as strings, such as Firestore's `orderBy('startsAt')`,
+normalize all values to the same UTC format. Mixing local-offset strings with
+UTC strings, or using variable fractional-second widths, can produce incorrect
+chronological ordering. When migrating, normalize existing values as well as new
+writes.
+
+`.toISOString()` has JavaScript `Date` millisecond precision; sub-millisecond
+precision is discarded. It throws `RangeError` for an invalid instance, just like
+native `Date.toISOString()`. In contrast, `.toString()` returns `'Invalid Date'`.
+Use `.raw.toString()` when you need the underlying Temporal value's full
+nanosecond precision and time-zone annotation.
+
 ## Token-based Formatting
 
 ### Complete Token Reference
