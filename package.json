@@ -1,6 +1,6 @@
 {
   "name": "atemporal",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "packageManager": "pnpm@11.13.1",
   "description": "A modern and ergonomic date-time library, powered by the Temporal API.",
   "main": "./dist/index.js",
