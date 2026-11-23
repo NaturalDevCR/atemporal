@@ -117,7 +117,16 @@ jobs:
         id: size
         if: always() && steps.pack.outcome == 'success'
         continue-on-error: true
-        run: node scripts/measure-release-artifact.cjs
+        run: |
+          node scripts/measure-release-artifact.cjs
+          pnpm run size:core
+      - name: Verify Temporal loading, entry families, and declarations
+        id: temporal
+        if: always() && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          pnpm run check:loading
+          pnpm run check:native
       - name: Capture hosted performance candidate
         id: benchmark
         if: always() && steps.build.outcome == 'success'
@@ -168,6 +177,7 @@ jobs:
           test "${{ steps.contracts.outcome }}" = success
           test "${{ steps.extended.outcome }}" = success
           test "${{ steps.size.outcome }}" = success
+          test "${{ steps.temporal.outcome }}" = success
           test "${{ steps.benchmark.outcome }}" = success
           test "${{ steps.performance.outcome }}" = success
 

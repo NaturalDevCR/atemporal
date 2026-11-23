@@ -7,7 +7,7 @@
 import {
   getTemporalInfo,
 } from "./core/temporal-detection";
-import type { Temporal } from "@js-temporal/polyfill";
+import type { Temporal } from './types/temporal';
 
 import { Temporal as TemporalAPI } from "./core/temporal-api";
 import { TemporalWrapper } from "./TemporalWrapper";
@@ -78,6 +78,8 @@ export type {
   ParseOptions,
   AppliedExtension,
   AtemporalDiagnostics,
+  AtemporalFactory,
+  AtemporalFunction,
 } from "./types";
 export type {
   InstantInput,
@@ -109,16 +111,6 @@ export {
   EXTENSION_METADATA,
 };
 export type { ExtensionMetadata, OfficialPluginMetadata } from './typeGuards';
-
-// Export the dateRangeOverlap plugin and related utilities
-export {
-  default as dateRangeOverlapPlugin,
-  checkDateRangeOverlap,
-  InvalidDateRangeError,
-  OverlapDetectionError,
-} from "./plugins/dateRangeOverlap";
-export { default as businessDaysPlugin } from "./plugins/businessDays";
-export { default as timeSlotsPlugin } from "./plugins/timeSlots";
 
 // Re-export format presets
 export { FORMAT_PRESETS as presets, listPresets, getPreset } from "./core/formatting/presets";

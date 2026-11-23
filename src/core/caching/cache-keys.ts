@@ -3,7 +3,7 @@
  * Provides 20-30% performance improvement in cache operations
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../../types/temporal';
 import type { TimeUnit } from '../../types';
 import { Temporal as TemporalRuntime } from '../temporal-api';
 

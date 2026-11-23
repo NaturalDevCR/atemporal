@@ -9,7 +9,7 @@ import { TemporalUtils, IntlCache, LRUCache, GlobalCacheCoordinator } from '../T
 import { LocaleUtils } from '../core/locale';
 import { debugLog } from '../core/debug';
 import type { AtemporalFactory, Plugin } from '../types';
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from '../types/temporal';
 import { markAsPlugin } from '../typeGuards';
 
 // Augment the JSDoc to reflect only the tokens this plugin provides.

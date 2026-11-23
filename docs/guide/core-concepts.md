@@ -216,8 +216,8 @@ const info = atemporal.getTemporalInfo();
 
 Under the hood, Atemporal is powered by several high-performance subsystems:
 
-- **ParseCoordinator**: Type-first parsing engine with 12 strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects). Uses intelligent caching and auto-optimization.
-- **FormattingEngine**: Token-based formatter with token compilation, object pooling, and multi-level caching for high-throughput scenarios.
+- **ParseEngine**: The compatibility wrapper shares one synchronous type-first engine with 12 strategies, bounded caching, and public diagnostics. Async coordination and optimizer tooling stay outside the normal v3 graph. Explicit constructors and strict parsing apply their own input policies.
+- **Formatting runtime**: Token-based formatting with shared compilation/result caches. Optional analysis and tuning helpers stay outside the normal runtime graph.
 - **ComparisonEngine**: Optimized date comparison logic with its own cache layer.
 - **DiffCache**: LRU-based cache for `diff()` calculations between recurring date pairs.
 - **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to reduce GC pressure.

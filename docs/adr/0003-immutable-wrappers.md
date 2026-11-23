@@ -14,10 +14,9 @@ d.setMonth(1);  // mutates `d` in place
 console.log(d);  // '2024-02-15'
 ```
 
-This makes `Date` unsafe to use in functional or reactive code
-(React, Redux, RxJS). Libraries like moment.js (pre-2.29) inherited
-this problem; later versions made most methods return new instances
-but kept the option of mutation in some helpers.
+Mutation can surprise functional or reactive code that relies on object
+identity to detect a changed value. Callers must copy a mutable Date when
+the original value needs to be retained.
 
 The TC39 Temporal API resolved this at the spec level: every
 `Temporal.*` type is immutable. `dt.add({ days: 1 })` returns a new
@@ -40,7 +39,7 @@ do expose is a pure function that returns a new wrapper:
 
 ```ts
 const a = atemporal('2024-01-15');
-const b = a.set({ hour: 9 });
+const b = a.set("hour", 9);
 // `a` is unchanged, `b` is a new wrapper
 ```
 

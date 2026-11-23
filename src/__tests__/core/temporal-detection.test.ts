@@ -13,6 +13,18 @@ import {
   isNodeEnvironment,
   getTemporalInfo,
 } from "../../core/temporal-detection";
+import { getFallbackTemporal as getCompatFallback } from '../../core/temporal-fallback-compat';
+import { getFallbackTemporal as requireNativeTemporal } from '../../core/temporal-fallback-native';
+
+test('native distribution reports how to enable fallback when Temporal is missing', () => {
+  expect(() => requireNativeTemporal()).toThrow(
+    'atemporal/native requires globalThis.Temporal. Use "atemporal" for automatic polyfill fallback.',
+  );
+});
+
+test('compat fallback keeps synchronous Temporal operations', () => {
+  expect(getCompatFallback().Instant.from('2026-07-15T10:00:00Z').toString()).toBe('2026-07-15T10:00:00Z');
+});
 
 describe("Temporal Detection", () => {
   beforeEach(() => {

@@ -46,7 +46,7 @@ atemporal().format("YYYY-MM-DD [at] HH:mm:ss");
 ```ts
 // Month name and AM/PM examples
 atemporal("2024-08-14T16:30:00").format("MMM DD, YYYY");       // "Aug 14, 2024"
-atemporal("2024-08-14T16:30:00").format("MMMM Do, hh:mm A");   // "August 14th, 04:30 PM"
+atemporal("2024-08-14T16:30:00").format("MMMM D, hh:mm A");    // "August 14, 04:30 PM"
 atemporal("2024-08-14T16:30:00").format("hh:mm a");             // "04:30 pm"
 ```
 

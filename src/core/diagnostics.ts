@@ -1,7 +1,7 @@
 import { TemporalWrapper } from '../TemporalWrapper';
 import { TemporalUtils } from '../TemporalUtils';
 import { DiffCache } from './caching/diff-cache';
-import { FormattingEngine } from './formatting/formatting-engine';
+import { FormattingEngine } from './formatting/formatting-runtime';
 import { getTemporalInfo } from './temporal-detection';
 import type { AtemporalDiagnostics } from '../types';
 

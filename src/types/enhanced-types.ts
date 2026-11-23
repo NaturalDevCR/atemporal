@@ -2,7 +2,7 @@
  * @file Enhanced TypeScript types with stricter generics and specific error types
  */
 
-import type { Temporal } from '@js-temporal/polyfill';
+import type { Temporal } from './temporal';
 import type { FirebaseTimestampLike } from '../types';
 
 /**

@@ -75,6 +75,7 @@ export default defineConfig({
             { text: 'From moment.js', link: '/migration/moment' },
             { text: 'From raw Temporal', link: '/migration/temporal' },
             { text: 'To v2', link: '/migration/v2' },
+            { text: 'To v3', link: '/migration/v3' },
           ]
         }
       ],

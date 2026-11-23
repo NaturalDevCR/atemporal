@@ -2,19 +2,38 @@
 
 > Generated from public consumer documentation. Use `llms.txt` for the concise operational guide.
 
+## v3 entry contract
+
+| Factory entry | Build/runtime requirement | Matching plugin prefix |
+| --- | --- | --- |
+| `atemporal` (ESM) | ES2022 and top-level await; conditional fallback import | `atemporal/plugins/` |
+| `atemporal` (CommonJS) | Synchronous require; fallback only when needed | `atemporal/plugins/` |
+| `atemporal/compat` | ES2020/IIFE; static fallback import | `atemporal/compat/plugins/` |
+| `atemporal/native` | ES2020; complete global Temporal required | `atemporal/native/plugins/` |
+
+Use the same entry family for the factory, named errors/helpers, and plugins. Date operations stay synchronous after import. Default browser download savings require code splitting; total output still includes optional fallback/plugin chunks. Native entry builds exclude fallback code, while the installed package retains its direct polyfill dependency. Leave globalThis.Temporal unchanged after initialization.
+
+Default/native roots no longer export `dateRangeOverlapPlugin`, `businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`, `InvalidDateRangeError`, or `OverlapDetectionError`. Import plugins/helpers from their matching subpaths. The compat root preserves all six legacy named exports. No Temporal runtime object is exported from the root. Public Temporal types are self-contained for TypeScript 5.4+.
+
+See [Migrating to v3](https://naturaldevcr.github.io/atemporal/migration/v3.html) for complete examples.
+
 ## Method index
 
-> A flat alphabetised (by section) index of the public surface. Use this as a quick reference before reading the long-form guides below.
+> A curated index of the public factory, wrapper, and plugin surface. Use this as a quick reference before reading the long-form guides below.
 
 ### Static / factory (`atemporal.*`)
 
 | Method | Signature | Notes |
 | --- | --- | --- |
-| `atemporal(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper` | Create an instance. input may be ISO string, Date, Unix ms, Unix s, [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper. |
-| `atemporal.try(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper | null` | Same as atemporal(input) but returns null instead of throwing on invalid input. |
+| `atemporal(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper` | Create an instance. input may be ISO string, Date, epoch milliseconds (use .unix() for seconds), [y,m,d,h,m,s,ms], plain object, Firebase Timestamp, or another TemporalWrapper. |
+| `atemporal.try(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => TemporalWrapper \| null` | Compatibility parsing that returns null for invalid input instead of an invalid wrapper. |
+| `atemporal.instant(input)` | `(InstantInput) => Temporal.Instant` | Raw instant; accepts an offset-bearing ISO string, epoch milliseconds, Date, or an instant. Throws InvalidDateError. |
+| `atemporal.date(input)` | `(PlainDateInput) => Temporal.PlainDate` | Raw date-only value; rejects calendar overflow. |
+| `atemporal.plainDateTime(input)` | `(PlainDateTimeInput) => Temporal.PlainDateTime` | Raw civil date-time with no time zone. |
+| `atemporal.zonedDateTime(input, options?)` | `(ZonedDateTimeInput, ZonedDateTimeOptions?) => Temporal.ZonedDateTime` | Raw zoned value; local input requires timeZone. Defaults to rejecting DST ambiguity and calendar overflow. |
 | `atemporal.parse(input, options?)` | `(input: DateInput, options?: ParseOptions) => TemporalWrapper` | Strict boundary parser. Defaults to disambiguation: "reject" and overflow: "reject"; throws InvalidDateError. |
-| `atemporal.tryParse(input, options?)` | `(input: DateInput, options?: ParseOptions) => TemporalWrapper | null` | Strict parser that returns null for every invalid input. |
-| `atemporal.iso(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => string | null` | Try to parse and return an ISO 8601 string, or null. Does not throw. |
+| `atemporal.tryParse(input, options?)` | `(input: DateInput, options?: ParseOptions) => TemporalWrapper \| null` | Strict parser that returns null for every invalid input. |
+| `atemporal.iso(input?, timeZone?)` | `(input?: DateInput, timeZone?: string) => string \| null` | Try to parse and return an ISO 8601 string, or null. Does not throw. |
 | `atemporal.validate(input)` | `(input: unknown) => ValidationResult` | Detailed validation: { ok: boolean, iso?: string, confidence?: number, reason?: string, code?: ATEMPORAL_* }. |
 | `atemporal.duration(spec)` | `(spec) => Temporal.Duration` | Build a Temporal.Duration from { years, months, days, hours, minutes, seconds, milliseconds, weeks }. |
 | `atemporal.from(input, timeZone?)` | `(input, tz?) => TemporalWrapper` | Alias of atemporal(input) — kept for API symmetry with Temporal static methods. |
@@ -26,28 +45,28 @@
 | `atemporal.isDuration(x)` | `(x) => boolean` | True if x is a Temporal.Duration. |
 | `atemporal.isValidTimeZone(tz)` | `(tz: string) => boolean` | True if tz is a valid IANA time zone. |
 | `atemporal.isValidLocale(loc)` | `(loc: string) => boolean` | True if loc is a valid BCP-47 locale. |
-| `atemporal.isPlugin(x)` | `(x) => boolean` | True if x is a Plugin object (has .name and an install hook). |
-| `atemporal.extend(plugin, options?)` | `(plugin, options?) => void` | Install a plugin synchronously. Options are passed to the plugin.install() hook. |
+| `atemporal.isPlugin(x)` | `(x) => boolean` | Checks the plugin function marker, with legacy function-shape recognition. |
+| `atemporal.extend(plugin, options?)` | `(plugin, options?) => void` | Install a plugin synchronously. Calls plugin(Atemporal, atemporal, options); repeated installation of the same function is ignored. |
 | `atemporal.lazyLoad(pluginName, options?)` | `async (...) => Promise<void>` | Install one official plugin by name on demand. Resolves after the plugin is applied. |
 | `atemporal.lazyLoadMultiple(pluginNames, options?)` | `async (...) => Promise<void>` | Install several official plugins by name. |
 | `atemporal.isPluginLoaded(name)` | `(name: string) => boolean` | Has the named official plugin been installed yet? |
 | `atemporal.getLoadedPlugins()` | `() => string[]` | Names of currently installed official plugins. Third-party extensions are not listed. |
 | `atemporal.getAppliedExtensions()` | `() => AppliedExtension[]` | Detached snapshots of every successful extension, including explicitly named third-party extensions. |
 | `atemporal.getAvailablePlugins()` | `() => string[]` | Names of official plugins registered with the loader (whether installed or not). |
-| `atemporal.getTemporalInfo()` | `() => { isNative: boolean, environment: "browser"|"node"|"unknown", version: "native"|"polyfill" }` | Diagnostic info about which Temporal implementation is in use. |
+| `atemporal.getTemporalInfo()` | `() => { isNative: boolean, environment: "browser"\|"node"\|"unknown", version: "native"\|"polyfill" }` | Diagnostic info about which Temporal implementation is in use. |
 | `atemporal.getDiagnostics()` | `() => AtemporalDiagnostics` | Detached runtime/cache snapshot; safe to serialize or inspect. |
 | `atemporal.clearCaches()` | `() => void` | Clear parsing, formatting, and diff cache entries while retaining defaults. |
 | `atemporal.resetDiagnostics()` | `() => void` | Clear caches and parser/formatter metrics while retaining defaults. |
 | `atemporal.prewarm(options?)` | `({ formatPatterns?: string[] }) => void` | Initialize formatting and compile known hot format patterns. |
 | `atemporal.setDefaultLocale(loc)` | `(loc: string) => void` | Set the global default locale (BCP-47). |
-| `atemporal.setDefaultTimeZone(tz)` | `(tz: string) => void` | Set the global default IANA time zone. Pass "system" to reset to the host TZ. |
+| `atemporal.setDefaultTimeZone(tz)` | `(tz: string) => void` | Set the global default IANA time zone. Use "UTC" to restore the initial default. |
 | `atemporal.getDefaultLocale()` | `() => string` | Current default locale. |
-| `atemporal.presets.ISO` | `string` | "YYYY-MM-DDTHH:mm:ss.SSSZ" — canonical ISO 8601 with milliseconds. |
+| `atemporal.presets.ISO` | `string` | "YYYY-MM-DDTHH:mm:ss.sssZ" — ISO 8601 with milliseconds. |
 | `atemporal.presets.ISO_DATE` | `string` | "YYYY-MM-DD". |
-| `atemporal.presets.ISO_TIME` | `string` | "HH:mm:ss". |
-| `atemporal.presets.RFC2822` | `string` | "ddd, DD MMM YYYY HH:mm:ss Z". |
-| `atemporal.presets.SQL` | `string` | "YYYY-MM-DD HH:mm:ss.SSS". |
-| `atemporal.setStrictMode(flags)` | `() => void` | Enable strict-mode checks. See ADR 0004 + src/core/strict-mode.ts. |
+| `atemporal.presets.ISO_TIME` | `string` | "HH:mm:ss.sss". |
+| `atemporal.presets.RFC2822` | `string` | "ddd, DD MMM YYYY HH:mm:ss ZZ". |
+| `atemporal.presets.SQL_DATETIME` | `string` | "YYYY-MM-DD HH:mm:ss.SSS". |
+| `atemporal.setStrictMode(onOrFlags)` | `(boolean \| Partial<StrictModeFlags>) => void` | Enable strict-mode checks. Warning configuration; use parse()/tryParse() for strict input validation. |
 | `atemporal.isStrictMode()` | `() => boolean` | Is strict mode currently on? |
 | `atemporal.getStrictModeFlags()` | `() => StrictModeFlags` | Current strict-mode flags. |
 | `atemporal.clearStrictWarnings()` | `() => void` | Reset the accumulated strict-mode warnings. |
@@ -56,39 +75,43 @@
 
 | Method | Signature | Notes |
 | --- | --- | --- |
-| `t.add(value, unit?) | t.add(duration)` | `(number|"year"|"month"|"week"|"day"|"hour"|"minute"|"second"|"millisecond", unit) => TemporalWrapper` | Immutably add. Returns a new instance; never mutates the receiver. |
-| `t.subtract(value, unit?) | t.subtract(duration)` | `(same as add) => TemporalWrapper` | Immutably subtract. |
-| `t.set(unit, value)` | `("year"|"month"|"day"|"hour"|"minute"|"second"|"millisecond"|"week"|"dayOfWeek", number) => TemporalWrapper` | Set a single field. Returns a new instance. |
-| `t.startOf(unit)` | `("year"|"month"|"week"|"day"|"hour"|"minute"|"second") => TemporalWrapper` | Snap down to the start of the given unit. |
+| `t.add(value, unit) \| t.add(duration)` | `(number, TimeUnit) or (Temporal.Duration) => TemporalWrapper` | Immutably add. Returns a new instance; never mutates the receiver. |
+| `t.subtract(value, unit) \| t.subtract(duration)` | `(same as add) => TemporalWrapper` | Immutably subtract. |
+| `t.set(unit, value)` | `(SettableUnit, number) => TemporalWrapper` | Set a single field. Returns a new instance. |
+| `t.startOf(unit)` | `("year"\|"month"\|"week"\|"day"\|"hour"\|"minute"\|"second") => TemporalWrapper` | Snap down to the start of the given unit. |
 | `t.endOf(unit)` | `(same as startOf) => TemporalWrapper` | Snap up to the end of the given unit. |
 | `t.get(unit)` | `(SettableUnit) => number` | Read a single field as a number. |
-| `t.dayOfWeek([day?])` | `() => number | (day: number) => TemporalWrapper` | Getter when called with no arg, setter (immutable) with one arg. |
-| `t.quarter([q?])` | `() => number | (q: number) => TemporalWrapper` | Quarter of the year (1-4). |
-| `t.format(patternOrOptions?, locale?)` | `(string | Intl.DateTimeFormatOptions, locale?) => string` | Format with a token string ("YYYY-MM-DD") or Intl options. |
+| `t.dayOfWeek([day?])` | `() => number \| (day: number) => TemporalWrapper` | Getter when called with no arg, setter (immutable) with one arg. |
+| `t.quarter([q?])` | `() => number \| (q: number) => TemporalWrapper` | Quarter of the year (1-4). |
+| `t.format(patternOrOptions?, locale?)` | `(string \| Intl.DateTimeFormatOptions, locale?) => string` | Format with a token string ("YYYY-MM-DD") or Intl options. |
 | `t.diff(other, unit?, float?)` | `(input, unit="millisecond", float=false) => number` | Signed difference in the requested unit. Float vs truncated int. |
 | `t.isBefore(other)` | `(input) => boolean` | Strict less-than comparison. |
 | `t.isAfter(other)` | `(input) => boolean` | Strict greater-than. |
 | `t.isSameOrBefore(other)` | `(input) => boolean` | Less-than-or-equal. |
 | `t.isSameOrAfter(other)` | `(input) => boolean` | Greater-than-or-equal. |
-| `t.isSame(other, unit?)` | `(input, unit="millisecond") => boolean` | Equality in the given unit. isSame(a,"day") is true if they fall on the same calendar day in the default TZ. |
+| `t.isSame(other, unit?)` | `(DateInput, unit?: "year" \| "month" \| "day") => boolean` | Without a unit, compares exact instants; calendar units use the receiver time zone. |
 | `t.isSameDay(other)` | `(input) => boolean` | Convenience for isSame(other, "day"). |
 | `t.isLeapYear()` | `() => boolean` | True for leap years (Gregorian). |
 | `t.isValid()` | `() => boolean` | True if the wrapper represents a real, parseable instant. |
-| `t.timeZone([tz?])` | `() => string | (tz: string) => TemporalWrapper` | Get the IANA TZ when called with no arg; convert immutably with one arg. |
+| `t.timeZone(tz)` | `(tz: string) => TemporalWrapper` | Convert immutably to a zone. Read t.timeZoneId or t.raw.timeZoneId to inspect it. |
 | `t.clone()` | `() => TemporalWrapper` | Returns a new instance with the same value. |
-| `t.toDate()` | `() => Date` | Native JS Date in the wrapper's TZ. |
-| `t.toString()` | `() => string` | ISO 8601 representation in the wrapper's TZ. |
+| `t.raw` | `Temporal.ZonedDateTime` | Raw underlying value with full precision; throws for an invalid wrapper. |
+| `t.timeZoneId` | `string` | Read the current time-zone identifier. |
+| `t.range(end, unit, options?)` | `(DateInput, TimeUnit, RangeOptions?) => TemporalWrapper[] \| string[]` | Generate a range; supplying options.format produces formatted strings. |
+| `t.isBetween(start, end, inclusivity?)` | `(DateInput, DateInput, inclusivity="[]") => boolean` | Compare bounds with (), [], (], or [) inclusivity. |
+| `t.toDate()` | `() => Date` | Legacy Date representing the same instant, with millisecond precision; Date does not retain the IANA zone. |
+| `t.toString()` | `() => string` | ISO string with offset; use t.raw.toString() to preserve the zone annotation and full nanoseconds. |
 
 ### Plugins (extend the wrapper)
 
 | Plugin | Extends with | Import path |
 | --- | --- | --- |
-| relativeTime | `.fromNow()`, `.toNow()`, `.from(other)`, `.to(other)` | `atemporal/plugins/relativeTime` |
-| customParseFormat | `.fromFormat(str, pattern)` (instance + static) | `atemporal/plugins/customParseFormat` |
+| relativeTime | `.fromNow()`, `.toNow()` | `atemporal/plugins/relativeTime` |
+| customParseFormat | `atemporal.fromFormat(str, pattern, timeZone?)` | `atemporal/plugins/customParseFormat` |
 | advancedFormat | Format tokens `Do`, `Qo`, `zzz`, `zzzz` in `.format()` | `atemporal/plugins/advancedFormat` |
-| weekDay | `.weekday()`, `.weekday(d)`, `.startOf("isoWeek")`, locale-aware week starts | `atemporal/plugins/weekDay` |
-| durationHumanizer | `atemporal.duration().humanize()` | `atemporal/plugins/durationHumanizer` |
-| dateRangeOverlap | `atemporal.overlapRanges(a, b)` and `.overlaps(other)` | `atemporal/plugins/dateRangeOverlap` |
+| weekDay | `.weekday()`, `atemporal.setWeekStartsOn(day)`, `.startOf("week")`, `.endOf("week")` | `atemporal/plugins/weekDay` |
+| durationHumanizer | `atemporal.humanize(durationLike, options?)` | `atemporal/plugins/durationHumanizer` |
+| dateRangeOverlap | `atemporal.checkDateRangeOverlap(a, b)`, `.rangeOverlapsWith(range)`, `.to(end)` | `atemporal/plugins/dateRangeOverlap` |
 | businessDays | `.isBusinessDay()`, `.isHoliday()`, `.isWeekend()`, `.addBusinessDays(n)`, `.subtractBusinessDays(n)`, `.nextBusinessDay()` | `atemporal/plugins/businessDays` |
 | timeSlots | `atemporal.findAvailableSlots({ range, duration, interval?, busySlots })` | `atemporal/plugins/timeSlots` |
 
@@ -155,6 +178,18 @@ features:
 
 [Browse all plugins →](/plugins/)
 
+## v3 integration requirements
+
+Default ESM requires ES2022 with top-level await and conditionally loads the
+Temporal fallback. Use `atemporal/compat` for ES2020/IIFE or tools without
+top-level await, and `atemporal/native` only when the runtime supplies complete
+Temporal support. Keep plugin imports in the same family as the factory.
+
+- [Choose the public API](./guide/choosing-an-api): raw Temporal constructors,
+  strict parsing, and the chainable wrapper.
+- [Migrating to v3](./migration/v3): every changed import and fallback policy.
+- [Concise LLM guide](https://naturaldevcr.github.io/atemporal/llms.txt) and [complete LLM reference](https://naturaldevcr.github.io/atemporal/llms-full.txt).
+
 
 
 --- FILE: guide/index.md (Guide index) ---
@@ -192,8 +227,9 @@ Atemporal is a modern, immutable, and ergonomic date-time library built on top o
 ## Installation
 
 > **Node.js 22 or newer is required.** The supported Node lines are 22, 24,
-> and 26. Browser consumers continue to use the packaged native/polyfill
-> runtime detection path.
+> and 26. The default ESM entry requires ES2022 with top-level await. Use
+> `atemporal/compat` and matching plugins for ES2020 or tools without top-level
+> await. See [Migrating to v3](../migration/v3) for the full loading contract.
 
 Install `atemporal` with your package manager:
 
@@ -209,7 +245,9 @@ npm install atemporal
 > runtime dependency of `atemporal`, so your package manager installs it with
 > the package. It is not a separate plugin or peer dependency.
 
-Atemporal ships with full TypeScript declarations. Autocompletion and type checking work out of the box.
+Atemporal ships with self-contained Temporal declarations for TypeScript 5.4+.
+Autocompletion and type checking work without importing the polyfill or declaring
+a global Temporal object. Keep factory and plugin imports in the same entry family.
 
 ## Quick Start
 
@@ -303,7 +341,7 @@ const now = atemporal();
 const future = now.add(twoHours);
 
 // Subtract with a duration
-const past = now.subtract({ hours: 1, minutes: 15 });
+const past = now.subtract(atemporal.duration({ hours: 1, minutes: 15 }));
 ```
 
 ### Global Configuration
@@ -342,7 +380,7 @@ const date = atemporal("2025-07-09T14:30:00Z");
 
 // Token-based formatting
 date.format("YYYY-MM-DD");                     // "2025-07-09"
-date.format("dddd, MMMM Do YYYY [at] HH:mm"); // "Wednesday, July 9th 2025 at 14:30"
+date.format("dddd, MMMM D YYYY [at] HH:mm"); // "Wednesday, July 9 2025 at 14:30"
 
 // Intl-based formatting
 date.format({ dateStyle: "full" }, "es-CR");   // "miércoles, 9 de julio de 2025"
@@ -350,6 +388,8 @@ date.format({ dateStyle: "full" }, "es-CR");   // "miércoles, 9 de julio de 202
 
 ## Next Steps
 
+- [Choosing the Public API](./choosing-an-api) — Raw Temporal constructors, strict parsing, and the chainable wrapper
+- [Migrating to v3](../migration/v3) — Entry families, changed plugin imports, and build requirements
 - [Core Concepts](./core-concepts) — Understand immutability, plugins, input types, and architecture
 - [API Reference](/api/) — Complete reference for all methods
 - [Plugins](/plugins/) — Explore all 8 official plugins
@@ -577,8 +617,8 @@ const info = atemporal.getTemporalInfo();
 
 Under the hood, Atemporal is powered by several high-performance subsystems:
 
-- **ParseCoordinator**: Type-first parsing engine with 12 strategies (string, number, Date, Temporal variants, Firebase timestamps, arrays, objects). Uses intelligent caching and auto-optimization.
-- **FormattingEngine**: Token-based formatter with token compilation, object pooling, and multi-level caching for high-throughput scenarios.
+- **ParseEngine**: The compatibility wrapper shares one synchronous type-first engine with 12 strategies, bounded caching, and public diagnostics. Async coordination and optimizer tooling stay outside the normal v3 graph. Explicit constructors and strict parsing apply their own input policies.
+- **Formatting runtime**: Token-based formatting with shared compilation/result caches. Optional analysis and tuning helpers stay outside the normal runtime graph.
 - **ComparisonEngine**: Optimized date comparison logic with its own cache layer.
 - **DiffCache**: LRU-based cache for `diff()` calculations between recurring date pairs.
 - **IntlCache**: Caches `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` instances to reduce GC pressure.
@@ -598,19 +638,25 @@ Choose the smallest public API that matches the temporal value you actually have
 
 | Case | Public API | Timezone rule | Failure result |
 | --- | --- | --- | --- |
-| Event instant | `atemporal.parse` with an offset-bearing ISO string | Never invent a zone | `InvalidDateError` or `null` |
-| Scheduled event | `atemporal.parse(input, { timeZone })` | Explicit IANA zone required for local input | Reject DST ambiguity by default |
-| Local civil date-time | `atemporal.parse` | Explicit IANA zone required | `InvalidDateError` or `null` |
-| Date-only value | `atemporal.parse` | Use the business zone only if a time will be added | `InvalidDateError` or `null` |
-| Trusted boundary parsing | `atemporal.parse` | Explicit zone for local input | Throws `InvalidDateError` |
+| Event instant | `atemporal.instant(value)` | Offset-bearing string or exact instant | `InvalidDateError` |
+| Scheduled event | `atemporal.zonedDateTime(value, { timeZone })` | Explicit IANA zone required for local input | `InvalidDateError`; rejects DST ambiguity |
+| Local civil date-time | `atemporal.plainDateTime(value)` | Zone-free raw value | `InvalidDateError` |
+| Date-only value | `atemporal.date(value)` | Zone-free raw value | `InvalidDateError` |
+| Chainable strict wrapper | `atemporal.parse` / `tryParse` | Choose a domain zone for local input | `InvalidDateError` / `null` |
 | Compatibility parsing | `atemporal(input)` | Optional zone; preserves compatibility behavior | Invalid wrapper |
-| Formatting | `value.format(pattern)` | Format in the value zone or convert with `.timeZone()` | Throws for invalid wrapper |
+| Formatting | `value.format(pattern)` | Format in the value zone or convert with `.timeZone(zone)` | Invalid wrappers format as `"Invalid Date"` |
 | Duration | `atemporal.duration(like)` | No zone | Temporal conversion error |
 | Range | `value.range(...)` | Keep both ends in an explicit, known zone | Invalid wrapper/error |
 | Official plugin | `atemporal.extend(plugin)` or `lazyLoad(name)` | No zone | Plugin load error |
 | Third-party extension | `atemporal.extend(markAsPlugin(...))` | No zone | Extension error |
 
 Use `atemporal.tryParse` instead of catching errors only when `null` is the correct result for malformed input. A DST policy is still required: its default is `disambiguation: "reject"`.
+
+The four explicit constructors return raw Temporal values, which expose Temporal
+methods such as `.toString()` and `.toLocaleString()`. The chainable wrapper from
+`parse()`, `tryParse()`, or the callable factory provides `.format()`, ranges, and
+installed plugin methods. Use `.raw` on a valid wrapper for its underlying
+`Temporal.ZonedDateTime` and full nanosecond precision.
 
 
 
@@ -652,6 +698,28 @@ Diagnostics are intentionally observational: no cache or parsing engine is publi
 
 For release-size and benchmark policy, see the repository's generated reports. Application bundles depend on the bundler, your imports, and whether the Temporal polyfill is included; treat those as separate measurements from the distributed core size.
 
+## Measuring the v3 core
+
+Maintainers can run `pnpm run size:core` for a pinned-esbuild source attribution
+and budget check. It excludes the polyfill, keeps optional chunks separate, and
+reports initial versus total bytes in `reports/core-source-size.json`. The check
+also rejects async coordination, optional formatter/cache analysis, and token
+pooling entering the factory graph.
+See [the v3 core size report](../reports/v3-core-size) for the fixture and measured
+parsing-runtime change. The reviewed baseline is never rewritten by this command.
+
+The [formatter runtime size report](../reports/v3-formatting-runtime-size) records
+the next reduction. Formatting retains shared caches and metrics while optional
+analysis helpers remain separate. Deprecated pool counters are zero because
+compiled tokens belong to the compiler cache rather than a temporary pool.
+
+The [complete v3 review](../reports/v3-release-review) combines the parser,
+formatter, and [plugin-boundary](../reports/v3-plugin-boundaries) results. The
+unchanged native source fixture falls from 38,118 to 31,151 initial gzip bytes
+(18.3%). These numbers exclude the fallback and differ from production-artifact
+or tarball measurements. Default ESM download savings require code splitting;
+`atemporal/native` excludes fallback code entirely.
+
 
 
 --- FILE: guide/temporal-detection.md (Temporal native vs polyfill detection) ---
@@ -674,6 +742,64 @@ guide. Check it with `atemporal.getTemporalInfo()` in the environment you
 deploy. CI validates the native path on Node 26 and validates the polyfill path
 across the supported Node matrix.
 
+## Loading Contract in v3
+
+| Entry | Initialization | Polyfill behavior |
+| --- | --- | --- |
+| `atemporal` with ESM | ES2022, top-level await | Dynamically imported only when Temporal is unavailable |
+| `atemporal` with CommonJS | Synchronous, Node 22+ | Required only when Temporal is unavailable |
+| `atemporal/compat` | Synchronous, ES2020 | Static fallback import for legacy bundlers |
+| `atemporal/native` | Synchronous, ES2020 | No fallback; requires global Temporal |
+
+For the default ESM entry, module initialization completes before an importing
+module executes. The public date API stays synchronous: no `init()` call or
+`await atemporal(...)` is needed. Import failures propagate to the importer.
+Both entry formats select one implementation and share it with their plugins.
+
+With browser code splitting enabled, the dynamic import keeps the polyfill in
+its own chunk. Environments with native Temporal do not request that chunk.
+Without code splitting, a bundler may still include it in the same file; its
+initialization remains conditional. The total build can include fallback bytes
+even when the initial download excludes them.
+
+ES2020 builds, IIFE output, and tools without top-level await should use:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+## Excluding the Polyfill from a Bundle
+
+Deployments that guarantee `globalThis.Temporal` can exclude the fallback
+entirely, including from the total build:
+
+```ts
+import atemporal from 'atemporal/native';
+import relativeTime from 'atemporal/native/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+console.log(atemporal.getTemporalInfo().isNative); // true
+```
+
+All eight plugins and `lazyLoad()` are available in each distribution. Keep
+factory and plugin imports in the same family: `atemporal/plugins/*`,
+`atemporal/compat/plugins/*`, or `atemporal/native/plugins/*`. Each distribution
+owns its runtime, caches, and plugin state.
+
+The native entry throws during import if Temporal is missing or incomplete.
+The polyfill remains an installed dependency for the automatic fallback entries.
+Public declarations include a local Temporal contract; TypeScript 5.4+ consumers
+do not resolve declarations from the polyfill or require global Temporal types.
+Keep `globalThis.Temporal` unchanged after initialization.
+
+Run `pnpm run check:loading` after building to verify conditional loading and
+initial versus total browser bundle sizes. The report is
+`reports/temporal-loading.json`. `pnpm run check:native` verifies the strict
+native distribution and compiles isolated consumers without polyfill packages.
+
 ## Checking the Implementation
 
 ```ts
@@ -690,11 +816,11 @@ console.log(info);
 
 ## Benefits
 
-- **No code changes required**: Your existing atemporal code works identically whether native or polyfill
+- **Synchronous date operations**: Native and fallback implementations use the same public API.
 - **Automatic performance**: Native Temporal is faster than the polyfill, and you get it for free
-- **Stable fallback**: Native and polyfill selection happens at runtime. The
-  polyfill remains a direct dependency, so native availability alone does not
-  guarantee that a bundler removes it from an application bundle.
+- **Conditional fallback**: The default entry loads the polyfill only when needed.
+  Browser download savings depend on code splitting; total build size still
+  includes the fallback.
 - **Seamless migration**: As more browsers adopt Temporal, your app automatically benefits
 
 ## Runtime Support
@@ -706,7 +832,8 @@ native and polyfill paths.
 
 ## Migration
 
-**No action is required.** The detection system is fully backward compatible. Your code continues to work regardless of which Temporal implementation is active:
+v3 changes the default ESM loading contract. Check the [v3 migration guide](../migration/v3)
+for ES2020, IIFE, and bundler requirements. Date operations keep their existing behavior:
 
 ```ts
 // This works identically with both native and polyfill Temporal
@@ -842,9 +969,16 @@ The `atemporal` factory object exposes static utility methods beyond instance cr
 | `atemporal(input, tz?)` | Create from any `DateInput` |
 | `atemporal.from(input, tz?)` | Alias for `atemporal(input, tz?)` |
 | `atemporal.unix(seconds)` | Create from Unix timestamp (seconds) |
+| `atemporal.instant(value)` | Raw `Temporal.Instant`; numeric input is epoch milliseconds |
+| `atemporal.date(value)` | Raw `Temporal.PlainDate`, without a time or zone |
+| `atemporal.plainDateTime(value)` | Raw `Temporal.PlainDateTime`, without a zone |
+| `atemporal.zonedDateTime(value, options?)` | Raw `Temporal.ZonedDateTime`; local input requires an explicit zone |
 | `atemporal.duration(like)` | Create a `Temporal.Duration` from an object or ISO string |
 | `atemporal.parse(input, options?)` | Strict parsing; throws `InvalidDateError` for invalid or ambiguous local input by default |
 | `atemporal.tryParse(input, options?)` | Strict parsing that returns `null` instead of throwing |
+
+The four explicit Temporal constructors return raw values. Use `parse()` or
+`tryParse()` when you need the chainable wrapper and its `.format()`/plugin methods.
 
 ### Validation
 
@@ -902,11 +1036,12 @@ For extended functionality like relative time (`.fromNow()`), business day calcu
 
 You can create an `atemporal` instance from various input types:
 
-> In v2, prefer the explicit constructors for new code when the value category
+> In v3, prefer the explicit constructors for new code when the value category
 > is known: `atemporal.instant()` for instants, `atemporal.date()` for dates,
 > `atemporal.plainDateTime()` for zone-free civil times, and
 > `atemporal.zonedDateTime()` for scheduled values. The callable wrapper below
-> remains available as a deprecated compatibility facade.
+> remains available as a deprecated compatibility facade. Raw constructor results
+> use Temporal methods; `.format()` and installed plugins belong to wrappers.
 
 ```ts
 const instant = atemporal.instant("2026-07-15T10:00:00Z");
@@ -1002,7 +1137,9 @@ atemporal(undefined); // Current time
 
 ## Error Behavior
 
-Atemporal does **not** throw exceptions for invalid inputs. Instead, an invalid instance is created. Check validity with `.isValid()`:
+The callable compatibility factory creates an invalid wrapper for malformed date
+input. Check validity with `.isValid()`. Explicit constructors and `parse()` throw
+`InvalidDateError`; `tryParse()` returns `null`:
 
 ```ts
 const maybeDate = atemporal("not a valid date");
@@ -1151,8 +1288,8 @@ date.add(5, "days"); // Add 5 days
 date.add(2, "h"); // Add 2 hours (alias)
 date.add(3, "months"); // Add 3 months
 
-// Add time with a plain object
-date.add({ months: 1, days: 10 }); // Add 1 month and 10 days
+// Build a Temporal.Duration from a plain object
+date.add(atemporal.duration({ months: 1, days: 10 })); // Add 1 month and 10 days
 
 // Add time with a Temporal.Duration
 const dur = atemporal.duration({ hours: 2, minutes: 30 });
@@ -1303,7 +1440,7 @@ atemporal().format("YYYY-MM-DD [at] HH:mm:ss");
 ```ts
 // Month name and AM/PM examples
 atemporal("2024-08-14T16:30:00").format("MMM DD, YYYY");       // "Aug 14, 2024"
-atemporal("2024-08-14T16:30:00").format("MMMM Do, hh:mm A");   // "August 14th, 04:30 PM"
+atemporal("2024-08-14T16:30:00").format("MMMM D, hh:mm A");    // "August 14, 04:30 PM"
 atemporal("2024-08-14T16:30:00").format("hh:mm a");             // "04:30 pm"
 ```
 
@@ -1649,10 +1786,18 @@ atemporal.extend(relativeTime);
 atemporal().subtract(5, "m").fromNow();
 ```
 
-Plugins can optionally accept configuration options:
+In v3, use matching `atemporal/compat/plugins/*` or `atemporal/native/plugins/*`
+paths with those factory entries. Default/native roots expose plugins through
+these subpaths; the compat root also retains the six legacy plugin/helper exports.
+See [Migrating to v3](../migration/v3).
+
+`extend(plugin, options?)` forwards options to plugin functions that implement
+that argument. Configure official plugins through their documented setters, for
+example after installing `businessDays`:
 
 ```ts
-atemporal.extend(relativeTime, { threshold: 45 });
+await atemporal.lazyLoad("businessDays");
+atemporal.setBusinessDaysConfig({ holidays: ["2026-07-20"], weekendDays: [6, 7] });
 ```
 
 ### Lazy Loading
@@ -1675,10 +1820,9 @@ async function loadAdvancedFeatures() {
   await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
 }
 
-// Pass options to lazy-loaded plugins
-await atemporal.lazyLoadMultiple(["weekDay", "customParseFormat"], {
-  weekDay: { defaultWeekStart: 1 },
-});
+// Configure an installed official plugin using its public setter
+await atemporal.lazyLoad("weekDay");
+atemporal.setWeekStartsOn(1);
 ```
 
 ## Plugin Utilities
@@ -1710,7 +1854,7 @@ uses `Function.name` as an identity.
 import atemporal, { markAsPlugin, type Plugin } from "atemporal";
 
 const auditPlugin = markAsPlugin(((Wrapper) => {
-  Wrapper.prototype.isAudited = () => true;
+  Object.assign(Wrapper.prototype, { isAudited: () => true });
 }) as Plugin, { id: "acme.audit", official: false });
 
 atemporal.extend(auditPlugin);
@@ -2115,8 +2259,8 @@ atemporal.extend(weekDay);
 
 const date = atemporal("2024-05-15"); // Wednesday
 
-// Get weekday number (0 for Sunday, 1 for Monday, etc. — based on week start config)
-console.log(date.weekday()); // 3 (Wednesday, assuming default ISO week)
+// Get the zero-based offset from the configured week start (Monday by default)
+console.log(date.weekday()); // 2 (Wednesday is two days after Monday)
 
 // Configure start of week globally
 atemporal.setWeekStartsOn(1); // 1 = Monday (0 = Sunday)
@@ -2188,7 +2332,10 @@ The internal cache has two layers: one for weekday calculations and one for week
 
 # durationHumanizer
 
-Converts `Temporal.Duration` objects into human-readable, localized strings.
+Adds `atemporal.humanize(duration, options?)` for human-readable, localized strings.
+It accepts a raw `Temporal.Duration` from `atemporal.duration()` or a duration-like
+object. Install the plugin before calling the factory method; it does not add a
+`.humanize()` method to `Temporal.Duration` objects.
 
 ## Usage
 
@@ -2198,7 +2345,7 @@ import durationHumanizer from "atemporal/plugins/durationHumanizer";
 
 atemporal.extend(durationHumanizer);
 
-const duration = { hours: 2, minutes: 30 };
+const duration = atemporal.duration({ hours: 2, minutes: 30 });
 console.log(atemporal.humanize(duration)); // "2 hours and 30 minutes"
 ```
 
@@ -2236,18 +2383,19 @@ interface HumanizeOptions {
 const dur = { hours: 3, minutes: 45, seconds: 30 };
 
 atemporal.humanize(dur, { listStyle: "long" });   // "3 hours, 45 minutes, and 30 seconds"
-atemporal.humanize(dur, { listStyle: "short" });  // "3 hr, 45 min, and 30 sec"
-atemporal.humanize(dur, { listStyle: "narrow" }); // "3h 45m 30s"
+atemporal.humanize(dur, { listStyle: "short" });  // Shorter list joining; unit labels stay long
+atemporal.humanize(dur, { listStyle: "narrow" }); // Narrow list joining; unit labels stay long
 ```
 
-**`unitDisplay`** controls individual unit labels:
+**`unitDisplay`** controls individual unit labels independently of `listStyle`
+(the exact joining punctuation depends on the locale and Intl implementation):
 
 ```ts
 const dur = { hours: 2, minutes: 30 };
 
 atemporal.humanize(dur, { unitDisplay: "long" });  // "2 hours and 30 minutes"
 atemporal.humanize(dur, { unitDisplay: "short" }); // "2 hr and 30 min"
-atemporal.humanize(dur, { unitDisplay: "narrow" });// "2h 30m"
+atemporal.humanize(dur, { unitDisplay: "narrow" });// "2h and 30m"
 ```
 
 ## Edge Cases
@@ -2260,7 +2408,7 @@ atemporal.humanize({ hours: 0 }); // "0 seconds"
 atemporal.humanize({}); // "0 seconds"
 
 // Very large durations
-atemporal.humanize({ days: 400 }); // "1 year, 1 month, and 5 days" (approx.)
+atemporal.humanize({ days: 400 }); // "400 days" (the plugin keeps the supplied units)
 
 // Only one unit
 atemporal.humanize({ minutes: 45 }); // "45 minutes"
@@ -2299,10 +2447,10 @@ The plugin offers both a standalone static function and instance methods.
 
 ### Standalone Function
 
-`checkDateRangeOverlap` is exported directly from the `atemporal` package — no plugin extension needed for the static function:
+`checkDateRangeOverlap` is exported from the plugin subpath; the standalone function does not require plugin installation:
 
 ```ts
-import atemporal, { checkDateRangeOverlap } from "atemporal";
+import { checkDateRangeOverlap } from "atemporal/plugins/dateRangeOverlap";
 
 const range1 = { start: "2024-01-01", end: "2024-01-15" };
 const range2 = { start: "2024-01-10", end: "2024-01-20" };
@@ -2388,14 +2536,13 @@ Results are cached via `OverlapCache` (LRU-based, max 200 entries) for repeated 
 
 ## Error Types
 
-The plugin exports custom error classes available both from the plugin and the main package:
+The plugin subpath exports custom error classes. The `atemporal/compat` root also retains their legacy exports:
 
 ```ts
 import {
   InvalidDateRangeError,
   OverlapDetectionError,
-} from "atemporal";
-// (also available from "atemporal/plugins/dateRangeOverlap")
+} from "atemporal/plugins/dateRangeOverlap";
 ```
 
 
@@ -3210,7 +3357,7 @@ export default {
     const next = atemporal()
       .add(1, 'day')
       .startOf('day')
-      .set({ hour: 9, minute: 0 });
+      .set('hour', 9).set('minute', 0);
 
     ctx.waitUntil(env.QUEUE.send({ runAt: next.toString() }));
   },
@@ -3392,7 +3539,7 @@ trap.
 import atemporal from 'atemporal';
 
 const row = {
-  id: 1n,
+  id: '1', // JSON-safe representation of a database BigInt
   actor: 'user_42',
   action: 'login',
   at: atemporal().format(atemporal.presets.ISO),  // '2024-01-15T12:34:56.789Z'
@@ -3515,7 +3662,7 @@ export async function audit(opts: {
       occurredAt: now.toDate(),
       actorId: opts.actorId,
       action: opts.action,
-      originTz: opts.originTz ?? atemporal.getDefaultTimeZone?.() ?? 'UTC',
+      originTz: opts.originTz ?? now.timeZoneId,
       meta: opts.meta ?? {},
     },
   });
@@ -3577,87 +3724,80 @@ If your audit log is security-sensitive, consider:
 --- FILE: cookbook/business-hours.md (Cookbook — business hours scheduling) ---
 
 
-# Business hours scheduling
+# Business-day scheduling
 
-Computing "the next business day at 09:00 local" is one of those
-tasks that looks simple and is full of edge cases. atemporal ships
-the [`businessDays`](../plugins/business-days.md) plugin which
-implements the boring parts.
+Use the [`businessDays`](../plugins/business-days.md) plugin for whole business
+days, configured weekends, and explicit holiday dates. Choose the business zone
+before doing calendar arithmetic.
 
-## Basic usage
+## Next business day at 09:00
 
 ```ts
 import atemporal from 'atemporal';
 import businessDays from 'atemporal/plugins/businessDays';
 atemporal.extend(businessDays);
 
-const tomorrow = atemporal().add(1, 'day');
-const nextBusiness = tomorrow.nextBusinessDay({ tz: 'America/New_York' });
-const at9am = nextBusiness.set({ hour: 9, minute: 0, second: 0, millisecond: 0 });
+const nextBusiness = atemporal().timeZone('America/New_York').nextBusinessDay();
+const at9am = nextBusiness.startOf('day').set('hour', 9);
 ```
+
+`nextBusinessDay()` advances to a later business day. Its methods retain the
+wrapper's zone; it does not accept a separate timezone options object.
 
 ## Holiday calendars
 
+Configure holidays and ISO weekend weekdays after installing the plugin:
+
 ```ts
-import businessDays from 'atemporal/plugins/businessDays';
-atemporal.extend(businessDays, {
-  holidays: [
-    '2024-12-25', '2024-12-26',  // Christmas + observed
-    '2024-01-01',                  // New Year
-  ],
-  weekend: [0, 6],                 // Sunday + Saturday
+atemporal.setBusinessDaysConfig({
+  holidays: ['2026-01-01', '2026-12-25'],
+  weekendDays: [6, 7], // ISO weekdays: 1 = Monday, 7 = Sunday
 });
 ```
 
-The holiday list is a per-environment config; load it from a
-database or a config service in production.
+This configuration is shared within the entry family. Set the application
+calendar during initialization; use application-level isolation if concurrent
+tenants need different holiday calendars.
 
-## SLO computation
+Observed holidays must be supplied explicitly in `holidays`. The plugin does
+not infer replacement dates, opening hours, or half-day holidays.
+
+## Day-based deadlines
 
 ```ts
-const incident = atemporal('2024-01-15T03:00:00Z');
-const sla = incident.addBusinessHours(4, { tz: 'America/New_York' });
-// 4 business hours after the incident, skipping nights and weekends.
+const incident = atemporal.parse('2026-07-17T09:00:00', {
+  timeZone: 'America/New_York',
+});
+const deadline = incident.addBusinessDays(2);
 ```
+
+The plugin exposes whole-day arithmetic, not `addBusinessHours()` or
+`endOfBusinessDay()`. Working-hour SLAs require an application policy for opening
+windows, partial days, holidays, and DST. The [timeSlots plugin](../plugins/time-slots.md)
+can find free slots inside explicitly supplied windows.
 
 ## Recurring meetings
 
-```ts
-import businessDays from 'atemporal/plugins/businessDays';
-atemporal.extend(businessDays);
+Reassign the value returned by immutable arithmetic:
 
-const start = atemporal('2024-01-01T09:00:00', 'America/New_York');
+```ts
+let current = atemporal.parse('2026-03-02T09:00:00', {
+  timeZone: 'America/New_York',
+});
 const meetings: string[] = [];
 for (let i = 0; i < 10; i++) {
-  meetings.push(start.format(atemporal.presets.ISO));
-  start.add(1, 'week');  // every Monday at 09:00 NY
+  meetings.push(current.toString());
+  current = current.add(1, 'week');
 }
 ```
 
-## Edge cases the plugin handles
-
-- **DST transitions.** A "9 AM local" meeting that falls on the
-  spring-forward day is still rendered as "9 AM local" in the
-  attendee's calendar; the underlying UTC instant shifts by 1 hour.
-- **Holiday on a weekend.** "If a holiday falls on a Saturday, we
-  observe it on Friday" — the `observed` config option handles this.
-- **Half-day holidays.** Use `endOfBusinessDay(...)` and `addBusinessHours(...)`
-  with a custom `hoursPerDay` of 4.
-
-## Anti-patterns to avoid
-
-1. **Do not** compute business days by adding `1, 'day'` in a loop
-   and skipping weekends yourself. You will get DST and holidays
-   wrong. Use the plugin.
-2. **Do not** store business day arithmetic in a cron expression.
-   "Every weekday at 09:00" is fine; "skip the day after Thanksgiving"
-   is not.
-3. **Do not** rely on the user's local clock. All business-day
-   arithmetic must specify an IANA timezone.
+This preserves 09:00 in New York across its DST transition; the UTC offset can
+change. Choose an explicit disambiguation policy when scheduling ambiguous
+local times with `atemporal.parse()` or `atemporal.zonedDateTime()`.
 
 ## See also
 
-- [`businessDays` plugin reference](../plugins/business-days.md)
+- [businessDays plugin reference](../plugins/business-days.md)
 - [Microservice timezones](microservice-tz.md)
 - [i18n formatting](i18n.md)
 
@@ -3860,6 +4000,13 @@ v2 raises the Node.js floor from 18 to **22**. It supports Node 22, 24, and
 26. Browser support remains available through the packaged Temporal runtime
 detection path and bundler fixtures. Upgrade the runtime before adopting v2;
 the existing callable wrapper facade remains available during the migration.
+
+## Upgrading to v3
+
+v3 loads the polyfill only on fallback in the default entry. ESM consumers need
+ES2022 and top-level await; CommonJS remains synchronous. Use `atemporal/compat`
+and matching plugin paths to keep ES2020/IIFE builds. See the
+[v3 migration guide](v3.md) for code splitting, native deployments, and types.
 
 
 
@@ -4475,6 +4622,130 @@ const event = atemporal.zonedDateTime("2026-11-01T01:30:00", {
 
 
 
+--- FILE: migration/v3.md (Migration — to v3) ---
+
+
+# Migrating to v3
+
+v3 changes how the Temporal fallback is loaded. Date parsing, formatting,
+constructors, time-zone policies, and installed plugin methods keep their existing behavior.
+Node 22, 24, and 26 remain supported; Temporal need not be native in the runtime.
+
+## Default ESM Entry
+
+```ts
+import atemporal from 'atemporal';
+import relativeTime from 'atemporal/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+const date = atemporal('2026-07-15T10:00:00Z');
+```
+
+The ESM graph requires ES2022 and top-level await. Module initialization waits
+for the fallback only when a complete global Temporal implementation is absent.
+All date methods remain synchronous once the import completes. No separate
+initialization call is needed. A fallback import failure rejects module loading.
+
+Browser builds should enable code splitting to put the polyfill in a separate
+chunk. Runtimes with native Temporal then avoid requesting that chunk. A
+single-file build can still contain the polyfill bytes; conditional execution
+alone does not reduce its download size. The package keeps the polyfill as a
+regular dependency to guarantee fallback availability.
+
+## CommonJS
+
+```js
+const { default: atemporal } = require('atemporal');
+```
+
+CommonJS remains synchronous. The polyfill is required only when Temporal is
+unavailable. A native runtime does not resolve or load the polyfill package.
+Prefer the package's `require` export over requiring its ESM file directly:
+Node cannot synchronously require an ESM graph containing top-level await.
+
+## Keep ES2020 or IIFE Builds
+
+If your bundler targets ES2020, emits IIFE, or cannot process top-level await,
+switch the factory and plugin imports together:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+This distribution preserves synchronous initialization and the static polyfill
+fallback used in v2. It still selects native Temporal for operations when
+available, but its polyfill import remains part of the static dependency graph.
+For a bundler error mentioning top-level await, use this entry or adopt an
+ES2022 ESM build. Do not force the bundler to claim unsupported syntax is safe.
+
+## Native Deployments
+
+```ts
+import atemporal, { InvalidDateError } from 'atemporal/native';
+import relativeTime from 'atemporal/native/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+This ES2020 distribution excludes the fallback entirely and throws at import
+time if global Temporal is missing or incomplete. Catch named errors imported
+from the same family as the factory so constructor identity is preserved.
+
+## Plugins and Types
+
+All eight plugins and `lazyLoad()` work in every distribution. Keep each
+factory, named errors/helpers, and plugins in the same entry family to share runtime, caches,
+and plugin state. Leave `globalThis.Temporal` unchanged after initialization.
+
+The default and native roots no longer re-export `dateRangeOverlapPlugin`,
+`businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`,
+`InvalidDateRangeError`, or `OverlapDetectionError`. Import them explicitly:
+
+```ts
+import atemporal from 'atemporal';
+import businessDays from 'atemporal/plugins/businessDays';
+import timeSlots from 'atemporal/plugins/timeSlots';
+import dateRangeOverlap, {
+  checkDateRangeOverlap,
+  InvalidDateRangeError,
+  OverlapDetectionError,
+} from 'atemporal/plugins/dateRangeOverlap';
+
+atemporal.extend(businessDays);
+atemporal.extend(timeSlots);
+atemporal.extend(dateRangeOverlap);
+```
+
+For native deployments, prefix the plugin paths with `atemporal/native/plugins/`.
+The `atemporal/compat` root retains all six legacy named exports. This explicit
+boundary keeps unused plugins out of the initial graph; `lazyLoad()` still emits
+optional plugin chunks, so total output includes their bytes.
+
+Temporal declarations are included in the package and support TypeScript 5.4+.
+Consumers do not need the polyfill's declarations or native global Temporal
+types. There is no runtime Temporal export from the root; raw values remain
+available from the explicit constructors and `.raw`.
+
+## Formatting Diagnostics
+
+Formatting still shares its result cache, compilation cache, and counters with
+public diagnostics and prewarming. The previous token pool was prewarmed but
+never supplied tokens to the formatter. v3 removes that allocation and keeps
+`getFormattingMetrics().tokenPoolStats` fields as deprecated zero-valued counters
+for compatibility. `prewarm()` continues to compile common and requested formats.
+
+## Release Validation
+
+`pnpm run check:loading` checks native and fallback imports, CommonJS, plugins,
+and initial versus total browser payloads. `pnpm run check:native` also compiles
+isolated type consumers without installed polyfill packages. The packed artifact
+contracts and Vite, Webpack, and Next.js fixtures verify the distributed package.
+
+
+
 --- FILE: security/index.md (Security — overview) ---
 
 
@@ -4699,6 +4970,13 @@ discovered or a mitigation lands.
 
 The atemporal library automatically detects native Temporal API support, allowing seamless transition from polyfill to native implementation as browsers adopt the Temporal specification.
 
+In v3, the default ESM entry uses top-level await and dynamically imports the
+fallback only when Temporal is unavailable. CommonJS loads it synchronously on
+demand. Use `atemporal/compat` for ES2020 or tools without top-level await, or
+`atemporal/native` when global Temporal is guaranteed. Match the plugin import
+family to the factory. See the [loading guide](./guide/temporal-detection) and
+[v3 migration guide](./migration/v3) for the complete contract.
+
 ## How It Works
 
 The library automatically detects whether the native Temporal API is available in the current environment:
@@ -4740,13 +5018,15 @@ Native implementations are typically faster than polyfills.
 
 ### Seamless Transition
 
-No breaking changes — your existing code continues to work exactly the same.
+Date operations keep their behavior when the runtime gains native support.
+v3 changes the ESM loading requirement; use the migration guide when upgrading.
 
 ### Bundle Size
 
-The polyfill is a direct runtime dependency and is statically imported. Native
-selection changes which implementation runs, but does not by itself guarantee
-that a bundler removes polyfill code from an application bundle.
+The polyfill remains a direct runtime dependency. The default ESM entry imports
+it dynamically only on fallback; browser download savings require code splitting.
+`atemporal/compat` keeps a static fallback import, while `atemporal/native`
+excludes the fallback entirely.
 
 ## Runtime Support
 
@@ -4792,7 +5072,8 @@ The detection result is cached for performance:
 
 ### For Existing Users
 
-**No action required!** The detection system is backward compatible:
+For v3, review the [migration guide](./migration/v3) before upgrading. The
+default ESM entry now requires top-level await; the date API remains synchronous:
 
 ```javascript
 // This code works exactly the same as before
@@ -4865,7 +5146,7 @@ A: You can mock the global Temporal object in your tests to simulate native supp
 
 ---
 
-_This feature ensures that atemporal is ready for the future of JavaScript date/time handling while maintaining full backward compatibility._
+_Use the distribution that matches your runtime and bundler requirements._
 
 
 
@@ -4979,6 +5260,14 @@ replacement for it. The library:
 3. Wraps the raw `Temporal.*` values in a `TemporalWrapper` class
    that provides fluent chaining, ergonomic format strings, and
    the plugin system.
+4. Provides an opt-in `atemporal/native` distribution, including matching
+   plugin paths, that requires native Temporal and contains no polyfill import.
+   The default ESM entry uses top-level await and dynamic fallback loading;
+   CommonJS requires the fallback synchronously on demand. `atemporal/compat`
+   preserves synchronous ES2020 loading for legacy bundlers. All distributions
+   publish a local, structural Temporal type contract derived from the 0.5.1
+   declarations with attribution, so public types do not require the polyfill
+   package or TypeScript's newer native Temporal definitions.
 
 ## Consequences
 
@@ -5002,6 +5291,8 @@ replacement for it. The library:
 - The freedom to redesign the date API. We are constrained by
   the spec's type model.
 - Smaller bundle size in the polyfill path. (Mitigated by tree-shaking.)
+  The native entry avoids the polyfill entirely when the deployment can
+  guarantee native Temporal, at the cost of additional distributions in the tarball.
 
 ## Alternatives considered
 
@@ -5057,17 +5348,28 @@ atemporal ships with a **plugin system** with two load modes:
    installs the plugin and patches the `TemporalWrapper` prototype
    with the plugin's methods.
 2. **Dynamic (`atemporal.lazyLoad(name)`)** — returns a `Promise`
-   that resolves to the loaded plugin. Used for code splitting
+   that resolves after installation (`Promise<void>`). Used for code splitting
    and to keep the main bundle small.
 
-A plugin is a function `(wrapperClass, options?) => void`. The
-function may add methods to the prototype, may add static helpers
-to the factory, and may return cleanup hooks.
+A plugin is a function `(wrapperClass, atemporalFactory, options?) => void`.
+It may add prototype methods or factory helpers. `extend()` does not use a
+return value as a cleanup hook.
 
 Each official plugin is exported as a separate subpath
 (`atemporal/plugins/relativeTime`) so consumers can import only
 what they use. Webpack, Rollup, and tsup can tree-shake unused
 plugins from the main bundle.
+
+### v3 import boundary
+
+Keep the factory and plugins in the same entry family: `atemporal`,
+`atemporal/compat`, or `atemporal/native`. Default/native roots no longer
+re-export the three previously bundled plugins or overlap helpers/errors;
+compat preserves those legacy named exports. The default ESM graph requires
+ES2022/top-level await; see [Migrating to v3](../migration/v3.md).
+
+The original core-size target above is a design goal. Current reproducible
+measurements are in [the v3 release review](../reports/v3-release-review.md).
 
 ## Consequences
 
@@ -5125,10 +5427,9 @@ d.setMonth(1);  // mutates `d` in place
 console.log(d);  // '2024-02-15'
 ```
 
-This makes `Date` unsafe to use in functional or reactive code
-(React, Redux, RxJS). Libraries like moment.js (pre-2.29) inherited
-this problem; later versions made most methods return new instances
-but kept the option of mutation in some helpers.
+Mutation can surprise functional or reactive code that relies on object
+identity to detect a changed value. Callers must copy a mutable Date when
+the original value needs to be retained.
 
 The TC39 Temporal API resolved this at the spec level: every
 `Temporal.*` type is immutable. `dt.add({ days: 1 })` returns a new
@@ -5151,7 +5452,7 @@ do expose is a pure function that returns a new wrapper:
 
 ```ts
 const a = atemporal('2024-01-15');
-const b = a.set({ hour: 9 });
+const b = a.set("hour", 9);
 // `a` is unchanged, `b` is a new wrapper
 ```
 
@@ -5291,51 +5592,52 @@ strings, RFC 2822 strings, `Date` objects, plain JS objects
 
 A naive parser would try to detect the type with a long `if/else`
 chain. A more principled design is to have **one strategy per
-input type**, and run them in parallel, taking the first match.
+input type**, with type checks, priorities, and shared caching.
 
 ## Decision
 
-atemporal's parser is a `ParseCoordinator` that owns **12
-strategies**, one per input type:
+In v3 the compatibility factory uses a shared synchronous `ParseEngine` with
+**12 configured strategies**:
 
-1. `string-strategy` — strings
-2. `number-strategy` — numbers (epoch ms)
-3. `date-strategy` — `Date` objects
-4. `temporal-instant-strategy` — `Temporal.Instant`
-5. `temporal-plain-date-strategy` — `Temporal.PlainDate`
-6. `temporal-plain-datetime-strategy` — `Temporal.PlainDateTime`
-7. `temporal-plain-time-strategy` — `Temporal.PlainTime`
-8. `temporal-zoned-strategy` — `Temporal.ZonedDateTime`
-9. `temporal-wrapper-strategy` — `TemporalWrapper` instances
-10. `firebase-strategy` — Firebase `Timestamp`-shaped objects
-11. `array-like-strategy` — arrays of numbers
-12. `fallback-strategy` — last-resort object strategy
+1. `temporal-wrapper` — existing wrappers
+2. `temporal-zoned` — `Temporal.ZonedDateTime`
+3. `temporal-instant` — `Temporal.Instant`
+4. `temporal-plain-datetime` — `Temporal.PlainDateTime`
+5. `temporal-plain-date` — `Temporal.PlainDate`
+6. `date` — legacy `Date`
+7. `firebase-timestamp` — Firebase timestamp shapes
+8. `number` — epoch milliseconds
+9. `string` — date strings
+10. `temporal-like` — Temporal-compatible values
+11. `array-like` — numeric date arrays
+12. `fallback` — last-resort object conversion
 
-Each strategy exposes:
-- `canParse(input): boolean` — fast type check.
-- `parse(input, context): ParseResult` — actual conversion.
+Strategies expose `canHandle(input, context)`, confidence/priority information,
+validation, and `parse(input, context)`. The engine selects candidates and runs
+the synchronous parsing path, retaining fast paths, cache entries, and metrics.
+Failed strategies can be followed by other candidates; the wrapper converts a
+final failure into its compatibility invalid-instance result.
 
-The coordinator calls `canParse` on each strategy in order and
-returns the first one that matches. If none match, it throws
-`InvalidDateError` with code `ATEMPORAL_INVALID_DATE`.
+The optional `ParseCoordinator` and optimizer remain internal tooling. They
+share engine configuration but are excluded from the normal v3 application
+graph. The public date path does not launch parallel promises. Strict parsing
+and explicit Temporal constructors apply their own boundary policies; use
+`parse()`/`tryParse()` for strict wrapper parsing.
 
 ## Consequences
 
 **Easier:**
 - Adding a new input type (e.g. a custom serialization) is a
-  one-strategy PR. The coordinator does not need to change.
+  one-strategy PR. The shared dispatcher does not need a new input-type branch.
 - Each strategy can be tested in isolation. We have a dedicated
   test suite per strategy.
-- Performance is predictable: the `canParse` check is O(1) for
-  the common cases.
+- Performance is predictable: fast paths and cached results avoid repeated conversion work.
 
 **Harder:**
 - Strategy order matters. If `object-strategy` ran first, it
   would always shadow the more specific strategies.
-- The string strategy is the only one that can fail *after*
-  `canParse` returns true (because ISO 8601 is permissive). The
-  coordinator must catch the failure and continue to the next
-  strategy.
+- Accepting a shape with `canHandle` does not guarantee a successful parse.
+  The engine must preserve validation errors and fallback behavior.
 
 **Given up:**
 - A single, unified type detection function. The cost of the
@@ -5355,7 +5657,8 @@ returns the first one that matches. If none match, it throws
 
 ## References
 
-- Internal: `src/core/parsing/parse-coordinator.ts`
+- Internal: `src/core/parsing/parse-engine.ts` and `engine-config.ts`
+- Optional tooling: `src/core/parsing/parse-coordinator.ts`
 - Internal: `src/core/parsing/strategies/`
 - Tests: `src/__tests__/core/parsing/parse-coordinator.test.ts`
 

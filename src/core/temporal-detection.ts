@@ -4,74 +4,19 @@
  * in the current environment and conditionally use it instead of the polyfill.
  */
 
-// Static import of the Temporal polyfill to avoid dynamic require() issues with bundlers
-import { Temporal as PolyfillTemporal } from "@js-temporal/polyfill";
+import { getFallbackTemporal } from './temporal-fallback';
+import type { Temporal } from '../types/temporal';
 
 /**
  * Interface for the Temporal API that can be either native or polyfilled
  */
 export interface TemporalAPI {
-  Temporal: typeof import("@js-temporal/polyfill").Temporal;
+  Temporal: typeof Temporal;
   isNative: boolean;
 }
 
-/**
- * Checks if the native Temporal API is available in the current environment
- * @returns {boolean} True if native Temporal is available, false otherwise
- */
-const getGlobalObject = (): any => {
-  if (typeof globalThis !== "undefined") return globalThis;
-  if (typeof window !== "undefined") return window;
-  if (typeof global !== "undefined") return global;
-  if (typeof self !== "undefined") return self;
-  throw new Error("Unable to locate global object");
-};
-
-/**
- * Checks if the native Temporal API is available in the current environment.
- *
- * ⚠️ SPEC NOTE (ECMAScript 2026 / TC39 Stage 4):
- * `Temporal.TimeZone` and `Temporal.Calendar` were **removed** from the Temporal spec
- * in the June 2024 TC39 meeting (scope reduction for Stage 3→4 advancement).
- * Chrome 144+ and Firefox 139+ native implementations do NOT include these classes.
- * We intentionally omit those checks so that native support is correctly detected.
- *
- * @returns {boolean} True if native Temporal is available, false otherwise
- */
-export function isNativeTemporalAvailable(): boolean {
-  try {
-    // Get the global object in a cross-platform way
-    const globalObj = getGlobalObject();
-
-    // Check if Temporal exists in the global scope
-    if ("Temporal" in globalObj) {
-      const temporal = (globalObj as any).Temporal;
-
-      // Verify that it has the expected structure and key methods.
-      // NOTE: We do NOT check for Temporal.TimeZone or Temporal.Calendar —
-      // both were removed from the final ECMAScript 2026 spec (TC39 Stage 4).
-      // Native implementations in Chrome 144+ and Firefox 139+ do not expose them.
-      return Boolean(
-        temporal &&
-        typeof temporal === "object" &&
-        typeof temporal.Now === "object" &&
-        typeof temporal.Now.zonedDateTimeISO === "function" &&
-        typeof temporal.PlainDate === "function" &&
-        typeof temporal.PlainDateTime === "function" &&
-        typeof temporal.ZonedDateTime === "function" &&
-        typeof temporal.Instant === "function" &&
-        typeof temporal.Duration === "function" &&
-        typeof temporal.PlainTime === "function" &&
-        typeof temporal.PlainYearMonth === "function" &&
-        typeof temporal.PlainMonthDay === "function"
-      );
-    }
-    return false;
-  } catch (error) {
-    // If any error occurs during detection, assume native Temporal is not available
-    return false;
-  }
-}
+import { getGlobalObject, isNativeTemporalAvailable } from './temporal-capabilities';
+export { isNativeTemporalAvailable } from './temporal-capabilities';
 
 /**
  * Gets the appropriate Temporal API (native or polyfilled)
@@ -91,9 +36,9 @@ export function getTemporalAPI(): TemporalAPI {
       isNative: true,
     };
   } else {
-    // Fall back to polyfill (using static import)
+    // The default build provides a polyfill; the native build reports a missing runtime.
     return {
-      Temporal: PolyfillTemporal,
+      Temporal: getFallbackTemporal(),
       isNative: false,
     };
   }

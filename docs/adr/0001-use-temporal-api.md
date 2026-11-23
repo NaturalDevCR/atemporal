@@ -32,6 +32,14 @@ replacement for it. The library:
 3. Wraps the raw `Temporal.*` values in a `TemporalWrapper` class
    that provides fluent chaining, ergonomic format strings, and
    the plugin system.
+4. Provides an opt-in `atemporal/native` distribution, including matching
+   plugin paths, that requires native Temporal and contains no polyfill import.
+   The default ESM entry uses top-level await and dynamic fallback loading;
+   CommonJS requires the fallback synchronously on demand. `atemporal/compat`
+   preserves synchronous ES2020 loading for legacy bundlers. All distributions
+   publish a local, structural Temporal type contract derived from the 0.5.1
+   declarations with attribution, so public types do not require the polyfill
+   package or TypeScript's newer native Temporal definitions.
 
 ## Consequences
 
@@ -55,6 +63,8 @@ replacement for it. The library:
 - The freedom to redesign the date API. We are constrained by
   the spec's type model.
 - Smaller bundle size in the polyfill path. (Mitigated by tree-shaking.)
+  The native entry avoids the polyfill entirely when the deployment can
+  guarantee native Temporal, at the cost of additional distributions in the tarball.
 
 ## Alternatives considered
 

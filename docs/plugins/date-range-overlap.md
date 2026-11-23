@@ -8,10 +8,10 @@ The plugin offers both a standalone static function and instance methods.
 
 ### Standalone Function
 
-`checkDateRangeOverlap` is exported directly from the `atemporal` package — no plugin extension needed for the static function:
+`checkDateRangeOverlap` is exported from the plugin subpath; the standalone function does not require plugin installation:
 
 ```ts
-import atemporal, { checkDateRangeOverlap } from "atemporal";
+import { checkDateRangeOverlap } from "atemporal/plugins/dateRangeOverlap";
 
 const range1 = { start: "2024-01-01", end: "2024-01-15" };
 const range2 = { start: "2024-01-10", end: "2024-01-20" };
@@ -97,12 +97,11 @@ Results are cached via `OverlapCache` (LRU-based, max 200 entries) for repeated 
 
 ## Error Types
 
-The plugin exports custom error classes available both from the plugin and the main package:
+The plugin subpath exports custom error classes. The `atemporal/compat` root also retains their legacy exports:
 
 ```ts
 import {
   InvalidDateRangeError,
   OverlapDetectionError,
-} from "atemporal";
-// (also available from "atemporal/plugins/dateRangeOverlap")
+} from "atemporal/plugins/dateRangeOverlap";
 ```

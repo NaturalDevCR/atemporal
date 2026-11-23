@@ -147,7 +147,7 @@ function buildCanonicalBundle(name, entryPoint) {
       '@js-temporal/polyfill': path.join(canonicalFixture, 'node_modules', '@js-temporal', 'polyfill', 'dist', 'index.esm.js'),
     },
     sourcemap: false,
-    target: ['es2020'],
+    target: ['es2022'],
   });
   const emittedFiles = Object.keys(result.metafile.outputs)
     .map((file) => path.resolve(canonicalFixture, file))
@@ -296,6 +296,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  ensureCanonicalDependencies,
   buildSizeReport,
   buildCanonicalBundles,
   gzipSize,

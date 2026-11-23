@@ -11,11 +11,11 @@
  * receiving a native ZonedDateTime and throwing "Must specify time zone").
  *
  * For TypeScript type annotations only, use:
- *   import type { Temporal } from '@js-temporal/polyfill';
+ *   import type { Temporal } from '../types/temporal';
  */
 
 import { getCachedTemporalAPI } from './temporal-detection';
-import type { Temporal as PolyfillTemporal } from '@js-temporal/polyfill';
+import type { Temporal as PolyfillTemporal } from '../types/temporal';
 
 // Export the runtime Temporal (native when available, polyfill otherwise).
 // Cast to `typeof PolyfillTemporal` so TypeScript can use `Temporal.ZonedDateTime`

@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0] (2026-11-17)
+
+### Breaking Changes
+
+- The default ESM entry and ESM plugin subpaths now require top-level await
+  (ES2022). Atemporal imports the Temporal polyfill dynamically only when a
+  complete global Temporal implementation is unavailable. Date operations remain
+  synchronous after import. Use `atemporal/compat` and matching
+  `atemporal/compat/plugins/*` paths for ES2020 and tools without top-level await.
+- CommonJS remains synchronous and requires the polyfill only on the fallback
+  path. `atemporal/native` and matching plugin subpaths require global Temporal
+  and never import the polyfill.
+
+- Default and native roots no longer re-export the three bundled plugins or
+  overlap helpers/errors. Use explicit `plugins/*` imports; `atemporal/compat`
+  retains the legacy root exports. Installed methods and lazy loading are unchanged.
+
+### Improvements
+
+- Separate formatter/cache runtime state from optional analysis and tuning tools.
+  Remove unused token pooling and empty per-format scopes; preserve diagnostic
+  field names with deprecated zero-valued pool statistics.
+
+- Route synchronous construction directly through the shared parse engine,
+  excluding async coordination and optimization reports from the default core.
+  Add pinned source attribution and initial/total core size gates.
+
+- Reduce the pinned native source fixture from 149,911 to 126,742 initial
+  minified bytes (15.5%) and from 38,118 to 31,151 initial gzip bytes (18.3%).
+  Total minified output falls from 170,602 to 152,914 bytes (10.4%); optional
+  plugin chunks remain available. These measurements exclude the Temporal fallback.
+- Keep production ESM benchmarks compatible with asynchronous module initialization
+  and check loading/declarations during weekly and release validation.
+- Publish self-contained Temporal types compatible with TypeScript 5.4+.
+- Preserve plugin declaration merging in CommonJS and ESM declarations.
+- Verify implementation loading, native and fallback runtime paths, package
+  contracts, and initial versus total browser bundle sizes.
+
 ## [2.1.0](https://github.com/NaturalDevCR/atemporal/compare/v2.0.3...v2.1.0) (2026-11-16)
 
 ### Bug Fixes

@@ -36,7 +36,7 @@ trap.
 import atemporal from 'atemporal';
 
 const row = {
-  id: 1n,
+  id: '1', // JSON-safe representation of a database BigInt
   actor: 'user_42',
   action: 'login',
   at: atemporal().format(atemporal.presets.ISO),  // '2024-01-15T12:34:56.789Z'

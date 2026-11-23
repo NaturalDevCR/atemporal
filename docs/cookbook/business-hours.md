@@ -1,83 +1,76 @@
-# Business hours scheduling
+# Business-day scheduling
 
-Computing "the next business day at 09:00 local" is one of those
-tasks that looks simple and is full of edge cases. atemporal ships
-the [`businessDays`](../plugins/business-days.md) plugin which
-implements the boring parts.
+Use the [`businessDays`](../plugins/business-days.md) plugin for whole business
+days, configured weekends, and explicit holiday dates. Choose the business zone
+before doing calendar arithmetic.
 
-## Basic usage
+## Next business day at 09:00
 
 ```ts
 import atemporal from 'atemporal';
 import businessDays from 'atemporal/plugins/businessDays';
 atemporal.extend(businessDays);
 
-const tomorrow = atemporal().add(1, 'day');
-const nextBusiness = tomorrow.nextBusinessDay({ tz: 'America/New_York' });
-const at9am = nextBusiness.set({ hour: 9, minute: 0, second: 0, millisecond: 0 });
+const nextBusiness = atemporal().timeZone('America/New_York').nextBusinessDay();
+const at9am = nextBusiness.startOf('day').set('hour', 9);
 ```
+
+`nextBusinessDay()` advances to a later business day. Its methods retain the
+wrapper's zone; it does not accept a separate timezone options object.
 
 ## Holiday calendars
 
+Configure holidays and ISO weekend weekdays after installing the plugin:
+
 ```ts
-import businessDays from 'atemporal/plugins/businessDays';
-atemporal.extend(businessDays, {
-  holidays: [
-    '2024-12-25', '2024-12-26',  // Christmas + observed
-    '2024-01-01',                  // New Year
-  ],
-  weekend: [0, 6],                 // Sunday + Saturday
+atemporal.setBusinessDaysConfig({
+  holidays: ['2026-01-01', '2026-12-25'],
+  weekendDays: [6, 7], // ISO weekdays: 1 = Monday, 7 = Sunday
 });
 ```
 
-The holiday list is a per-environment config; load it from a
-database or a config service in production.
+This configuration is shared within the entry family. Set the application
+calendar during initialization; use application-level isolation if concurrent
+tenants need different holiday calendars.
 
-## SLO computation
+Observed holidays must be supplied explicitly in `holidays`. The plugin does
+not infer replacement dates, opening hours, or half-day holidays.
+
+## Day-based deadlines
 
 ```ts
-const incident = atemporal('2024-01-15T03:00:00Z');
-const sla = incident.addBusinessHours(4, { tz: 'America/New_York' });
-// 4 business hours after the incident, skipping nights and weekends.
+const incident = atemporal.parse('2026-07-17T09:00:00', {
+  timeZone: 'America/New_York',
+});
+const deadline = incident.addBusinessDays(2);
 ```
+
+The plugin exposes whole-day arithmetic, not `addBusinessHours()` or
+`endOfBusinessDay()`. Working-hour SLAs require an application policy for opening
+windows, partial days, holidays, and DST. The [timeSlots plugin](../plugins/time-slots.md)
+can find free slots inside explicitly supplied windows.
 
 ## Recurring meetings
 
-```ts
-import businessDays from 'atemporal/plugins/businessDays';
-atemporal.extend(businessDays);
+Reassign the value returned by immutable arithmetic:
 
-const start = atemporal('2024-01-01T09:00:00', 'America/New_York');
+```ts
+let current = atemporal.parse('2026-03-02T09:00:00', {
+  timeZone: 'America/New_York',
+});
 const meetings: string[] = [];
 for (let i = 0; i < 10; i++) {
-  meetings.push(start.format(atemporal.presets.ISO));
-  start.add(1, 'week');  // every Monday at 09:00 NY
+  meetings.push(current.toString());
+  current = current.add(1, 'week');
 }
 ```
 
-## Edge cases the plugin handles
-
-- **DST transitions.** A "9 AM local" meeting that falls on the
-  spring-forward day is still rendered as "9 AM local" in the
-  attendee's calendar; the underlying UTC instant shifts by 1 hour.
-- **Holiday on a weekend.** "If a holiday falls on a Saturday, we
-  observe it on Friday" — the `observed` config option handles this.
-- **Half-day holidays.** Use `endOfBusinessDay(...)` and `addBusinessHours(...)`
-  with a custom `hoursPerDay` of 4.
-
-## Anti-patterns to avoid
-
-1. **Do not** compute business days by adding `1, 'day'` in a loop
-   and skipping weekends yourself. You will get DST and holidays
-   wrong. Use the plugin.
-2. **Do not** store business day arithmetic in a cron expression.
-   "Every weekday at 09:00" is fine; "skip the day after Thanksgiving"
-   is not.
-3. **Do not** rely on the user's local clock. All business-day
-   arithmetic must specify an IANA timezone.
+This preserves 09:00 in New York across its DST transition; the UTC offset can
+change. Choose an explicit disambiguation policy when scheduling ambiguous
+local times with `atemporal.parse()` or `atemporal.zonedDateTime()`.
 
 ## See also
 
-- [`businessDays` plugin reference](../plugins/business-days.md)
+- [businessDays plugin reference](../plugins/business-days.md)
 - [Microservice timezones](microservice-tz.md)
 - [i18n formatting](i18n.md)

@@ -1,7 +1,7 @@
 # Atemporal — LLM-friendly documentation
 
-> This file is a curated concatenation of the atemporal documentation,
-> ordered for coding agents. It is regenerated on every docs build by
+> Concise operational guide for the v3 public API. Read `llms-full.txt` for
+> the complete reference. Both files are regenerated on every docs build by
 > `scripts/generate-llms-txt.js`. Do not edit it by hand.
 
 ## TL;DR for coding agents
@@ -12,50 +12,75 @@
 - **Construct:** `atemporal()` (now) / `atemporal(input, tz?)` / `atemporal.unix(s)` / `atemporal.validate(x)`. At untrusted-input boundaries use `atemporal.parse(input, options)` or `atemporal.tryParse(input, options)`.
 - **Strict parsing:** `atemporal.parse` defaults to `disambiguation: "reject"` and `overflow: "reject"`; explicitly choose `"earlier"`, `"later"`, or `"compatible"` only when your domain policy requires it.
 - **Model and compatibility:** the principal representation is `Temporal.ZonedDateTime`. The API is Day.js-inspired but does not promise full Day.js compatibility; check the compatibility matrix before a migration.
-- **Immutable:** every mutator returns a NEW `TemporalWrapper`. Never use `let` to "update" a date — use `const next = current.add(1, "day");`.
+- **Immutable:** every mutator returns a NEW `TemporalWrapper`. Assign the returned value, for example `const next = current.add(1, "day");`.
 - **Plugins:** synchronously install any plugin with `atemporal.extend(plugin)`. Lazy loading accepts an official plugin name: `await atemporal.lazyLoad("relativeTime")`. `getLoadedPlugins()` reports only official plugins; use `getAppliedExtensions()` to inspect explicitly identified third-party extensions too.
-- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code.
-- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. Relying on the host TZ is a bug.
-- **Temporal runtime:** call `atemporal.getTemporalInfo()` to observe the selected native or polyfill implementation. Do not assume `globalThis.Temporal` exists. CI verifies the native path on Node 26; do not infer native support from an arbitrary runtime version. The polyfill is statically imported, so native runtime selection does not by itself remove it from an application bundle.
+- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code. Deprecated `Atemporal.getFormattingMetrics().tokenPoolStats` fields are zero in v3; prewarm still compiles formats.
+- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. The configured default starts at UTC; specify the domain zone before calendar operations.
+- **Temporal runtime:** call `atemporal.getTemporalInfo()` to inspect the implementation. Do not assume `globalThis.Temporal` exists. Choose the v3 entry contract below; date operations remain synchronous after import.
 - **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.
-- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from `atemporal`. Catch on the boundary, not deep in business logic.
-- **Type-safe:** full TypeScript declarations ship in the package. Prefer `Temporal.Duration`-shaped arguments over `(value, unit)` pairs when you have them.
+- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from the same entry family as the factory. Catch on the boundary, not deep in business logic.
+- **Value categories:** `instant()`, `date()`, `plainDateTime()`, and `zonedDateTime()` return raw Temporal values. Use `parse()`/`tryParse()` for a chainable wrapper with `.format()` and plugin methods. Create wrapper duration arguments with `atemporal.duration(like)`.
 - **Size:** See `size-report.md` in the `package-artifact-reports` artifact on [GitHub Actions](https://github.com/NaturalDevCR/atemporal/actions/workflows/ci.yml). It reports core, packed-tarball, and application-bundle measurements separately, including the application-bundle cost of `@js-temporal/polyfill`.
-- **License:** MIT. SBOM + signed releases (npm `--provenance`) on every release since v1.4.0.
+- **License and releases:** MIT, with the Temporal declaration attribution in LICENSE. Releases use npm trusted publishing, provenance, and SPDX/CycloneDX SBOMs.
 
-### Common recipes (1-liners)
+## v3 entry contract
+
+| Factory entry | Build/runtime requirement | Matching plugin prefix |
+| --- | --- | --- |
+| `atemporal` (ESM) | ES2022 and top-level await; conditional fallback import | `atemporal/plugins/` |
+| `atemporal` (CommonJS) | Synchronous require; fallback only when needed | `atemporal/plugins/` |
+| `atemporal/compat` | ES2020/IIFE; static fallback import | `atemporal/compat/plugins/` |
+| `atemporal/native` | ES2020; complete global Temporal required | `atemporal/native/plugins/` |
+
+Use the same entry family for the factory, named errors/helpers, and plugins. Date operations stay synchronous after import. Default browser download savings require code splitting; total output still includes optional fallback/plugin chunks. Native entry builds exclude fallback code, while the installed package retains its direct polyfill dependency. Leave globalThis.Temporal unchanged after initialization.
+
+Default/native roots no longer export `dateRangeOverlapPlugin`, `businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`, `InvalidDateRangeError`, or `OverlapDetectionError`. Import plugins/helpers from their matching subpaths. The compat root preserves all six legacy named exports. No Temporal runtime object is exported from the root. Public Temporal types are self-contained for TypeScript 5.4+.
+
+See [Migrating to v3](https://naturaldevcr.github.io/atemporal/migration/v3.html) for complete examples.
+
+### Common recipes
 
 ```ts
-// Today, midnight, in a specific TZ
-atemporal().startOf("day").timeZone("America/New_York")
+import atemporal from "atemporal";
 
-// Add 30 days, excluding weekends and a holiday list
-atemporal("2025-01-01").add(30, "day") /* then plugin: .addBusinessDays(30) */
+// Convert to the business zone before finding its midnight
+const midnight = atemporal().timeZone("America/New_York").startOf("day");
 
-// Human-readable diff
-atemporal.duration({ hours: 2, minutes: 30 }).humanize() // "2.5 hours"
+// Preserve a timestamp at nanosecond precision with a raw instant
+const instant = atemporal.instant("2026-07-15T10:00:00.123456789Z");
+const timestamp = instant.toString();
 
-// Validate untrusted input without throwing
-const ok = atemporal.try(userInput)?.isValid() ?? false;
+// Add business days with an explicit holiday configuration
+await atemporal.lazyLoad("businessDays");
+atemporal.setBusinessDaysConfig({ holidays: ["2026-07-20"] });
+const deadline = atemporal("2026-07-17", "America/Costa_Rica").addBusinessDays(1);
 
-// Format in any BCP-47 locale
-atemporal("2025-01-01").format({ dateStyle: "full" }, "es-CR")
+// Humanize a duration after installing the official plugin
+await atemporal.lazyLoad("durationHumanizer");
+const duration = atemporal.duration({ hours: 2, minutes: 30 });
+const humanized = atemporal.humanize(duration, { locale: "en" });
+
+// Validate untrusted input with a strict, explicit DST policy
+const parsed = atemporal.tryParse("not a date", { timeZone: "America/Costa_Rica" });
+
+// Format a valid wrapper in a chosen locale
+const formatted = atemporal.parse("2026-07-15T10:00:00Z").format({ dateStyle: "full" }, "es-CR");
 ```
 
 ## Choose the public API
 
 | Case | Public API | Timezone rule | Failure result |
 | --- | --- | --- | --- |
-| Event instant | `atemporal.parse` with an offset-bearing input | Do not guess a zone | `InvalidDateError` / `null` |
-| Scheduled event | `atemporal.parse(input, { timeZone })` | Explicit IANA zone | Reject DST ambiguity by default |
-| Local civil date-time | `atemporal.parse` | Always provide an IANA zone | `InvalidDateError` / `null` |
-| Date-only value | `atemporal.parse` | Provide the business zone when a time is implied | `InvalidDateError` / `null` |
-| Trusted boundary parsing | `atemporal.parse` | Explicit zone for local input | Throws `InvalidDateError` |
+| Event instant | `atemporal.instant(value)` | Offset-bearing string or exact instant | `InvalidDateError` |
+| Scheduled event | `atemporal.zonedDateTime(value, { timeZone })` | Explicit zone required for local input | `InvalidDateError`; rejects DST ambiguity |
+| Local civil date-time | `atemporal.plainDateTime(value)` | Zone-free raw value | `InvalidDateError` |
+| Date-only value | `atemporal.date(value)` | Zone-free raw value | `InvalidDateError` |
+| Chainable strict wrapper | `atemporal.parse` / `tryParse` | Choose a domain zone for local input | `InvalidDateError` / `null` |
 | Compatibility parsing | `atemporal(input)` | Optional zone preserves v1 behavior | Invalid wrapper |
-| Formatting | `value.format(pattern)` | Format in the value zone or convert first | Throws for invalid wrapper |
+| Formatting | `wrapper.format(pattern)` | Convert the wrapper to the domain zone first | Invalid wrappers format as `"Invalid Date"` |
 | Duration | `atemporal.duration(like)` | No zone | Temporal conversion error |
 | Range | `value.range(...)` | Keep both ends in a known zone | Invalid wrapper/error |
 | Official plugin | `extend(plugin)` / `lazyLoad(name)` | No zone | Plugin load error |
 | Third-party extension | `extend(markAsPlugin(...))` | No zone | Extension error |
 
-For complete API signatures, migration matrices, plugin guides, and cookbook recipes read `llms-full.txt`.
+Raw Temporal values do not have wrapper `.format()`, range, or plugin methods. For complete API signatures, migration matrices, plugin guides, and cookbook recipes read `llms-full.txt`.

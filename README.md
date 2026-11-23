@@ -60,19 +60,89 @@ For full guides and API reference, please visit:
 
 **[AI-Friendly Documentation (llms.txt)](https://naturaldevcr.github.io/atemporal/llms.txt)**
 
+Use [llms-full.txt](https://naturaldevcr.github.io/atemporal/llms-full.txt) for
+the complete API reference, plugin guides, migration instructions, and cookbook.
+
 ---
 
 ## Installation
 
 **Node.js 22 or newer is required.** Atemporal supports Node 22, 24, and 26;
-browser compatibility continues through Temporal runtime detection and the
-published bundler fixtures.
+the default ESM entry requires ES2022 with top-level await. CommonJS remains
+synchronous. See [Migrating to v3](docs/migration/v3.md) for the loading contract.
 
 ```bash
 npm install atemporal
 # or
 pnpm add atemporal
 ```
+
+The default entry loads `@js-temporal/polyfill` only when a complete global
+Temporal implementation is unavailable. In ESM, initialization finishes before
+importers run; date operations stay synchronous. Browser bundlers with code
+splitting can keep the fallback in a separate, conditionally downloaded chunk.
+In CommonJS, the polyfill is required synchronously only on the fallback path.
+
+For ES2020 builds or tools without top-level await, use the compatibility entry:
+
+```ts
+import atemporal from 'atemporal/compat';
+import relativeTime from 'atemporal/compat/plugins/relativeTime';
+
+atemporal.extend(relativeTime);
+```
+
+Deployments that guarantee `globalThis.Temporal` can use `atemporal/native`
+and `atemporal/native/plugins/*` to exclude the fallback entirely. The native
+entry throws at import time when Temporal is unavailable. Use the same entry
+family for the factory, named errors/helpers, and plugins. All eight plugins and `lazyLoad()` are
+available in each distribution. Import plugins and overlap helpers from their
+explicit `plugins/*` subpaths; the compat root retains the legacy named exports.
+
+The polyfill remains installed for automatic fallback. Public Temporal types
+are self-contained and support TypeScript 5.4+ without global Temporal types.
+
+### Choose an entry for v3
+
+| Entry | Module/build requirement | Temporal fallback |
+| --- | --- | --- |
+| `atemporal` (ESM) | ES2022 ESM with top-level await | Conditional dynamic import |
+| `atemporal` (CommonJS) | Synchronous `require()` | Required only when native Temporal is unavailable |
+| `atemporal/compat` | ES2020, including IIFE builds | Static polyfill import |
+| `atemporal/native` | ES2020 and complete `globalThis.Temporal` | None; import fails if Temporal is missing/incomplete |
+
+CommonJS reads the default exports explicitly:
+
+```js
+const { default: atemporal } = require('atemporal');
+const { default: relativeTime } = require('atemporal/plugins/relativeTime');
+atemporal.extend(relativeTime);
+```
+
+Browser download savings from the default ESM fallback require code splitting.
+A single-file build can still contain the fallback, and total output includes
+the optional chunks. `atemporal/native` excludes fallback code from the build
+while the installed package still includes its polyfill dependency.
+
+### Changed plugin imports
+
+The default and native roots no longer export `dateRangeOverlapPlugin`,
+`businessDaysPlugin`, `timeSlotsPlugin`, `checkDateRangeOverlap`,
+`InvalidDateRangeError`, or `OverlapDetectionError`. Use the plugin subpaths:
+
+```ts
+import businessDays from 'atemporal/plugins/businessDays';
+import timeSlots from 'atemporal/plugins/timeSlots';
+import dateRangeOverlap, {
+  checkDateRangeOverlap,
+  InvalidDateRangeError,
+  OverlapDetectionError,
+} from 'atemporal/plugins/dateRangeOverlap';
+```
+
+Use matching `atemporal/native/plugins/*` paths with the native factory.
+`atemporal/compat` retains all six legacy named exports. Installed plugin methods
+and `lazyLoad()` continue to work; see the [v3 migration guide](docs/migration/v3.md).
 
 ## Quick Start
 
@@ -110,6 +180,40 @@ if (future.isAfter(now)) {
 const past = now.subtract(5, "minutes");
 console.log(past.fromNow()); // "5 minutes ago"
 ```
+
+## Choose a value and parsing policy
+
+When the value category is known, explicit constructors return raw Temporal
+values with their own methods:
+
+```ts
+import atemporal from 'atemporal';
+
+const event = atemporal.instant('2026-07-15T10:00:00.123456789Z'); // Temporal.Instant
+const invoiceDate = atemporal.date('2026-07-15'); // Temporal.PlainDate
+const openingTime = atemporal.plainDateTime('2026-07-15T09:00:00'); // Temporal.PlainDateTime
+const meeting = atemporal.zonedDateTime('2026-07-15T10:00:00', {
+  timeZone: 'America/Costa_Rica',
+}); // Temporal.ZonedDateTime
+```
+
+For the chainable wrapper and its formatting/plugins, use strict parsing at
+untrusted-input boundaries. `parse()` throws `InvalidDateError`; `tryParse()`
+returns `null`. Both reject invalid calendar values and DST gaps/overlaps by
+default. Choose a different disambiguation policy explicitly when needed:
+
+```ts
+const appointment = atemporal.tryParse('2026-11-01T01:30:00', {
+  timeZone: 'America/New_York',
+  disambiguation: 'later',
+});
+if (appointment) console.log(appointment.format('YYYY-MM-DD HH:mm Z'));
+```
+
+The callable `atemporal(input, timeZone?)` keeps compatibility parsing and can
+return an invalid wrapper; check `.isValid()`. Raw Temporal values from the
+explicit constructors do not have wrapper methods such as `.format()` or plugin
+methods. See [Choosing the public API](docs/guide/choosing-an-api.md).
 
 ## Configuration
 

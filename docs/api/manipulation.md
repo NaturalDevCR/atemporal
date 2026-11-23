@@ -12,8 +12,8 @@ date.add(5, "days"); // Add 5 days
 date.add(2, "h"); // Add 2 hours (alias)
 date.add(3, "months"); // Add 3 months
 
-// Add time with a plain object
-date.add({ months: 1, days: 10 }); // Add 1 month and 10 days
+// Build a Temporal.Duration from a plain object
+date.add(atemporal.duration({ months: 1, days: 10 })); // Add 1 month and 10 days
 
 // Add time with a Temporal.Duration
 const dur = atemporal.duration({ hours: 2, minutes: 30 });

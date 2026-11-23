@@ -18,10 +18,18 @@ atemporal.extend(relativeTime);
 atemporal().subtract(5, "m").fromNow();
 ```
 
-Plugins can optionally accept configuration options:
+In v3, use matching `atemporal/compat/plugins/*` or `atemporal/native/plugins/*`
+paths with those factory entries. Default/native roots expose plugins through
+these subpaths; the compat root also retains the six legacy plugin/helper exports.
+See [Migrating to v3](../migration/v3).
+
+`extend(plugin, options?)` forwards options to plugin functions that implement
+that argument. Configure official plugins through their documented setters, for
+example after installing `businessDays`:
 
 ```ts
-atemporal.extend(relativeTime, { threshold: 45 });
+await atemporal.lazyLoad("businessDays");
+atemporal.setBusinessDaysConfig({ holidays: ["2026-07-20"], weekendDays: [6, 7] });
 ```
 
 ### Lazy Loading
@@ -44,10 +52,9 @@ async function loadAdvancedFeatures() {
   await atemporal.lazyLoadMultiple(["businessDays", "timeSlots"]);
 }
 
-// Pass options to lazy-loaded plugins
-await atemporal.lazyLoadMultiple(["weekDay", "customParseFormat"], {
-  weekDay: { defaultWeekStart: 1 },
-});
+// Configure an installed official plugin using its public setter
+await atemporal.lazyLoad("weekDay");
+atemporal.setWeekStartsOn(1);
 ```
 
 ## Plugin Utilities
@@ -79,7 +86,7 @@ uses `Function.name` as an identity.
 import atemporal, { markAsPlugin, type Plugin } from "atemporal";
 
 const auditPlugin = markAsPlugin(((Wrapper) => {
-  Wrapper.prototype.isAudited = () => true;
+  Object.assign(Wrapper.prototype, { isAudited: () => true });
 }) as Plugin, { id: "acme.audit", official: false });
 
 atemporal.extend(auditPlugin);
