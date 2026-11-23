@@ -2,20 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## Unreleased
+## [3.1.0](https://github.com/NaturalDevCR/atemporal/compare/v3.0.0...v3.1.0) (2026-11-23)
 
 ### Features
 
 - Add `.toISOString()` for UTC serialization matching native `Date.toISOString()`,
   and document how it differs from offset-preserving `.toString()` when storing
-  and sorting date strings (fixes [#102](https://github.com/NaturalDevCR/atemporal/issues/102)).
+  and sorting date strings ([#103](https://github.com/NaturalDevCR/atemporal/pull/103), fixes [#102](https://github.com/NaturalDevCR/atemporal/issues/102)).
 
-## [3.1.0](https://github.com/NaturalDevCR/atemporal/compare/v3.0.0...v3.1.0) (2026-11-23)
+### Maintenance
 
-
-### Features
-
-* add UTC ISO serialization ([#103](https://github.com/NaturalDevCR/atemporal/issues/103)) ([40a5a2b](https://github.com/NaturalDevCR/atemporal/commit/40a5a2bd484a0a598757a689f6ad6e71eaff3591))
+- Update the OSV Scanner GitHub Action to 2.7.1 ([#99](https://github.com/NaturalDevCR/atemporal/pull/99)).
+- Update the fast-check development dependency to 4.10.3 ([#104](https://github.com/NaturalDevCR/atemporal/pull/104)).
 
 ## [3.0.0] (2026-11-17)
 
