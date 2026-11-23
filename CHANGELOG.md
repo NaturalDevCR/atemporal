@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file. See [standa
   and document how it differs from offset-preserving `.toString()` when storing
   and sorting date strings (fixes [#102](https://github.com/NaturalDevCR/atemporal/issues/102)).
 
+## [3.1.0](https://github.com/NaturalDevCR/atemporal/compare/v3.0.0...v3.1.0) (2026-11-23)
+
+
+### Features
+
+* add UTC ISO serialization ([#103](https://github.com/NaturalDevCR/atemporal/issues/103)) ([40a5a2b](https://github.com/NaturalDevCR/atemporal/commit/40a5a2bd484a0a598757a689f6ad6e71eaff3591))
+
 ## [3.0.0] (2026-11-17)
 
 ### Breaking Changes
