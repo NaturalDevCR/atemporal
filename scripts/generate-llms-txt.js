@@ -204,6 +204,7 @@ function buildMethodIndex() {
     { kind: 'instance', name: 't.range(end, unit, options?)', sig: '(DateInput, TimeUnit, RangeOptions?) => TemporalWrapper[] | string[]', note: 'Generate a range; supplying options.format produces formatted strings.' },
     { kind: 'instance', name: 't.isBetween(start, end, inclusivity?)', sig: '(DateInput, DateInput, inclusivity="[]") => boolean', note: 'Compare bounds with (), [], (], or [) inclusivity.' },
     { kind: 'instance', name: 't.toDate()', sig: '() => Date', note: 'Legacy Date representing the same instant, with millisecond precision; Date does not retain the IANA zone.' },
+    { kind: 'instance', name: 't.toISOString()', sig: '() => string', note: 'UTC ISO string with three millisecond digits and Z, equivalent to t.toDate().toISOString(); throws RangeError for invalid instances.' },
     { kind: 'instance', name: 't.toString()', sig: '() => string', note: 'ISO string with offset; use t.raw.toString() to preserve the zone annotation and full nanoseconds.' },
   ];
 
@@ -292,6 +293,7 @@ function buildTldr() {
     '- **Plugins:** synchronously install any plugin with `atemporal.extend(plugin)`. Lazy loading accepts an official plugin name: `await atemporal.lazyLoad("relativeTime")`. `getLoadedPlugins()` reports only official plugins; use `getAppliedExtensions()` to inspect explicitly identified third-party extensions too.',
     '- **Diagnostics:** use `atemporal.getDiagnostics()`, `clearCaches()`, `resetDiagnostics()`, and `prewarm()`; do not import `atemporal/src/...` in consumer code. Deprecated `Atemporal.getFormattingMetrics().tokenPoolStats` fields are zero in v3; prewarm still compiles formats.',
     '- **Time zones:** always pass an explicit IANA TZ to functions that compare or persist. The configured default starts at UTC; specify the domain zone before calendar operations.',
+    '- **Serialization:** wrapper `.toString()` preserves local time and offset. Use `.toISOString()` (equivalent to `.toDate().toISOString()`) for UTC `Z` strings with three millisecond digits in database fields sorted as strings; invalid wrappers throw `RangeError`.',
     '- **Temporal runtime:** call `atemporal.getTemporalInfo()` to inspect the implementation. Do not assume `globalThis.Temporal` exists. Choose the v3 entry contract below; date operations remain synchronous after import.',
     '- **Compatibility contract:** pull-request CI tests the packed npm artifact for installation, ESM and CommonJS imports, type resolution, core operations, formatting, and official plugin loading on Node 22, 24, and 26. Release validation additionally covers Vite, Webpack, and Next.js SSR fixtures.',
     '- **Errors:** import named errors such as `InvalidDateError`, `AtemporalError`, and `ATEMPORAL_ERROR_CODES` from the same entry family as the factory. Catch on the boundary, not deep in business logic.',
